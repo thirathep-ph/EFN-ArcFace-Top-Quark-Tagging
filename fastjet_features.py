@@ -179,7 +179,8 @@ def _d2(constituents):
         k_slice = slice(j + 1, n)
 
         # pT_i * pT_j * pT_k for all i<j<k
-        pt_ijk = pts[i_slice] * pts[j] * pts[k_slice]  # (j,) * (n-j-1,) -> broadcast
+        # Shape: (j, 1) * (n-j-1,) -> (j, n-j-1)
+        pt_ijk = pts[i_slice, np.newaxis] * pts[j] * pts[k_slice]
 
         # dR_ij * dR_jk * dR_ik for all i<j<k
         dr_ij = dr[i_slice, j]          # (j,)
@@ -187,7 +188,7 @@ def _d2(constituents):
         dr_ik = dr[i_slice, k_slice]    # (j, n-j-1)
 
         # Sum over i and k
-        term = pt_ijk[np.newaxis, :] * dr_ij[:, np.newaxis] * dr_jk[np.newaxis, :] * dr_ik
+        term = pt_ijk * dr_ij[:, np.newaxis] * dr_jk[np.newaxis, :] * dr_ik
         e3 += np.sum(term)
 
     if e2 > 1e-10:
