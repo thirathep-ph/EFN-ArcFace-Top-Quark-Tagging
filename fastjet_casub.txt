@@ -1,0 +1,140 @@
+﻿Help on class CASubJetTagger in module fastjet._swig:
+
+class CASubJetTagger(Transformer)
+ |  CASubJetTagger(*args)
+ |
+ |  clean (almost parameter-free) tagger searching for the element in the clustering
+ |  history that maximises a chosen distance
+ |
+ |  class to help us get a clean (almost parameter-free) handle on substructure
+ |  inside a C/A jet. It follows the logic described in arXiv:0906.0728 (and is
+ |  inspired by the original Cambridge algorithm paper in its use of separate
+ |  angular and dimensionful distances), but provides some extra flexibility.
+ |
+ |  It searches for all splittings that pass a symmetry cut (zcut) and then selects
+ |  the one with the largest auxiliary scale choice (e.g. jade distance of the
+ |  splitting, kt distance of the splitting, etc.)
+ |
+ |  By default, the zcut is calculated from the fraction of the child pt carried by
+ |  the parent jet. If one calls set_absolute_z_cut the fraction of transverse
+ |  momentum will be computed wrt the original jet.
+ |
+ |  original code copyright (C) 2009 by Gavin Salam, released under the GPL.
+ |  Options
+ |  *   the distance choice: options are kt2_distance : usual
+ |      min(kti^2,ktj^2)DeltaR_{ij}^2 jade_distance : kti . ktj DeltaR_{ij}^2 (LI
+ |      version of jade) jade2_distance : kti . ktj DeltaR_{ij}^4 (LI version of
+ |      jade * DR^2) plain_distance : DeltaR_{ij}^2 mass_drop_distance : m_jet -
+ |      max(m_parent1,m_parent2) dot_product_distance: parent1.parent2 (kt2_distance
+ |      by default)
+ |  *   the z cut (0 by default)
+ |  *   by calling set_absolute_z_cut(), one can ask that the pt fraction if
+ |      calculated wrt the original jet
+ |  *   by calling set_dr_min(drmin), one can ask that only the recombinations where
+ |      the 2 objects are (geometrically) distant by at least drmin are kept in the
+ |      maximisation.
+ |  Input conditions
+ |  *   the jet must have been obtained from a Cambridge/Aachen cluster sequence
+ |  Output/structure
+ |  *   the element of the cluster sequence maximising the requested distance (and
+ |      satisfying the zcut) is returned.
+ |  *   if the original jet has no parents, it will be returned
+ |  *   the value of the "z" and distance corresponding to that history element
+ |      are stored and accessible through result.structure_of<CASubJetTagger>().z();
+ |      result.structure_of<CASubJetTagger>().distance();
+ |
+ |  C++ includes: fastjet/tools/CASubJetTagger.hh
+ |
+ |  Method resolution order:
+ |      CASubJetTagger
+ |      Transformer
+ |      FunctionOfPseudoJetPseudoJet
+ |      builtins.object
+ |
+ |  Methods defined here:
+ |
+ |  __init__(self, *args)
+ |      `CASubJetTagger(ScaleChoice scale_choice=jade_distance, double z_threshold=0.1)`
+ |
+ |      just constructs
+ |
+ |  __repr__ = _swig_repr(self) from fastjet._swig
+ |
+ |  __str__(self)
+ |      Return str(self).
+ |
+ |  description(self)
+ |      `description() const -> std::string`
+ |
+ |      returns a textual description of the tagger
+ |
+ |  result(self, jet)
+ |      `result(const PseudoJet &jet) const -> PseudoJet`
+ |
+ |      runs the tagger on the given jet and returns the tagged PseudoJet if successful,
+ |      or a PseudoJet==0 otherwise (standard access is through operator()).
+ |
+ |  set_absolute_z_cut(self, abs_z_cut=True)
+ |      `set_absolute_z_cut(bool abs_z_cut=true)`
+ |
+ |      If (abs_z_cut) is set to false (the default) then for a splitting to be
+ |      considered, each subjet must satisfy.
+ |
+ |      p_{t,sub} > z_threshold * p_{t,parent}
+ |
+ |      whereas if it is set to true, then each subject must satisfy
+ |
+ |             p_{t,sub} > z_threshold * p_{t,original-jet}
+ |
+ |      where parent is the immediate parent of the splitting, and original jet is the
+ |      one supplied to the run() function.
+ |
+ |      Only relevant is called prior to run().
+ |
+ |  set_dr_min(self, drmin)
+ |      `set_dr_min(double drmin)`
+ |
+ |      sets a minimum delta R below which spliting will be ignored (only relevant if
+ |      set prior to calling run())
+ |
+ |  ----------------------------------------------------------------------
+ |  Static methods defined here:
+ |
+ |  __swig_destroy__ = delete_CASubJetTagger(object, /)
+ |
+ |  ----------------------------------------------------------------------
+ |  Data descriptors defined here:
+ |
+ |  thisown
+ |      The membership flag
+ |
+ |  ----------------------------------------------------------------------
+ |  Data and other attributes defined here:
+ |
+ |  dot_product_distance = 5
+ |
+ |  jade2_distance = 2
+ |
+ |  jade_distance = 1
+ |
+ |  kt2_distance = 0
+ |
+ |  mass_drop_distance = 4
+ |
+ |  plain_distance = 3
+ |
+ |  ----------------------------------------------------------------------
+ |  Methods inherited from FunctionOfPseudoJetPseudoJet:
+ |
+ |  __call__(self, *args)
+ |      Call self as a function.
+ |
+ |  ----------------------------------------------------------------------
+ |  Data descriptors inherited from FunctionOfPseudoJetPseudoJet:
+ |
+ |  __dict__
+ |      dictionary for instance variables
+ |
+ |  __weakref__
+ |      list of weak references to the object
+

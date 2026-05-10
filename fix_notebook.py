@@ -369,93 +369,130 @@ def plot_results(history, test_d_qcd, test_d_top, test_labels, test_similarities
     import matplotlib.pyplot as plt
     import seaborn as sns
     from sklearn.metrics import roc_curve, auc, confusion_matrix, precision_recall_curve, average_precision_score
+    sns.set_style("whitegrid")
     fig, axes = plt.subplots(3, 3, figsize=(18, 18))
-    fig.suptitle('Top Tagging - DeepSets + Prototype Layer (EBM)', fontsize=16, y=1.02)
+    fig.suptitle('Top Tagging -- DeepSets + Prototype Layer (EBM)', fontsize=16, y=1.02, fontweight='bold')
     d_qcd_np, d_top_np, labels_np = test_d_qcd.numpy(), test_d_top.numpy(), test_labels.numpy()
     scores = d_qcd_np - d_top_np
     preds = (d_top_np < d_qcd_np).astype(np.int64)
     qcd_mask, top_mask = labels_np == 0, labels_np == 1
     epochs = range(1, len(history['train_loss']) + 1)
+    best_epoch = history.get('best_epoch', 0)
     # Panel 1: Loss
-    axes[0,0].plot(epochs, history['train_loss'], 'b-', label='Train', linewidth=2)
-    axes[0,0].plot(epochs, history['val_loss'], 'r-', label='Val', linewidth=2)
-    axes[0,0].set(xlabel='Epoch', ylabel='Loss', title='Loss Curves'); axes[0,0].legend(); axes[0,0].grid(True, alpha=0.3)
+    ax = axes[0,0]
+    ax.plot(epochs, history['train_loss'], 'b-', label='Train', linewidth=2)
+    ax.plot(epochs, history['val_loss'], 'r-', label='Val', linewidth=2)
+    if best_epoch > 0:
+        ax.axvline(x=best_epoch+1, color='g', linestyle=':', alpha=0.7, label=f'Best (ep {best_epoch+1})')
+    ax.set(xlabel='Epoch', ylabel='Loss', title='Loss Curves'); ax.legend(fontsize=9); ax.grid(True, alpha=0.3)
     # Panel 2: Accuracy
-    axes[0,1].plot(epochs, history['train_acc'], 'b-', label='Train', linewidth=2)
-    axes[0,1].plot(epochs, history['val_acc'], 'r-', label='Val', linewidth=2)
-    axes[0,1].axhline(y=history.get('test_acc', 0), color='g', linestyle='--', label=f"Test: {history.get('test_acc', 0)*100:.1f}%")
-    axes[0,1].set(xlabel='Epoch', ylabel='Accuracy', title='Accuracy Curves'); axes[0,1].legend(); axes[0,1].grid(True, alpha=0.3)
+    ax = axes[0,1]
+    ax.plot(epochs, history['train_acc'], 'b-', label='Train', linewidth=2)
+    ax.plot(epochs, history['val_acc'], 'r-', label='Val', linewidth=2)
+    test_acc = history.get('test_acc', 0)
+    ax.axhline(y=test_acc, color='g', linestyle='--', linewidth=2, label=f'Test: {test_acc*100:.2f}%')
+    if best_epoch > 0:
+        ax.axvline(x=best_epoch+1, color='g', linestyle=':', alpha=0.7)
+    ax.set(xlabel='Epoch', ylabel='Accuracy', title='Accuracy Curves'); ax.legend(fontsize=9); ax.grid(True, alpha=0.3)
     # Panel 3: Energy distribution
+    ax = axes[0,2]
+    bins = np.linspace(0, 2, 50)
     if qcd_mask.sum() > 0:
-        axes[0,2].hist(d_qcd_np[qcd_mask], bins=50, alpha=0.5, label='QCD->d_qcd', color='blue', density=True)
-        axes[0,2].hist(d_top_np[qcd_mask], bins=50, alpha=0.5, label='QCD->d_top', color='cyan', density=True)
+        ax.hist(d_qcd_np[qcd_mask], bins=bins, alpha=0.6, label='QCD -> d_qcd', color='#1f77b4', density=True)
+        ax.hist(d_top_np[qcd_mask], bins=bins, alpha=0.6, label='QCD -> d_top', color='#7fcdbb', density=True)
     if top_mask.sum() > 0:
-        axes[0,2].hist(d_qcd_np[top_mask], bins=50, alpha=0.5, label='Top->d_qcd', color='red', density=True)
-        axes[0,2].hist(d_top_np[top_mask], bins=50, alpha=0.5, label='Top->d_top', color='orange', density=True)
-    axes[0,2].set(xlabel='Cosine Distance', ylabel='Density', title='Energy Distribution'); axes[0,2].legend(fontsize=8); axes[0,2].grid(True, alpha=0.3)
+        ax.hist(d_qcd_np[top_mask], bins=bins, alpha=0.6, label='Top -> d_qcd', color='#d62728', density=True)
+        ax.hist(d_top_np[top_mask], bins=bins, alpha=0.6, label='Top -> d_top', color='#ffbb78', density=True)
+    ax.set(xlabel='Cosine Distance (1 - similarity)', ylabel='Density', title='Energy Distribution')
+    ax.legend(fontsize=8, loc='upper right'); ax.grid(True, alpha=0.3)
     # Panel 4: Decision boundary
+    ax = axes[1,0]
     if qcd_mask.sum() > 0:
-        axes[1,0].scatter(d_qcd_np[qcd_mask], d_top_np[qcd_mask], c='blue', alpha=0.3, s=5, label='QCD', edgecolors='none')
+        ax.scatter(d_qcd_np[qcd_mask], d_top_np[qcd_mask], c='#1f77b4', alpha=0.15, s=3, label='QCD', edgecolors='none', rasterized=True)
     if top_mask.sum() > 0:
-        axes[1,0].scatter(d_qcd_np[top_mask], d_top_np[top_mask], c='red', alpha=0.3, s=5, label='Top', edgecolors='none')
+        ax.scatter(d_qcd_np[top_mask], d_top_np[top_mask], c='#d62728', alpha=0.15, s=3, label='Top', edgecolors='none', rasterized=True)
     lim_max = max(d_qcd_np.max(), d_top_np.max()) * 1.1
-    axes[1,0].plot([0, lim_max], [0, lim_max], 'k--', linewidth=1, alpha=0.5)
-    axes[1,0].set(xlabel='d_qcd', ylabel='d_top', title='Decision Boundary', xlim=(0, lim_max), ylim=(0, lim_max))
-    axes[1,0].legend(); axes[1,0].grid(True, alpha=0.3)
+    ax.plot([0, lim_max], [0, lim_max], 'k--', linewidth=1, alpha=0.5)
+    ax.set(xlabel='d_qcd (distance to QCD prototypes)', ylabel='d_top (distance to Top prototypes)',
+           title='Decision Boundary', xlim=(0, lim_max), ylim=(0, lim_max))
+    ax.legend(markerscale=5, fontsize=9); ax.grid(True, alpha=0.3)
     # Panel 5: Prototype activation
+    ax = axes[1,1]
     n_proto = test_similarities.shape[1]
     proto_labels_arr = np.array([0] * (n_proto // 2) + [1] * (n_proto - n_proto // 2))
     mean_sims = [test_similarities[:, p].mean().item() for p in range(n_proto)]
-    colors = ['red' if proto_labels_arr[p] == 1 else 'blue' for p in range(n_proto)]
-    axes[1,1].bar(range(n_proto), mean_sims, color=colors, alpha=0.7)
-    axes[1,1].set_xticks(range(n_proto)); axes[1,1].set_xticklabels([f'P{p}' for p in range(n_proto)], fontsize=7)
-    axes[1,1].set(ylabel='Mean Cosine Similarity', title='Prototype Activations'); axes[1,1].grid(True, alpha=0.3, axis='y')
+    colors = ['#d62728' if proto_labels_arr[p] == 1 else '#1f77b4' for p in range(n_proto)]
+    bars = ax.bar(range(n_proto), mean_sims, color=colors, alpha=0.8, edgecolor='gray', linewidth=0.5)
+    ax.set_xticks(range(n_proto))
+    ax.set_xticklabels([f'P{p}' for p in range(n_proto)], fontsize=7, rotation=45)
+    ax.set(ylabel='Mean Cosine Similarity', title='Prototype Activations')
+    ax.axhline(y=0, color='k', linewidth=0.5)
+    ax.grid(True, alpha=0.3, axis='y')
+    from matplotlib.patches import Patch
+    legend_elements = [Patch(facecolor='#1f77b4', alpha=0.8, label='QCD proto'),
+                       Patch(facecolor='#d62728', alpha=0.8, label='Top proto')]
+    ax.legend(handles=legend_elements, fontsize=8, loc='lower right')
     # Panel 6: ROC
+    ax = axes[1,2]
     fpr, tpr, _ = roc_curve(labels_np, scores)
     roc_auc = auc(fpr, tpr)
-    axes[1,2].plot(fpr, tpr, 'b-', linewidth=2, label=f'ROC (AUC = {roc_auc:.4f})')
-    axes[1,2].plot([0, 1], [0, 1], 'k--', alpha=0.5, label='Random')
-    axes[1,2].set(xlabel='FPR', ylabel='TPR', title='ROC Curve', xlim=(0, 1), ylim=(0, 1))
-    axes[1,2].legend(); axes[1,2].grid(True, alpha=0.3)
+    ax.plot(fpr, tpr, '#2ca02c', linewidth=2.5, label=f'ROC (AUC = {roc_auc:.4f})')
+    ax.fill_between(fpr, tpr, alpha=0.15, color='#2ca02c')
+    ax.plot([0, 1], [0, 1], 'k--', alpha=0.5, label='Random (AUC=0.5)')
+    ax.set(xlabel='False Positive Rate (1 - Specificity)', ylabel='True Positive Rate (Sensitivity)',
+           title='ROC Curve', xlim=(-0.02, 1.02), ylim=(-0.02, 1.02))
+    ax.legend(fontsize=9, loc='lower right'); ax.grid(True, alpha=0.3)
     # Panel 7: Confusion Matrix
+    ax = axes[2,0]
     cm = confusion_matrix(labels_np, preds)
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[2,0],
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax,
                 xticklabels=['QCD', 'Top'], yticklabels=['QCD', 'Top'],
-                cbar=False, annot_kws={'size': 16})
-    axes[2,0].set_xlabel('Predicted'); axes[2,0].set_ylabel('Actual')
-    axes[2,0].set_title(f'Confusion Matrix (Acc={history.get("test_acc", 0)*100:.1f}%)')
+                cbar=False, annot_kws={'size': 18, 'fontweight': 'bold'})
+    ax.set_xlabel('Predicted Label', fontsize=11); ax.set_ylabel('True Label', fontsize=11)
+    ax.set_title(f'Confusion Matrix\nAccuracy = {test_acc*100:.2f}%', fontsize=12, fontweight='bold')
     cm_sum = cm.sum()
     for i in range(2):
         for j in range(2):
-            axes[2,0].text(j + 0.5, i + 0.65, f'{cm[i,j]/cm_sum*100:.1f}%', ha='center', va='center', fontsize=10, color='gray')
+            pct = cm[i, j] / cm_sum * 100
+            ax.text(j + 0.5, i + 0.65, f'{pct:.1f}%', ha='center', va='center', fontsize=11, color='gray', fontweight='bold')
     # Panel 8: PR curve
+    ax = axes[2,1]
     precision_curve, recall_curve, _ = precision_recall_curve(labels_np, scores)
     avg_prec = average_precision_score(labels_np, scores)
-    axes[2,1].plot(recall_curve, precision_curve, 'b-', linewidth=2, label=f'PR (AP={avg_prec:.4f})')
-    axes[2,1].axhline(y=labels_np.mean(), color='k', linestyle='--', alpha=0.5, label=f'Baseline ({labels_np.mean():.2f})')
-    axes[2,1].set(xlabel='Recall', ylabel='Precision', title='PR Curve', xlim=(0, 1), ylim=(0, 1))
-    axes[2,1].legend(); axes[2,1].grid(True, alpha=0.3)
+    ax.plot(recall_curve, precision_curve, '#9467bd', linewidth=2.5, label=f'PR (AP = {avg_prec:.4f})')
+    ax.fill_between(recall_curve, precision_curve, alpha=0.15, color='#9467bd')
+    baseline = labels_np.mean()
+    ax.axhline(y=baseline, color='gray', linestyle='--', alpha=0.7, label=f'Baseline ({baseline:.3f})')
+    ax.set(xlabel='Recall (Sensitivity)', ylabel='Precision (PPV)',
+           title='Precision-Recall Curve', xlim=(-0.02, 1.02), ylim=(-0.02, 1.02))
+    ax.legend(fontsize=9, loc='lower left'); ax.grid(True, alpha=0.3)
     # Panel 9: Score distribution
+    ax = axes[2,2]
+    bins = np.linspace(scores.min(), scores.max(), 60)
     if qcd_mask.sum() > 0:
-        axes[2,2].hist(scores[qcd_mask], bins=50, alpha=0.5, label='QCD', color='blue', density=True)
+        ax.hist(scores[qcd_mask], bins=bins, alpha=0.6, label=f'QCD (n={qcd_mask.sum():,})', color='#1f77b4', density=True)
     if top_mask.sum() > 0:
-        axes[2,2].hist(scores[top_mask], bins=50, alpha=0.5, label='Top', color='red', density=True)
-    axes[2,2].axvline(x=0, color='k', linestyle='--', linewidth=1, alpha=0.5, label='Boundary')
-    axes[2,2].set(xlabel='Score (d_qcd - d_top)', ylabel='Density', title='Score Distribution')
-    axes[2,2].legend(); axes[2,2].grid(True, alpha=0.3)
-    plt.tight_layout(); plt.savefig(save_path, dpi=150, bbox_inches='tight'); plt.close()
+        ax.hist(scores[top_mask], bins=bins, alpha=0.6, label=f'Top (n={top_mask.sum():,})', color='#d62728', density=True)
+    ax.axvline(x=0, color='k', linestyle='--', linewidth=1.5, alpha=0.7, label='Decision boundary')
+    ax.set(xlabel='Score (d_qcd - d_top)', ylabel='Density', title='Score Distribution by Class')
+    ax.legend(fontsize=9); ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"  Saved figure to {save_path}")
     return fig"""))
 
 
 # Cell 14
 cells.append(md("## 6. Run Training"))
 
-# Cell 15 - Training loop
+# Cell 15 - Training loop with Early Stopping
 cells.append(code("""QUICK = True  # Set to False for full training
-N_EVENTS = 2000 if QUICK else None
-EPOCHS = 5 if QUICK else 30
+N_EVENTS = 100000 if QUICK else None
+EPOCHS = 200 if QUICK else 1000
 BATCH_SIZE = 512
 LR = 1e-3
+EARLY_STOP_PATIENCE = 20  # Stop if no val_acc improvement for this many epochs
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f'Device: {device}')
 train_ds = JetTaggingDataset('train.h5', max_events=N_EVENTS)
@@ -474,6 +511,8 @@ print(f'Parameters: {count_parameters(model):,}')
 optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=2)
 history = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': [], 'best_val_acc': 0.0}
+best_epoch = 0
+early_stop_counter = 0
 for epoch in range(EPOCHS):
     t0 = time.time()
     train_loss, train_acc = train_epoch(model, train_loader, optimizer, device, class_weight=class_weight)
@@ -485,13 +524,21 @@ for epoch in range(EPOCHS):
     if val_acc > history['best_val_acc']:
         history['best_val_acc'] = val_acc
         torch.save(model.state_dict(), 'best_model.pt')
+        best_epoch = epoch
+        early_stop_counter = 0
         print(f"Epoch {epoch+1:2d}/{EPOCHS} | train_loss={train_loss:.4f} train_acc={train_acc:.4f} | val_loss={val_loss:.4f} val_acc={val_acc:.4f} | time={t1-t0:.1f}s | NEW BEST!")
     else:
-        print(f"Epoch {epoch+1:2d}/{EPOCHS} | train_loss={train_loss:.4f} train_acc={train_acc:.4f} | val_loss={val_loss:.4f} val_acc={val_acc:.4f} | time={t1-t0:.1f}s")
+        early_stop_counter += 1
+        print(f"Epoch {epoch+1:2d}/{EPOCHS} | train_loss={train_loss:.4f} train_acc={train_acc:.4f} | val_loss={val_loss:.4f} val_acc={val_acc:.4f} | time={t1-t0:.1f}s | no improvement ({early_stop_counter}/{EARLY_STOP_PATIENCE})")
+        if early_stop_counter >= EARLY_STOP_PATIENCE:
+            print(f"\\nEarly stopping triggered at epoch {epoch+1}. Best was epoch {best_epoch+1} (val_acc={history['best_val_acc']:.4f})")
+            break
+print(f"\\nTraining finished. Best val_acc = {history['best_val_acc']:.4f} at epoch {best_epoch+1}")
 model.load_state_dict(torch.load('best_model.pt'))
 test_loss, test_acc, test_d_qcd, test_d_top, test_labels, test_similarities = evaluate(model, test_loader, device, class_weight=class_weight)
 print(f"Test accuracy: {test_acc:.4f} ({test_acc*100:.2f}%)")
 history['test_acc'] = test_acc
+history['best_epoch'] = best_epoch
 # Comprehensive evaluation
 metrics = comprehensive_evaluation(test_labels, test_d_qcd, test_d_top, test_similarities)
 print_evaluation_report(metrics)

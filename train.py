@@ -350,28 +350,29 @@ def plot_results(history, test_d_qcd, test_d_top, test_labels, test_similarities
     Generate a 9-panel figure summarizing training results.
 
     Panels:
-        1. Loss curves (train + val)
-        2. Accuracy curves (train + val)
+        1. Loss curves (train + val) with best epoch marker
+        2. Accuracy curves (train + val) with best epoch marker
         3. Energy distribution (d_qcd vs d_top by true class)
         4. Decision boundary scatter (d_qcd vs d_top)
         5. Prototype activation bar chart
-        6. ROC curve with AUC
-        7. Confusion matrix heatmap
-        8. Precision-Recall curve
+        6. ROC curve with AUC and fill_between
+        7. Confusion matrix heatmap with percentages
+        8. Precision-Recall curve with fill_between
         9. Score distribution by class
     """
     try:
         import matplotlib
         matplotlib.use('Agg')  # Non-interactive backend
         import matplotlib.pyplot as plt
-        from sklearn.metrics import roc_curve, auc, confusion_matrix, precision_recall_curve
+        from sklearn.metrics import roc_curve, auc, confusion_matrix, precision_recall_curve, average_precision_score
         import seaborn as sns
     except ImportError:
         print("  [plot_results] matplotlib or sklearn not available. Skipping plot.")
         return
 
+    sns.set_style("whitegrid")
     fig, axes = plt.subplots(3, 3, figsize=(18, 18))
-    fig.suptitle('Top Tagging -- DeepSets + Prototype Layer (EBM)', fontsize=16, y=1.02)
+    fig.suptitle('Top Tagging -- DeepSets + Prototype Layer (EBM)', fontsize=16, y=1.02, fontweight='bold')
 
     d_qcd_np = test_d_qcd.numpy()
     d_top_np = test_d_top.numpy()
@@ -382,111 +383,115 @@ def plot_results(history, test_d_qcd, test_d_top, test_labels, test_similarities
     qcd_mask = labels_np == 0
     top_mask = labels_np == 1
 
+    epochs = range(1, len(history['train_loss']) + 1)
+    best_epoch = history.get('best_epoch', 0)
+
     # --- Panel 1: Loss curves ---
     ax = axes[0, 0]
-    epochs = range(1, len(history['train_loss']) + 1)
     ax.plot(epochs, history['train_loss'], 'b-', label='Train', linewidth=2)
     ax.plot(epochs, history['val_loss'], 'r-', label='Val', linewidth=2)
+    if best_epoch > 0:
+        ax.axvline(x=best_epoch + 1, color='g', linestyle=':', alpha=0.7,
+                   label=f'Best (ep {best_epoch + 1})')
     ax.set_xlabel('Epoch')
     ax.set_ylabel('Loss')
     ax.set_title('Loss Curves')
-    ax.legend()
+    ax.legend(fontsize=9)
     ax.grid(True, alpha=0.3)
 
     # --- Panel 2: Accuracy curves ---
     ax = axes[0, 1]
     ax.plot(epochs, history['train_acc'], 'b-', label='Train', linewidth=2)
     ax.plot(epochs, history['val_acc'], 'r-', label='Val', linewidth=2)
-    ax.axhline(y=history.get('test_acc', 0), color='g', linestyle='--',
-               label=f"Test: {history.get('test_acc', 0)*100:.1f}%")
+    test_acc = history.get('test_acc', 0)
+    ax.axhline(y=test_acc, color='g', linestyle='--', linewidth=2,
+               label=f'Test: {test_acc * 100:.2f}%')
+    if best_epoch > 0:
+        ax.axvline(x=best_epoch + 1, color='g', linestyle=':', alpha=0.7)
     ax.set_xlabel('Epoch')
     ax.set_ylabel('Accuracy')
     ax.set_title('Accuracy Curves')
-    ax.legend()
+    ax.legend(fontsize=9)
     ax.grid(True, alpha=0.3)
 
     # --- Panel 3: Energy distribution ---
     ax = axes[0, 2]
+    bins = np.linspace(0, 2, 50)
     if qcd_mask.sum() > 0:
-        ax.hist(d_qcd_np[qcd_mask], bins=50, alpha=0.5, label='QCD -> d_qcd', color='blue', density=True)
-        ax.hist(d_top_np[qcd_mask], bins=50, alpha=0.5, label='QCD -> d_top', color='cyan', density=True)
+        ax.hist(d_qcd_np[qcd_mask], bins=bins, alpha=0.6, label='QCD -> d_qcd', color='#1f77b4', density=True)
+        ax.hist(d_top_np[qcd_mask], bins=bins, alpha=0.6, label='QCD -> d_top', color='#7fcdbb', density=True)
     if top_mask.sum() > 0:
-        ax.hist(d_qcd_np[top_mask], bins=50, alpha=0.5, label='Top -> d_qcd', color='red', density=True)
-        ax.hist(d_top_np[top_mask], bins=50, alpha=0.5, label='Top -> d_top', color='orange', density=True)
+        ax.hist(d_qcd_np[top_mask], bins=bins, alpha=0.6, label='Top -> d_qcd', color='#d62728', density=True)
+        ax.hist(d_top_np[top_mask], bins=bins, alpha=0.6, label='Top -> d_top', color='#ffbb78', density=True)
     ax.set_xlabel('Cosine Distance (1 - similarity)')
     ax.set_ylabel('Density')
     ax.set_title('Energy Distribution')
-    ax.legend(fontsize=8)
+    ax.legend(fontsize=8, loc='upper right')
     ax.grid(True, alpha=0.3)
 
     # --- Panel 4: Decision boundary scatter ---
     ax = axes[1, 0]
     if qcd_mask.sum() > 0:
         ax.scatter(d_qcd_np[qcd_mask], d_top_np[qcd_mask],
-                   c='blue', alpha=0.3, s=5, label='QCD', edgecolors='none')
+                   c='#1f77b4', alpha=0.15, s=3, label='QCD', edgecolors='none', rasterized=True)
     if top_mask.sum() > 0:
         ax.scatter(d_qcd_np[top_mask], d_top_np[top_mask],
-                   c='red', alpha=0.3, s=5, label='Top', edgecolors='none')
+                   c='#d62728', alpha=0.15, s=3, label='Top', edgecolors='none', rasterized=True)
     lim_max = max(d_qcd_np.max(), d_top_np.max()) * 1.1
     ax.plot([0, lim_max], [0, lim_max], 'k--', linewidth=1, alpha=0.5)
     ax.set_xlabel('d_qcd (distance to QCD prototypes)')
     ax.set_ylabel('d_top (distance to Top prototypes)')
     ax.set_title('Decision Boundary')
-    ax.legend()
+    ax.legend(markerscale=5, fontsize=9)
     ax.grid(True, alpha=0.3)
     ax.set_xlim(0, lim_max)
     ax.set_ylim(0, lim_max)
 
     # --- Panel 5: Prototype activation ---
     ax = axes[1, 1]
-    proto_labels_arr = np.array([0] * 10 + [1] * 10)  # 10 QCD + 10 Top
     n_proto = test_similarities.shape[1]
+    proto_labels_arr = np.array([0] * (n_proto // 2) + [1] * (n_proto - n_proto // 2))
 
-    mean_sims = []
-    proto_names = []
-    colors = []
-    for p in range(n_proto):
-        pclass = 'Top' if proto_labels_arr[p] == 1 else 'QCD'
-        mean_sim = test_similarities[:, p].mean().item()
-        mean_sims.append(mean_sim)
-        proto_names.append(f'P{p}\n({pclass})')
-        colors.append('red' if proto_labels_arr[p] == 1 else 'blue')
+    mean_sims = [test_similarities[:, p].mean().item() for p in range(n_proto)]
+    colors = ['#d62728' if proto_labels_arr[p] == 1 else '#1f77b4' for p in range(n_proto)]
 
-    bars = ax.bar(range(n_proto), mean_sims, color=colors, alpha=0.7)
+    bars = ax.bar(range(n_proto), mean_sims, color=colors, alpha=0.8, edgecolor='gray', linewidth=0.5)
     ax.set_xticks(range(n_proto))
-    ax.set_xticklabels(proto_names, fontsize=7)
+    ax.set_xticklabels([f'P{p}' for p in range(n_proto)], fontsize=7, rotation=45)
     ax.set_ylabel('Mean Cosine Similarity')
     ax.set_title('Prototype Activations')
+    ax.axhline(y=0, color='k', linewidth=0.5)
     ax.grid(True, alpha=0.3, axis='y')
 
     from matplotlib.patches import Patch
-    legend_elements = [Patch(facecolor='blue', alpha=0.7, label='QCD prototype'),
-                       Patch(facecolor='red', alpha=0.7, label='Top prototype')]
-    ax.legend(handles=legend_elements, fontsize=8)
+    legend_elements = [Patch(facecolor='#1f77b4', alpha=0.8, label='QCD proto'),
+                       Patch(facecolor='#d62728', alpha=0.8, label='Top proto')]
+    ax.legend(handles=legend_elements, fontsize=8, loc='lower right')
 
     # --- Panel 6: ROC curve ---
     ax = axes[1, 2]
     fpr, tpr, _ = roc_curve(labels_np, scores)
     roc_auc = auc(fpr, tpr)
-    ax.plot(fpr, tpr, 'b-', linewidth=2, label=f'ROC (AUC = {roc_auc:.4f})')
-    ax.plot([0, 1], [0, 1], 'k--', alpha=0.5, label='Random')
-    ax.set_xlabel('False Positive Rate')
-    ax.set_ylabel('True Positive Rate')
+    ax.plot(fpr, tpr, '#2ca02c', linewidth=2.5, label=f'ROC (AUC = {roc_auc:.4f})')
+    ax.fill_between(fpr, tpr, alpha=0.15, color='#2ca02c')
+    ax.plot([0, 1], [0, 1], 'k--', alpha=0.5, label='Random (AUC=0.5)')
+    ax.set_xlabel('False Positive Rate (1 - Specificity)')
+    ax.set_ylabel('True Positive Rate (Sensitivity)')
     ax.set_title('ROC Curve')
-    ax.legend()
+    ax.legend(fontsize=9, loc='lower right')
     ax.grid(True, alpha=0.3)
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
+    ax.set_xlim(-0.02, 1.02)
+    ax.set_ylim(-0.02, 1.02)
 
     # --- Panel 7: Confusion Matrix ---
     ax = axes[2, 0]
     cm = confusion_matrix(labels_np, preds)
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax,
                 xticklabels=['QCD', 'Top'], yticklabels=['QCD', 'Top'],
-                cbar=False, annot_kws={'size': 16})
-    ax.set_xlabel('Predicted')
-    ax.set_ylabel('Actual')
-    ax.set_title(f'Confusion Matrix\n(Acc={history.get("test_acc", 0)*100:.1f}%)')
+                cbar=False, annot_kws={'size': 18, 'fontweight': 'bold'})
+    ax.set_xlabel('Predicted Label', fontsize=11)
+    ax.set_ylabel('True Label', fontsize=11)
+    ax.set_title(f'Confusion Matrix\nAccuracy = {test_acc * 100:.2f}%', fontsize=12, fontweight='bold')
 
     # Add percentages in cells
     cm_sum = cm.sum()
@@ -494,42 +499,47 @@ def plot_results(history, test_d_qcd, test_d_top, test_labels, test_similarities
         for j in range(2):
             pct = cm[i, j] / cm_sum * 100
             ax.text(j + 0.5, i + 0.65, f'{pct:.1f}%',
-                    ha='center', va='center', fontsize=10, color='gray')
+                    ha='center', va='center', fontsize=11, color='gray', fontweight='bold')
 
     # --- Panel 8: Precision-Recall curve ---
     ax = axes[2, 1]
-    from sklearn.metrics import precision_recall_curve, average_precision_score
     precision_curve, recall_curve, _ = precision_recall_curve(labels_np, scores)
     avg_prec = average_precision_score(labels_np, scores)
-    ax.plot(recall_curve, precision_curve, 'b-', linewidth=2,
+    ax.plot(recall_curve, precision_curve, '#9467bd', linewidth=2.5,
             label=f'PR (AP = {avg_prec:.4f})')
-    ax.axhline(y=labels_np.mean(), color='k', linestyle='--', alpha=0.5,
-               label=f'Baseline ({labels_np.mean():.2f})')
-    ax.set_xlabel('Recall')
-    ax.set_ylabel('Precision')
+    ax.fill_between(recall_curve, precision_curve, alpha=0.15, color='#9467bd')
+    baseline = labels_np.mean()
+    ax.axhline(y=baseline, color='gray', linestyle='--', alpha=0.7,
+               label=f'Baseline ({baseline:.3f})')
+    ax.set_xlabel('Recall (Sensitivity)')
+    ax.set_ylabel('Precision (PPV)')
     ax.set_title('Precision-Recall Curve')
-    ax.legend()
+    ax.legend(fontsize=9, loc='lower left')
     ax.grid(True, alpha=0.3)
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
+    ax.set_xlim(-0.02, 1.02)
+    ax.set_ylim(-0.02, 1.02)
 
     # --- Panel 9: Score distribution ---
     ax = axes[2, 2]
+    bins = np.linspace(scores.min(), scores.max(), 60)
     if qcd_mask.sum() > 0:
-        ax.hist(scores[qcd_mask], bins=50, alpha=0.5, label='QCD', color='blue', density=True)
+        ax.hist(scores[qcd_mask], bins=bins, alpha=0.6,
+                label=f'QCD (n={qcd_mask.sum():,})', color='#1f77b4', density=True)
     if top_mask.sum() > 0:
-        ax.hist(scores[top_mask], bins=50, alpha=0.5, label='Top', color='red', density=True)
-    ax.axvline(x=0, color='k', linestyle='--', linewidth=1, alpha=0.5, label='Decision boundary')
+        ax.hist(scores[top_mask], bins=bins, alpha=0.6,
+                label=f'Top (n={top_mask.sum():,})', color='#d62728', density=True)
+    ax.axvline(x=0, color='k', linestyle='--', linewidth=1.5, alpha=0.7, label='Decision boundary')
     ax.set_xlabel('Score (d_qcd - d_top)')
     ax.set_ylabel('Density')
     ax.set_title('Score Distribution by Class')
-    ax.legend()
+    ax.legend(fontsize=9)
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"  Saved figure to {save_path}")
+    return fig
 
 
 # ============================================================================
@@ -639,6 +649,11 @@ def main():
         'best_val_acc': 0.0,
     }
 
+    # Early stopping
+    EARLY_STOP_PATIENCE = 20
+    early_stop_counter = 0
+    best_epoch = 0
+
     # Training loop
     print("\n" + "=" * 60)
     print("Training...")
@@ -669,15 +684,25 @@ def main():
         if val_acc > history['best_val_acc']:
             history['best_val_acc'] = val_acc
             torch.save(model.state_dict(), 'best_model.pt')
+            best_epoch = epoch
+            early_stop_counter = 0
             print(f"  Epoch {epoch+1:2d}/{args.epochs} | "
                   f"train_loss={train_loss:.4f} train_acc={train_acc:.4f} | "
                   f"val_loss={val_loss:.4f} val_acc={val_acc:.4f} | "
                   f"time={t1-t0:.1f}s | NEW BEST!")
         else:
+            early_stop_counter += 1
             print(f"  Epoch {epoch+1:2d}/{args.epochs} | "
                   f"train_loss={train_loss:.4f} train_acc={train_acc:.4f} | "
                   f"val_loss={val_loss:.4f} val_acc={val_acc:.4f} | "
-                  f"time={t1-t0:.1f}s")
+                  f"time={t1-t0:.1f}s | no improvement ({early_stop_counter}/{EARLY_STOP_PATIENCE})")
+            if early_stop_counter >= EARLY_STOP_PATIENCE:
+                print(f"\n  Early stopping triggered at epoch {epoch+1}. "
+                      f"Best was epoch {best_epoch+1} (val_acc={history['best_val_acc']:.4f})")
+                break
+
+    print(f"\n  Training finished. Best val_acc = {history['best_val_acc']:.4f} at epoch {best_epoch+1}")
+    history['best_epoch'] = best_epoch
 
     # Load best model and evaluate on test set
     print("\n" + "=" * 60)
