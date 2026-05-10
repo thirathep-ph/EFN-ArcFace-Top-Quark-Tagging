@@ -1,0 +1,41 @@
+# Data files (too large for git)
+*.h5
+*.hdf5
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Training artifacts
+*.pt
+*.pth
+*.ckpt
+*.json
+*.log
+
+# Temp output files
+*_output.txt
+*_out.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# EDA plots
+*.png
+*.pdf
+*.svg
