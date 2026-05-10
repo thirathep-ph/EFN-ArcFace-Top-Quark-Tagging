@@ -15,7 +15,8 @@ Usage:
 Output:
     - best_model.pt:  Best model checkpoint
     - training_history.json:  Loss and accuracy history
-    - training_results.png:  6-panel figure (loss, accuracy, energy, etc.)
+    - training_results.png:  9-panel figure (loss, accuracy, energy, decision
+      boundary, prototype activations, ROC, confusion matrix, PR curve, scores)
 """
 import json
 import time
@@ -43,7 +44,7 @@ class JetTaggingDataset(Dataset):
     PyTorch Dataset that loads H5 data and computes FastJet features.
 
     OPTIMIZATION: Pre-computes ALL numpy arrays in __init__ using vectorized
-    Awkward → numpy conversion. __getitem__ does O(1) numpy slicing —
+    Awkward -> numpy conversion. __getitem__ does O(1) numpy slicing --
     NO per-particle Python loop. This eliminates the main training bottleneck.
     """
     def __init__(self, h5_path, max_events=None, precompute_fastjet=True, max_constituents=200):
@@ -70,7 +71,7 @@ class JetTaggingDataset(Dataset):
         # ====================================================================
         # OPTIMIZATION: Pre-compute padded constituent array ONCE
         # ====================================================================
-        # Convert awkward arrays to flat numpy arrays (vectorized — NO Python loop)
+        # Convert awkward arrays to flat numpy arrays (vectorized -- NO Python loop)
         print(f"  Pre-computing padded constituent arrays ({self.n} events)...")
         t0 = time.time()
 
@@ -89,7 +90,7 @@ class JetTaggingDataset(Dataset):
         self.mask = np.zeros((self.n, max_constituents), dtype=bool)
 
         # Fill using numpy slicing (still per-event, but each iteration is
-        # a vectorized slice assignment — MUCH faster than per-particle loop)
+        # a vectorized slice assignment -- MUCH faster than per-particle loop)
         start = 0
         for i in range(self.n):
             n_p = self.counts_np[i]
@@ -102,9 +103,6 @@ class JetTaggingDataset(Dataset):
                 self.constituents[i, :n_use, 3] = pz_flat[start:end]
                 self.mask[i, :n_use] = True
                 start = end
-            else:
-                # No particles (shouldn't happen after trim_padding)
-                pass
 
         t1 = time.time()
         print(f"  Done in {t1-t0:.2f}s")
@@ -122,7 +120,7 @@ class JetTaggingDataset(Dataset):
 
     def __getitem__(self, idx):
         """
-        O(1) numpy slicing — NO per-particle Python loop!
+        O(1) numpy slicing -- NO per-particle Python loop!
 
         Returns:
             constituents: (200, 4) numpy array - (E, px, py, pz)
@@ -131,8 +129,8 @@ class JetTaggingDataset(Dataset):
             weight: float
             mask: (200,) bool - True for valid particles
         """
-        constituents = self.constituents[idx]  # (200, 4) — O(1) slice
-        mask = self.mask[idx]  # (200,) — O(1) slice
+        constituents = self.constituents[idx]  # (200, 4) -- O(1) slice
+        mask = self.mask[idx]  # (200,) -- O(1) slice
 
         fj = self.fastjet_features[idx] if self.fastjet_features is not None else np.zeros(6, dtype=np.float32)
 
@@ -232,13 +230,124 @@ def evaluate(model, loader, device, class_weight=None):
 
 
 # ============================================================================
+# Comprehensive Evaluation
+# ============================================================================
+
+def comprehensive_evaluation(test_labels, test_d_qcd, test_d_top, test_similarities,
+                              proto_labels_arr=None):
+    """
+    Compute comprehensive classification metrics.
+
+    Returns dict with: accuracy, precision, recall, f1, confusion matrix,
+    classification report, ROC AUC, and score arrays.
+    """
+    from sklearn.metrics import (accuracy_score, precision_score, recall_score,
+                                 f1_score, confusion_matrix, classification_report,
+                                 roc_curve, auc, precision_recall_curve,
+                                 average_precision_score)
+
+    labels_np = test_labels.numpy()
+    d_qcd_np = test_d_qcd.numpy()
+    d_top_np = test_d_top.numpy()
+
+    # Predictions: lower energy = predicted class
+    preds = (d_top_np < d_qcd_np).astype(np.int64)
+
+    # Score: d_qcd - d_top (positive = more Top-like)
+    scores = d_qcd_np - d_top_np
+
+    # Confusion matrix
+    cm = confusion_matrix(labels_np, preds)
+
+    # Metrics
+    acc = accuracy_score(labels_np, preds)
+    prec = precision_score(labels_np, preds, zero_division=0)
+    rec = recall_score(labels_np, preds, zero_division=0)
+    f1 = f1_score(labels_np, preds, zero_division=0)
+
+    # ROC
+    fpr, tpr, _ = roc_curve(labels_np, scores)
+    roc_auc = auc(fpr, tpr)
+
+    # Precision-Recall
+    precision_curve, recall_curve, _ = precision_recall_curve(labels_np, scores)
+    avg_prec = average_precision_score(labels_np, scores)
+
+    # Classification report as dict
+    report = classification_report(labels_np, preds, target_names=['QCD', 'Top'],
+                                   output_dict=True, zero_division=0)
+
+    # Per-class accuracy
+    tn, fp, fn, tp = cm.ravel()
+    tpr_val = tp / (tp + fn) if (tp + fn) > 0 else 0.0  # Sensitivity / Recall for Top
+    tnr_val = tn / (tn + fp) if (tn + fp) > 0 else 0.0  # Specificity for QCD
+    ppv_val = tp / (tp + fp) if (tp + fp) > 0 else 0.0  # Precision for Top
+    npv_val = tn / (tn + fn) if (tn + fn) > 0 else 0.0  # Negative predictive value
+
+    result = {
+        'accuracy': acc,
+        'precision': prec,
+        'recall': rec,
+        'f1_score': f1,
+        'roc_auc': roc_auc,
+        'avg_precision': avg_prec,
+        'true_positive_rate': tpr_val,
+        'true_negative_rate': tnr_val,
+        'positive_predictive_value': ppv_val,
+        'negative_predictive_value': npv_val,
+        'confusion_matrix': cm,
+        'classification_report': report,
+        'predictions': preds,
+        'scores': scores,
+        'fpr': fpr,
+        'tpr': tpr,
+        'precision_curve': precision_curve,
+        'recall_curve': recall_curve,
+    }
+    return result
+
+
+def print_evaluation_report(metrics):
+    """Print a formatted evaluation report."""
+    cm = metrics['confusion_matrix']
+    print("\n" + "=" * 60)
+    print("COMPREHENSIVE EVALUATION REPORT")
+    print("=" * 60)
+
+    print(f"\nConfusion Matrix:")
+    print(f"                  Predicted")
+    print(f"                  QCD    Top")
+    print(f"  Actual QCD    {cm[0,0]:6d}  {cm[0,1]:6d}")
+    print(f"         Top    {cm[1,0]:6d}  {cm[1,1]:6d}")
+
+    print(f"\nMetrics:")
+    print(f"  Accuracy:           {metrics['accuracy']:.4f} ({metrics['accuracy']*100:.2f}%)")
+    print(f"  Precision (Top):    {metrics['precision']:.4f}")
+    print(f"  Recall (Top):       {metrics['recall']:.4f}")
+    print(f"  F1 Score:           {metrics['f1_score']:.4f}")
+    print(f"  ROC AUC:            {metrics['roc_auc']:.4f}")
+    print(f"  Avg Precision:      {metrics['avg_precision']:.4f}")
+    print(f"  TPR (Sensitivity):  {metrics['true_positive_rate']:.4f}")
+    print(f"  TNR (Specificity):  {metrics['true_negative_rate']:.4f}")
+    print(f"  PPV (Precision):    {metrics['positive_predictive_value']:.4f}")
+    print(f"  NPV:                {metrics['negative_predictive_value']:.4f}")
+
+    print(f"\nPer-class breakdown:")
+    for cls_name in ['QCD', 'Top']:
+        cr = metrics['classification_report'][cls_name]
+        print(f"  {cls_name}: precision={cr['precision']:.4f}, "
+              f"recall={cr['recall']:.4f}, f1={cr['f1-score']:.4f}, "
+              f"support={int(cr['support'])}")
+
+
+# ============================================================================
 # Plotting
 # ============================================================================
 
 def plot_results(history, test_d_qcd, test_d_top, test_labels, test_similarities,
                  save_path='training_results.png'):
     """
-    Generate a 6-panel figure summarizing training results.
+    Generate a 9-panel figure summarizing training results.
 
     Panels:
         1. Loss curves (train + val)
@@ -247,18 +356,31 @@ def plot_results(history, test_d_qcd, test_d_top, test_labels, test_similarities
         4. Decision boundary scatter (d_qcd vs d_top)
         5. Prototype activation bar chart
         6. ROC curve with AUC
+        7. Confusion matrix heatmap
+        8. Precision-Recall curve
+        9. Score distribution by class
     """
     try:
         import matplotlib
         matplotlib.use('Agg')  # Non-interactive backend
         import matplotlib.pyplot as plt
-        from sklearn.metrics import roc_curve, auc
+        from sklearn.metrics import roc_curve, auc, confusion_matrix, precision_recall_curve
+        import seaborn as sns
     except ImportError:
         print("  [plot_results] matplotlib or sklearn not available. Skipping plot.")
         return
 
-    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
-    fig.suptitle('Top Tagging — DeepSets + Prototype Layer (EBM)', fontsize=16, y=1.02)
+    fig, axes = plt.subplots(3, 3, figsize=(18, 18))
+    fig.suptitle('Top Tagging -- DeepSets + Prototype Layer (EBM)', fontsize=16, y=1.02)
+
+    d_qcd_np = test_d_qcd.numpy()
+    d_top_np = test_d_top.numpy()
+    labels_np = test_labels.numpy()
+    scores = d_qcd_np - d_top_np  # Higher = more Top-like
+    preds = (d_top_np < d_qcd_np).astype(np.int64)
+
+    qcd_mask = labels_np == 0
+    top_mask = labels_np == 1
 
     # --- Panel 1: Loss curves ---
     ax = axes[0, 0]
@@ -285,21 +407,12 @@ def plot_results(history, test_d_qcd, test_d_top, test_labels, test_similarities
 
     # --- Panel 3: Energy distribution ---
     ax = axes[0, 2]
-    d_qcd_np = test_d_qcd.numpy()
-    d_top_np = test_d_top.numpy()
-    labels_np = test_labels.numpy()
-
-    # QCD events: d_qcd (should be low) and d_top (should be high)
-    qcd_mask = labels_np == 0
-    top_mask = labels_np == 1
-
     if qcd_mask.sum() > 0:
-        ax.hist(d_qcd_np[qcd_mask], bins=50, alpha=0.5, label='QCD → d_qcd', color='blue', density=True)
-        ax.hist(d_top_np[qcd_mask], bins=50, alpha=0.5, label='QCD → d_top', color='cyan', density=True)
+        ax.hist(d_qcd_np[qcd_mask], bins=50, alpha=0.5, label='QCD -> d_qcd', color='blue', density=True)
+        ax.hist(d_top_np[qcd_mask], bins=50, alpha=0.5, label='QCD -> d_top', color='cyan', density=True)
     if top_mask.sum() > 0:
-        ax.hist(d_qcd_np[top_mask], bins=50, alpha=0.5, label='Top → d_qcd', color='red', density=True)
-        ax.hist(d_top_np[top_mask], bins=50, alpha=0.5, label='Top → d_top', color='orange', density=True)
-
+        ax.hist(d_qcd_np[top_mask], bins=50, alpha=0.5, label='Top -> d_qcd', color='red', density=True)
+        ax.hist(d_top_np[top_mask], bins=50, alpha=0.5, label='Top -> d_top', color='orange', density=True)
     ax.set_xlabel('Cosine Distance (1 - similarity)')
     ax.set_ylabel('Density')
     ax.set_title('Energy Distribution')
@@ -314,8 +427,6 @@ def plot_results(history, test_d_qcd, test_d_top, test_labels, test_similarities
     if top_mask.sum() > 0:
         ax.scatter(d_qcd_np[top_mask], d_top_np[top_mask],
                    c='red', alpha=0.3, s=5, label='Top', edgecolors='none')
-
-    # Decision boundary: d_qcd == d_top (diagonal line)
     lim_max = max(d_qcd_np.max(), d_top_np.max()) * 1.1
     ax.plot([0, lim_max], [0, lim_max], 'k--', linewidth=1, alpha=0.5)
     ax.set_xlabel('d_qcd (distance to QCD prototypes)')
@@ -328,18 +439,18 @@ def plot_results(history, test_d_qcd, test_d_top, test_labels, test_similarities
 
     # --- Panel 5: Prototype activation ---
     ax = axes[1, 1]
-    proto_labels = np.array([0] * 10 + [1] * 10)  # 10 QCD + 10 Top
+    proto_labels_arr = np.array([0] * 10 + [1] * 10)  # 10 QCD + 10 Top
     n_proto = test_similarities.shape[1]
 
     mean_sims = []
     proto_names = []
     colors = []
     for p in range(n_proto):
-        pclass = 'Top' if proto_labels[p] == 1 else 'QCD'
+        pclass = 'Top' if proto_labels_arr[p] == 1 else 'QCD'
         mean_sim = test_similarities[:, p].mean().item()
         mean_sims.append(mean_sim)
         proto_names.append(f'P{p}\n({pclass})')
-        colors.append('red' if proto_labels[p] == 1 else 'blue')
+        colors.append('red' if proto_labels_arr[p] == 1 else 'blue')
 
     bars = ax.bar(range(n_proto), mean_sims, color=colors, alpha=0.7)
     ax.set_xticks(range(n_proto))
@@ -348,7 +459,6 @@ def plot_results(history, test_d_qcd, test_d_top, test_labels, test_similarities
     ax.set_title('Prototype Activations')
     ax.grid(True, alpha=0.3, axis='y')
 
-    # Add legend for colors
     from matplotlib.patches import Patch
     legend_elements = [Patch(facecolor='blue', alpha=0.7, label='QCD prototype'),
                        Patch(facecolor='red', alpha=0.7, label='Top prototype')]
@@ -356,12 +466,8 @@ def plot_results(history, test_d_qcd, test_d_top, test_labels, test_similarities
 
     # --- Panel 6: ROC curve ---
     ax = axes[1, 2]
-    # Energy score: lower d_top relative to d_qcd = more Top-like
-    # Score = d_qcd - d_top (positive = Top, negative = QCD)
-    scores = d_top_np - d_qcd_np  # Higher = more Top-like (lower d_top)
     fpr, tpr, _ = roc_curve(labels_np, scores)
     roc_auc = auc(fpr, tpr)
-
     ax.plot(fpr, tpr, 'b-', linewidth=2, label=f'ROC (AUC = {roc_auc:.4f})')
     ax.plot([0, 1], [0, 1], 'k--', alpha=0.5, label='Random')
     ax.set_xlabel('False Positive Rate')
@@ -371,6 +477,54 @@ def plot_results(history, test_d_qcd, test_d_top, test_labels, test_similarities
     ax.grid(True, alpha=0.3)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
+
+    # --- Panel 7: Confusion Matrix ---
+    ax = axes[2, 0]
+    cm = confusion_matrix(labels_np, preds)
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax,
+                xticklabels=['QCD', 'Top'], yticklabels=['QCD', 'Top'],
+                cbar=False, annot_kws={'size': 16})
+    ax.set_xlabel('Predicted')
+    ax.set_ylabel('Actual')
+    ax.set_title(f'Confusion Matrix\n(Acc={history.get("test_acc", 0)*100:.1f}%)')
+
+    # Add percentages in cells
+    cm_sum = cm.sum()
+    for i in range(2):
+        for j in range(2):
+            pct = cm[i, j] / cm_sum * 100
+            ax.text(j + 0.5, i + 0.65, f'{pct:.1f}%',
+                    ha='center', va='center', fontsize=10, color='gray')
+
+    # --- Panel 8: Precision-Recall curve ---
+    ax = axes[2, 1]
+    from sklearn.metrics import precision_recall_curve, average_precision_score
+    precision_curve, recall_curve, _ = precision_recall_curve(labels_np, scores)
+    avg_prec = average_precision_score(labels_np, scores)
+    ax.plot(recall_curve, precision_curve, 'b-', linewidth=2,
+            label=f'PR (AP = {avg_prec:.4f})')
+    ax.axhline(y=labels_np.mean(), color='k', linestyle='--', alpha=0.5,
+               label=f'Baseline ({labels_np.mean():.2f})')
+    ax.set_xlabel('Recall')
+    ax.set_ylabel('Precision')
+    ax.set_title('Precision-Recall Curve')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+
+    # --- Panel 9: Score distribution ---
+    ax = axes[2, 2]
+    if qcd_mask.sum() > 0:
+        ax.hist(scores[qcd_mask], bins=50, alpha=0.5, label='QCD', color='blue', density=True)
+    if top_mask.sum() > 0:
+        ax.hist(scores[top_mask], bins=50, alpha=0.5, label='Top', color='red', density=True)
+    ax.axvline(x=0, color='k', linestyle='--', linewidth=1, alpha=0.5, label='Decision boundary')
+    ax.set_xlabel('Score (d_qcd - d_top)')
+    ax.set_ylabel('Density')
+    ax.set_title('Score Distribution by Class')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches='tight')
@@ -503,7 +657,6 @@ def main():
             class_weight=class_weight,
         )
 
-
         scheduler.step(val_acc)
 
         t1 = time.time()
@@ -538,13 +691,33 @@ def main():
         class_weight=class_weight,
     )
 
-
     print(f"Test accuracy: {test_acc:.4f} ({test_acc*100:.2f}%)")
     print(f"Test loss: {test_loss:.4f}")
 
     # Save history
     history['test_acc'] = test_acc
     history['test_loss'] = test_loss
+
+    # ====================================================================
+    # Comprehensive Evaluation
+    # ====================================================================
+    print("\n" + "=" * 60)
+    print("Comprehensive Evaluation...")
+    print("=" * 60)
+
+    proto_labels_arr = model.prototype_layer.get_prototype_labels().cpu().numpy()
+    metrics = comprehensive_evaluation(
+        test_labels, test_d_qcd, test_d_top, test_similarities,
+        proto_labels_arr=proto_labels_arr,
+    )
+    print_evaluation_report(metrics)
+
+    # Save metrics to JSON
+    metrics_json = {k: v.tolist() if isinstance(v, np.ndarray) else v
+                    for k, v in metrics.items()
+                    if k not in ['predictions', 'scores', 'fpr', 'tpr',
+                                 'precision_curve', 'recall_curve']}
+    history['test_metrics'] = metrics_json
     with open('training_history.json', 'w') as f:
         json.dump(history, f, indent=2)
 
@@ -553,12 +726,8 @@ def main():
     print("Prototype Analysis")
     print("=" * 60)
 
-    proto_labels = model.prototype_layer.get_prototype_labels().cpu().numpy()
-    proto_vectors = model.prototype_layer.prototypes.detach().cpu().numpy()
-
     for i in range(args.n_prototypes):
-        class_name = "Top" if proto_labels[i] == 1 else "QCD"
-        # Average similarity of test inputs to this prototype
+        class_name = "Top" if proto_labels_arr[i] == 1 else "QCD"
         sim_to_proto = test_similarities[:, i].numpy()
         print(f"  Prototype {i:2d} ({class_name}): "
               f"mean_sim={sim_to_proto.mean():.4f} +/- {sim_to_proto.std():.4f}")
