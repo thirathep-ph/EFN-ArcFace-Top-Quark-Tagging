@@ -331,13 +331,27 @@ def comprehensive_evaluation(test_labels, test_d_qcd, test_d_top, test_similarit
     tnr_val = tn / (tn + fp) if (tn + fp) > 0 else 0.0
     ppv_val = tp / (tp + fp) if (tp + fp) > 0 else 0.0
     npv_val = tn / (tn + fn) if (tn + fn) > 0 else 0.0
+    # Background rejection = 1 / FPR at various signal efficiency (TPR) working points
+    target_tprs = np.array([0.3, 0.5, 0.7, 0.9])
+    fpr_at_target = {}
+    rejection_at_target = {}
+    for target in target_tprs:
+        idx = np.argmin(np.abs(tpr - target))
+        fpr_val = fpr[idx]
+        fpr_at_target[f'tpr_{target:.1f}'] = fpr_val
+        rejection_at_target[f'rejection_tpr_{target:.1f}'] = 1.0 / fpr_val if fpr_val > 0 else float('inf')
+    default_fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
+    default_rejection = 1.0 / default_fpr if default_fpr > 0 else float('inf')
     return {'accuracy': acc, 'precision': prec, 'recall': rec, 'f1_score': f1,
             'roc_auc': roc_auc, 'avg_precision': avg_prec,
             'true_positive_rate': tpr_val, 'true_negative_rate': tnr_val,
             'positive_predictive_value': ppv_val, 'negative_predictive_value': npv_val,
             'confusion_matrix': cm, 'classification_report': report,
             'predictions': preds, 'scores': scores, 'fpr': fpr, 'tpr': tpr,
-            'precision_curve': precision_curve, 'recall_curve': recall_curve}
+            'precision_curve': precision_curve, 'recall_curve': recall_curve,
+            'background_rejection': default_rejection,
+            'fpr_at_target': fpr_at_target,
+            'rejection_at_target': rejection_at_target}
 
 def print_evaluation_report(metrics):
     cm = metrics['confusion_matrix']
@@ -363,6 +377,17 @@ def print_evaluation_report(metrics):
     for cls_name in ['QCD', 'Top']:
         cr = metrics['classification_report'][cls_name]
         print(f"  {cls_name}: precision={cr['precision']:.4f}, recall={cr['recall']:.4f}, f1={cr['f1-score']:.4f}, support={int(cr['support'])}")
+    print(f"\\nBackground Rejection (1 / FPR):")
+    print(f"  Default operating point: {metrics['background_rejection']:.1f}")
+    for target in [0.3, 0.5, 0.7, 0.9]:
+        rej_key = f'rejection_tpr_{target:.1f}'
+        fpr_key = f'tpr_{target:.1f}'
+        rej = metrics['rejection_at_target'][rej_key]
+        fpr_val = metrics['fpr_at_target'][fpr_key]
+        if rej == float('inf'):
+            print(f"  @ TPR={target:.0%}: rejection = inf (FPR=0)")
+        else:
+            print(f"  @ TPR={target:.0%}: rejection = {rej:.1f} (FPR={fpr_val:.4f})")
 
 def plot_results(history, test_d_qcd, test_d_top, test_labels, test_similarities, save_path='training_results.png'):
     import matplotlib; matplotlib.use('Agg')
@@ -466,16 +491,21 @@ def plot_results(history, test_d_qcd, test_d_top, test_labels, test_similarities
     ax.set(xlabel='Recall (Sensitivity)', ylabel='Precision (PPV)',
            title='Precision-Recall Curve', xlim=(-0.02, 1.02), ylim=(-0.02, 1.02))
     ax.legend(fontsize=9, loc='lower left'); ax.grid(True, alpha=0.3)
-    # Panel 9: Score distribution
+    # Panel 9: Background Rejection vs Signal Efficiency
     ax = axes[2,2]
-    bins = np.linspace(scores.min(), scores.max(), 60)
-    if qcd_mask.sum() > 0:
-        ax.hist(scores[qcd_mask], bins=bins, alpha=0.6, label=f'QCD (n={qcd_mask.sum():,})', color='#1f77b4', density=True)
-    if top_mask.sum() > 0:
-        ax.hist(scores[top_mask], bins=bins, alpha=0.6, label=f'Top (n={top_mask.sum():,})', color='#d62728', density=True)
-    ax.axvline(x=0, color='k', linestyle='--', linewidth=1.5, alpha=0.7, label='Decision boundary')
-    ax.set(xlabel='Score (d_qcd - d_top)', ylabel='Density', title='Score Distribution by Class')
-    ax.legend(fontsize=9); ax.grid(True, alpha=0.3)
+    fpr, tpr, _ = roc_curve(labels_np, scores)
+    valid = fpr > 0
+    rejection = np.where(valid, 1.0 / fpr, 0.0)
+    ax.plot(tpr[valid], rejection[valid], '#ff7f0e', linewidth=2.5, label='Background Rejection')
+    for target_tpr, marker, label_text in [(0.3, 'o', '30%'), (0.5, 's', '50%'), (0.7, 'D', '70%'), (0.9, '^', '90%')]:
+        idx = np.argmin(np.abs(tpr - target_tpr))
+        if fpr[idx] > 0:
+            rej_val = 1.0 / fpr[idx]
+            ax.plot(tpr[idx], rej_val, marker, color='#d62728', markersize=8, label=f'TPR={label_text}: rej={rej_val:.0f}')
+    ax.set(xlabel='Signal Efficiency (TPR)', ylabel='Background Rejection (1 / FPR)',
+           title='Background Rejection vs Signal Efficiency')
+    ax.legend(fontsize=8, loc='upper right'); ax.grid(True, alpha=0.3)
+    ax.set_yscale('log'); ax.set_xlim(-0.02, 1.02)
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches='tight')
     plt.close()
