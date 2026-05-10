@@ -92,29 +92,27 @@ class DeepSets(nn.Module):
 
 
 # ============================================================================
-# Prototype Layer (xAI)
+# Prototype Layer (xAI) — Energy-Based Model
 # ============================================================================
 
 class PrototypeLayer(nn.Module):
     """
-    Prototype layer with Energy Distance (EDM) similarity.
+    Prototype layer with cosine similarity (Energy-Based Model).
     
-    EDM(z, p) = sqrt( E[z] + E[p] - 2 * E[sqrt(z * p)] )
+    Architecture:
+        - Normalize inputs and prototypes to unit sphere
+        - Compute cosine similarity: sim = z·p  (range [-1, 1])
+        - Convert to distance: d = 1 - sim  (range [0, 2])
+        - Per-class energy: min distance to that class's prototypes
+        - Classification via softmax over negative energies
     
-    For deterministic embeddings (not distributions), this simplifies to:
-    EDM(z, p) = sqrt( z^2 + p^2 - 2 * sqrt(z * p) )
-    
-    Actually, for deterministic vectors, the standard EDM is:
-    EDM(z, p) = ||z - p||_2  (Euclidean distance)
-    
-    We use a similarity transformation:
-    sim(z, p) = exp(-EDM(z, p) / temperature)
+    20 prototypes: 10 for Top class, 10 for QCD class.
+    No learned classifier layer — pure prototype-based decision.
     """
-    def __init__(self, input_dim, n_prototypes=20, n_classes=2, temperature=1.0):
+    def __init__(self, input_dim, n_prototypes=20, n_classes=2):
         super().__init__()
         self.n_prototypes = n_prototypes
         self.n_classes = n_classes
-        self.temperature = temperature
         
         # Prototype vectors: (n_prototypes, input_dim)
         self.prototypes = nn.Parameter(torch.randn(n_prototypes, input_dim) * 0.1)
@@ -128,31 +126,33 @@ class PrototypeLayer(nn.Module):
                 torch.ones(n_prototypes - n_prototypes // 2, dtype=torch.long),
             ])
         )
-        
-        # Classification head: prototype similarities -> class scores
-        self.classifier = nn.Linear(n_prototypes, n_classes)
 
     def forward(self, x):
         """
         x: (batch_size, input_dim) - concatenated [jet_embedding, fastjet_features]
         
         Returns:
-            similarities: (batch_size, n_prototypes) - EDM-based similarity scores
-            logits: (batch_size, n_classes) - class scores
+            d_qcd: (batch_size,) - min cosine distance to QCD prototypes
+            d_top: (batch_size,) - min cosine distance to Top prototypes
+            similarities: (batch_size, n_prototypes) - cosine similarities to all prototypes
         """
-        # Compute EDM (Euclidean distance) between each input and each prototype
-        # x: (B, D), prototypes: (P, D)
-        # dist: (B, P)
-        diff = x.unsqueeze(1) - self.prototypes.unsqueeze(0)  # (B, P, D)
-        dist = torch.norm(diff, dim=2)  # (B, P)
+        # Normalize to unit sphere
+        x_norm = F.normalize(x, dim=1)  # (B, D)
+        p_norm = F.normalize(self.prototypes, dim=1)  # (P, D)
         
-        # Convert distance to similarity: exp(-dist / temperature)
-        similarities = torch.exp(-dist / self.temperature)  # (B, P)
+        # Cosine similarity: (B, P), range [-1, 1]
+        similarities = x_norm @ p_norm.T
         
-        # Classification from prototype similarities
-        logits = self.classifier(similarities)  # (B, n_classes)
+        # Convert to distance: d = 1 - sim, range [0, 2]
+        # d = 0 means identical direction, d = 2 means opposite direction
+        distances = 1.0 - similarities  # (B, P)
         
-        return similarities, logits
+        # Per-class min distance (energy)
+        n_qcd = self.n_prototypes // 2
+        d_qcd = distances[:, :n_qcd].min(dim=1)[0]  # (B,)
+        d_top = distances[:, n_qcd:].min(dim=1)[0]  # (B,)
+        
+        return d_qcd, d_top, similarities
 
     def get_prototype_labels(self):
         """Return class label for each prototype."""
@@ -164,8 +164,8 @@ class PrototypeLayer(nn.Module):
         Returns: (batch_size, n_prototypes)
         """
         with torch.no_grad():
-            sim, _ = self.forward(x)
-        return sim
+            _, _, similarities = self.forward(x)
+        return similarities
 
 
 # ============================================================================
@@ -218,7 +218,6 @@ class TopTaggingModel(nn.Module):
             input_dim=combined_dim,
             n_prototypes=n_prototypes,
             n_classes=n_classes,
-            temperature=temperature,
         )
 
     def forward(self, constituents, fastjet_features, mask=None):
@@ -228,8 +227,9 @@ class TopTaggingModel(nn.Module):
         mask: (batch_size, 200) - True for valid particles
         
         Returns:
-            logits: (batch_size, 2) - [P(QCD), P(Top)]
-            similarities: (batch_size, 20) - prototype similarity scores
+            d_qcd: (batch_size,) - min cosine distance to QCD prototypes
+            d_top: (batch_size,) - min cosine distance to Top prototypes
+            similarities: (batch_size, 20) - cosine similarities to all prototypes
             jet_emb: (batch_size, jet_dim) - jet embedding from DeepSets
         """
         # DeepSets jet embedding
@@ -240,89 +240,61 @@ class TopTaggingModel(nn.Module):
         combined = self.combined_proj(combined)
         
         # Prototype layer
-        similarities, logits = self.prototype_layer(combined)
+        d_qcd, d_top, similarities = self.prototype_layer(combined)
         
-        return logits, similarities, jet_emb
+        return d_qcd, d_top, similarities, jet_emb
 
     def predict(self, constituents, fastjet_features, mask=None):
-        """Get class probabilities."""
-        logits, similarities, jet_emb = self.forward(constituents, fastjet_features, mask)
-        probs = F.softmax(logits, dim=1)
+        """Get class probabilities from energy-based model."""
+        d_qcd, d_top, similarities, jet_emb = self.forward(constituents, fastjet_features, mask)
+        # P = softmax(-E) where E = min distance to class prototypes
+        energies = torch.stack([d_qcd, d_top], dim=1)  # (B, 2)
+        probs = F.softmax(-energies, dim=1)  # lower energy = higher probability
         return probs, similarities, jet_emb
 
 
 # ============================================================================
-# Loss Functions
+# Loss Functions — Energy-Based Model
 # ============================================================================
 
-def prototype_loss(logits, labels, similarities, prototype_layer, 
-                   lambda_clf=1.0, lambda_clst=0.1, lambda_sep=0.1):
+def energy_loss(d_qcd, d_top, labels, class_weight=None):
     """
-    Combined loss: classification + clustering + separation.
+    Energy-Based Model loss function.
     
-    L = lambda_clf * L_clf + lambda_clst * L_clst + lambda_sep * L_sep
+    Energy for each class = min cosine distance to that class's prototypes.
+    Classification via softmax over negative energies:
+        P(class=c) = exp(-E_c) / (exp(-E_qcd) + exp(-E_top))
     
-    L_clf: Cross-entropy classification loss
-    L_clst: Clustering loss - pull inputs toward their class prototypes
-    L_sep: Separation loss - push prototypes of different classes apart
+    Lower energy = higher probability = better match to class prototypes.
+    
+    Args:
+        d_qcd: (batch_size,) - min cosine distance to QCD prototypes [0, 2]
+        d_top: (batch_size,) - min cosine distance to Top prototypes [0, 2]
+        labels: (batch_size,) - 0=QCD, 1=Top
+        class_weight: (2,) tensor - weight for each class (handles imbalance)
+    
+    Returns:
+        loss: scalar tensor
     """
-    # Classification loss
-    L_clf = F.cross_entropy(logits, labels)
+    # Stack energies: (B, 2) where col 0 = E_qcd, col 1 = E_top
+    energies = torch.stack([d_qcd, d_top], dim=1)
     
-    # Clustering loss: minimize distance to same-class prototypes
-    proto_labels = prototype_layer.get_prototype_labels()  # (P,)
-    n_protos = len(proto_labels)
+    # Softmax over negative energies: P = softmax(-E)
+    # Lower energy -> higher probability
+    log_probs = F.log_softmax(-energies, dim=1)
     
-    # For each input, find the closest same-class prototype
-    diff = similarities.unsqueeze(2) - proto_labels.unsqueeze(0).unsqueeze(0).float()
-    # Actually, we want: for each input, maximize similarity to same-class prototypes
-    # L_clst = -mean over inputs of mean similarity to same-class prototypes
+    # Negative log-likelihood with optional class weighting
+    if class_weight is not None:
+        # class_weight: (2,) -> weight per class
+        # For each sample, weight = class_weight[label]
+        sample_weights = class_weight[labels]
+        loss = -log_probs[range(len(labels)), labels] * sample_weights
+        loss = loss.mean()
+    else:
+        loss = F.nll_loss(log_probs, labels)
     
-    # Compute per-prototype similarity masked by class
-    # similarities: (B, P), proto_labels: (P,)
-    # For each input, gather similarities to prototypes of its class
-    batch_size = similarities.shape[0]
-    device = similarities.device
-    
-    L_clst = 0.0
-    L_sep = 0.0
-    
-    for c in [0, 1]:
-        # Prototypes of this class
-        class_proto_mask = (proto_labels == c)  # (P,)
-        class_proto_idx = torch.where(class_proto_mask)[0]
-        
-        if len(class_proto_idx) == 0:
-            continue
-        
-        # Inputs of this class
-        class_input_mask = (labels == c)  # (B,)
-        if class_input_mask.sum() == 0:
-            continue
-        
-        # Similarities of class-c inputs to class-c prototypes
-        class_sims = similarities[class_input_mask][:, class_proto_idx]  # (N_c, P_c)
-        
-        # Clustering: maximize similarity to same-class prototypes
-        # We want high similarity -> minimize -log(similarity)
-        L_clst += -torch.mean(torch.log(class_sims.clamp(min=1e-10)))
-        
-        # Separation: minimize similarity to opposite-class prototypes
-        other_proto_idx = torch.where(~class_proto_mask)[0]
-        if len(other_proto_idx) > 0:
-            other_sims = similarities[class_input_mask][:, other_proto_idx]
-            L_sep += torch.mean(other_sims)
-    
-    L_clst = L_clst / 2.0  # average over classes
-    L_sep = L_sep / 2.0
-    
-    total_loss = lambda_clf * L_clf + lambda_clst * L_clst + lambda_sep * L_sep
-    
-    return total_loss, {
-        'loss_clf': L_clf.item(),
-        'loss_clst': L_clst.item() if isinstance(L_clst, torch.Tensor) else L_clst,
-        'loss_sep': L_sep.item() if isinstance(L_sep, torch.Tensor) else L_sep,
-    }
+    return loss
+
 
 
 # ============================================================================
@@ -366,30 +338,35 @@ if __name__ == '__main__':
     mask[:, 150:] = False
     constituents[:, 150:] = 0.0
     
-    logits, similarities, jet_emb = model(constituents, fastjet_features, mask)
+    d_qcd, d_top, similarities, jet_emb = model(constituents, fastjet_features, mask)
     
     print(f"\nForward pass shapes:")
     print(f"  constituents: {constituents.shape}")
     print(f"  fastjet_features: {fastjet_features.shape}")
     print(f"  mask: {mask.shape}")
-    print(f"  logits: {logits.shape}")
+    print(f"  d_qcd: {d_qcd.shape}")
+    print(f"  d_top: {d_top.shape}")
     print(f"  similarities: {similarities.shape}")
     print(f"  jet_emb: {jet_emb.shape}")
     
-    # Test loss
+    # Test energy loss
     labels = torch.randint(0, 2, (batch_size,)).to(device)
-    loss, loss_components = prototype_loss(logits, labels, similarities, model.prototype_layer)
+    loss = energy_loss(d_qcd, d_top, labels)
     
-    print(f"\nLoss: {loss.item():.4f}")
-    print(f"  L_clf: {loss_components['loss_clf']:.4f}")
-    print(f"  L_clst: {loss_components['loss_clst']:.4f}")
-    print(f"  L_sep: {loss_components['loss_sep']:.4f}")
+    print(f"\nEnergy loss: {loss.item():.4f}")
+    
+    # Test with class weights
+    class_weight = torch.tensor([1.0, 1.0]).to(device)
+    loss_w = energy_loss(d_qcd, d_top, labels, class_weight=class_weight)
+    print(f"Energy loss (weighted): {loss_w.item():.4f}")
     
     # Test prediction
     probs, sims, emb = model.predict(constituents, fastjet_features, mask)
     print(f"\nPredictions: {probs}")
     print(f"  Predicted classes: {probs.argmax(dim=1)}")
     print(f"  True labels: {labels}")
+    print(f"  Energies: d_qcd={d_qcd}, d_top={d_top}")
+
     
     print("\n" + "=" * 60)
     print("  Model architecture ready!")

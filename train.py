@@ -5,7 +5,7 @@ Trains the model on train.h5, validates on val.h5, tests on test.h5.
 
 Usage:
     python train.py                          # Full training
-    python train.py --quick                   # Quick test (1000 events)
+    python train.py --quick                   # Quick test (2,000 events)
     python train.py --epochs 20 --batch_size 256
 
 Output:
@@ -15,6 +15,7 @@ Output:
 """
 import json
 import time
+import sys
 import argparse
 import numpy as np
 import torch
@@ -22,7 +23,8 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 
-from model import TopTaggingModel, prototype_loss, count_parameters
+from model import TopTaggingModel, energy_loss, count_parameters
+
 from fastjet_features import compute_features
 from to_awkward import load_awkward
 
@@ -116,7 +118,7 @@ def collate_fn(batch):
 # Training Loop
 # ============================================================================
 
-def train_epoch(model, loader, optimizer, device, lambda_clf=1.0, lambda_clst=0.1, lambda_sep=0.1):
+def train_epoch(model, loader, optimizer, device, class_weight=None):
     """Train for one epoch. Returns average loss and accuracy."""
     model.train()
     total_loss = 0.0
@@ -131,32 +133,33 @@ def train_epoch(model, loader, optimizer, device, lambda_clf=1.0, lambda_clst=0.
         
         optimizer.zero_grad()
         
-        logits, similarities, jet_emb = model(constituents, fj, mask)
+        d_qcd, d_top, similarities, jet_emb = model(constituents, fj, mask)
         
-        loss, components = prototype_loss(
-            logits, labels, similarities, model.prototype_layer,
-            lambda_clf=lambda_clf, lambda_clst=lambda_clst, lambda_sep=lambda_sep,
-        )
+        loss = energy_loss(d_qcd, d_top, labels, class_weight=class_weight)
         
         loss.backward()
         optimizer.step()
         
+        # Accuracy from energy-based decision: lower energy = predicted class
+        preds = (d_top < d_qcd).long()  # 1 if Top (lower d_top), 0 if QCD (lower d_qcd)
+        total_correct += (preds == labels).sum().item()
         total_loss += loss.item() * len(labels)
-        total_correct += (logits.argmax(dim=1) == labels).sum().item()
         total_samples += len(labels)
     
     return total_loss / total_samples, total_correct / total_samples
 
 
+
 @torch.no_grad()
-def evaluate(model, loader, device, lambda_clf=1.0, lambda_clst=0.1, lambda_sep=0.1):
+def evaluate(model, loader, device, class_weight=None):
     """Evaluate model. Returns loss, accuracy, and all predictions."""
     model.eval()
     total_loss = 0.0
     total_correct = 0
     total_samples = 0
     
-    all_logits = []
+    all_d_qcd = []
+    all_d_top = []
     all_labels = []
     all_similarities = []
     
@@ -166,28 +169,29 @@ def evaluate(model, loader, device, lambda_clf=1.0, lambda_clst=0.1, lambda_sep=
         labels = labels.to(device)
         mask = mask.to(device)
         
-        logits, similarities, jet_emb = model(constituents, fj, mask)
+        d_qcd, d_top, similarities, jet_emb = model(constituents, fj, mask)
         
-        loss, components = prototype_loss(
-            logits, labels, similarities, model.prototype_layer,
-            lambda_clf=lambda_clf, lambda_clst=lambda_clst, lambda_sep=lambda_sep,
-        )
+        loss = energy_loss(d_qcd, d_top, labels, class_weight=class_weight)
         
+        preds = (d_top < d_qcd).long()
+        total_correct += (preds == labels).sum().item()
         total_loss += loss.item() * len(labels)
-        total_correct += (logits.argmax(dim=1) == labels).sum().item()
         total_samples += len(labels)
         
-        all_logits.append(logits.cpu())
+        all_d_qcd.append(d_qcd.cpu())
+        all_d_top.append(d_top.cpu())
         all_labels.append(labels.cpu())
         all_similarities.append(similarities.cpu())
     
-    all_logits = torch.cat(all_logits)
+    all_d_qcd = torch.cat(all_d_qcd)
+    all_d_top = torch.cat(all_d_top)
     all_labels = torch.cat(all_labels)
     all_similarities = torch.cat(all_similarities)
     
     return (total_loss / total_samples, 
             total_correct / total_samples,
-            all_logits, all_labels, all_similarities)
+            all_d_qcd, all_d_top, all_labels, all_similarities)
+
 
 
 # ============================================================================
@@ -196,18 +200,16 @@ def evaluate(model, loader, device, lambda_clf=1.0, lambda_clst=0.1, lambda_sep=
 
 def main():
     parser = argparse.ArgumentParser(description='Train Top Tagging model')
-    parser.add_argument('--epochs', type=int, default=10, help='Number of epochs')
+    parser.add_argument('--epochs', type=int, default=30, help='Number of epochs')
     parser.add_argument('--batch_size', type=int, default=256, help='Batch size')
     parser.add_argument('--lr', type=float, default=1e-3, help='Learning rate')
-    parser.add_argument('--quick', action='store_true', help='Quick test with 1000 events')
-    parser.add_argument('--lambda_clf', type=float, default=1.0, help='Classification loss weight')
-    parser.add_argument('--lambda_clst', type=float, default=0.1, help='Clustering loss weight')
-    parser.add_argument('--lambda_sep', type=float, default=0.1, help='Separation loss weight')
+    parser.add_argument('--quick', action='store_true', help='Quick test with 2,000 events')
     parser.add_argument('--particle_dim', type=int, default=128, help='Particle embedding dimension')
     parser.add_argument('--jet_dim', type=int, default=128, help='Jet embedding dimension')
     parser.add_argument('--n_prototypes', type=int, default=20, help='Number of prototypes')
     parser.add_argument('--temperature', type=float, default=1.0, help='Prototype temperature')
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
+
     args = parser.parse_args()
     
     # Set random seeds
@@ -219,16 +221,41 @@ def main():
     print(f"PyTorch: {torch.__version__}")
     
     # Limit events for quick test
-    max_events = 1000 if args.quick else None
+    max_events = 2000 if args.quick else None
     
     # Load datasets
     print("\n" + "=" * 60)
     print("Loading datasets...")
     print("=" * 60)
     
+    print("[Progress] Loading train.h5... (this may take a while on slow machines)")
+    sys.stdout.flush()
     train_ds = JetTaggingDataset('train.h5', max_events=max_events)
+    print(f"[Progress] train.h5 loaded: {len(train_ds)} events")
+    sys.stdout.flush()
+    
+    print("[Progress] Loading val.h5...")
+    sys.stdout.flush()
     val_ds = JetTaggingDataset('val.h5', max_events=max_events)
+    print(f"[Progress] val.h5 loaded: {len(val_ds)} events")
+    sys.stdout.flush()
+    
+    print("[Progress] Loading test.h5...")
+    sys.stdout.flush()
     test_ds = JetTaggingDataset('test.h5', max_events=max_events)
+    print(f"[Progress] test.h5 loaded: {len(test_ds)} events")
+    sys.stdout.flush()
+    
+    # Compute class weights for imbalance
+    n_total = len(train_ds)
+    n_top = int(train_ds.labels.sum())
+    n_qcd = n_total - n_top
+    # weight = n_total / (n_classes * n_class_samples)
+    class_weight = torch.tensor([
+        n_total / (2 * n_qcd),
+        n_total / (2 * n_top),
+    ], dtype=torch.float32).to(device)
+    print(f"Class weights: QCD={class_weight[0]:.4f}, Top={class_weight[1]:.4f}")
     
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, 
                               collate_fn=collate_fn, num_workers=0)
@@ -258,7 +285,7 @@ def main():
     # Optimizer
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode='max', factor=0.5, patience=2, verbose=True
+        optimizer, mode='max', factor=0.5, patience=2
     )
     
     # Training history
@@ -278,17 +305,14 @@ def main():
         
         train_loss, train_acc = train_epoch(
             model, train_loader, optimizer, device,
-            lambda_clf=args.lambda_clf,
-            lambda_clst=args.lambda_clst,
-            lambda_sep=args.lambda_sep,
+            class_weight=class_weight,
         )
         
-        val_loss, val_acc, _, _, _ = evaluate(
+        val_loss, val_acc, _, _, _, _ = evaluate(
             model, val_loader, device,
-            lambda_clf=args.lambda_clf,
-            lambda_clst=args.lambda_clst,
-            lambda_sep=args.lambda_sep,
+            class_weight=class_weight,
         )
+
         
         scheduler.step(val_acc)
         
@@ -319,12 +343,11 @@ def main():
     
     model.load_state_dict(torch.load('best_model.pt'))
     
-    test_loss, test_acc, test_logits, test_labels, test_similarities = evaluate(
+    test_loss, test_acc, test_d_qcd, test_d_top, test_labels, test_similarities = evaluate(
         model, test_loader, device,
-        lambda_clf=args.lambda_clf,
-        lambda_clst=args.lambda_clst,
-        lambda_sep=args.lambda_sep,
+        class_weight=class_weight,
     )
+
     
     print(f"Test accuracy: {test_acc:.4f} ({test_acc*100:.2f}%)")
     print(f"Test loss: {test_loss:.4f}")
@@ -348,7 +371,7 @@ def main():
         # Average similarity of test inputs to this prototype
         sim_to_proto = test_similarities[:, i].numpy()
         print(f"  Prototype {i:2d} ({class_name}): "
-              f"mean_sim={sim_to_proto.mean():.4f} ± {sim_to_proto.std():.4f}")
+              f"mean_sim={sim_to_proto.mean():.4f} +/- {sim_to_proto.std():.4f}")
     
     # Per-class prototype activations
     for cls, cls_name in [(0, 'QCD'), (1, 'Top')]:

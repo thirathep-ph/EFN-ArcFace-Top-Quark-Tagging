@@ -1,7 +1,7 @@
 """
-Step 2: FastJet Feature Extraction
-====================================
-Extract physics observables from jet constituents using FastJet.
+Step 2: FastJet Feature Extraction (Vectorized AwkwardClusterSequence API)
+===========================================================================
+Extract physics observables from jet constituents using FastJet's vectorized API.
 
 Pipeline: Awkward (Vector) -> FastJet (C/A exclusive) -> 6 features
 
@@ -13,7 +13,11 @@ Features:
     5. tau32 = tau3/tau2 (N-subjettiness ratio)
     6. D2 (energy correlation ratio)
 
-No R parameter used -- exclusive C/A clustering with large R.
+Algorithm: C/A (cambridge_algorithm) with R=10.0
+Clustering: Exclusive (1 jet per event)
+
+Performance: Vectorized AwkwardClusterSequence API processes ALL events
+in a single C++ call -- ~1000x faster than per-event Python loop.
 """
 import numpy as np
 import awkward as ak
@@ -22,7 +26,7 @@ import fastjet
 
 def compute_features(events, trim_padding=True):
     """
-    Compute 6 FastJet features for each event.
+    Compute 6 FastJet features for each event using vectorized API.
 
     Parameters
     ----------
@@ -37,163 +41,59 @@ def compute_features(events, trim_padding=True):
         Array of shape (N_events, 6): [mass, pT, eta, tau21, tau32, D2]
     """
     n_events = len(events)
-    features = np.zeros((n_events, 6), dtype=np.float32)
 
-    # C/A jet definition with large R (captures everything)
+    # Convert to float64 Awkward Array with {px, py, pz, E} fields
+    px = ak.values_astype(events.x, np.float64)
+    py = ak.values_astype(events.y, np.float64)
+    pz = ak.values_astype(events.z, np.float64)
+    E = ak.values_astype(events.t, np.float64)
+
+    cons = ak.zip({
+        "px": px,
+        "py": py,
+        "pz": pz,
+        "E": E,
+    })
+
+    # C/A jet definition with R=10.0
     jet_def = fastjet.JetDefinition(fastjet.cambridge_algorithm, 10.0)
 
-    for i in range(n_events):
-        evt = events[i]
+    # Vectorized clustering -- ALL events in one C++ call
+    cs = fastjet._pyjet.AwkwardClusterSequence(cons, jet_def)
 
-        # Convert to list of PseudoJets
-        constituents = []
-        for p in evt:
-            # p has .px, .py, .pz, .E from vector
-            constituents.append(fastjet.PseudoJet(float(p.px), float(p.py), float(p.pz), float(p.E)))
+    # Get exactly 1 jet per event (exclusive clustering)
+    jets = cs.exclusive_jets(n_jets=1)
 
-        if len(constituents) == 0:
-            continue
+    # Extract basic kinematics
+    mass = ak.to_numpy(jets.mass)
+    pt = ak.to_numpy(jets.pt)
+    eta = ak.to_numpy(jets.eta)
 
-        # Cluster with C/A
-        cs = fastjet.ClusterSequence(constituents, jet_def)
+    # N-subjettiness: returns (N_events, 4) for njets=[1,2,3,4]
+    nj = cs.njettiness()
+    tau1 = ak.to_numpy(nj[:, 0])
+    tau2 = ak.to_numpy(nj[:, 1])
+    tau3 = ak.to_numpy(nj[:, 2])
 
-        # Get the hardest inclusive jet
-        incl_jets = cs.inclusive_jets()
-        if len(incl_jets) == 0:
-            continue
-        jet = incl_jets[0]
+    # Ratios (avoid division by zero)
+    tau21 = np.where(tau1 > 1e-10, tau2 / tau1, 1.0)
+    tau32 = np.where(tau2 > 1e-10, tau3 / tau2, 1.0)
 
-        # Basic jet kinematics
-        mass = jet.m()
-        pt = jet.pt()
-        eta = jet.eta()
+    # Energy Correlators for D2
+    # Use normalized=False to get actual ECF values
+    ecf2 = cs.exclusive_jets_energy_correlator(npoint=2, normalized=False)
+    ecf3 = cs.exclusive_jets_energy_correlator(npoint=3, normalized=False)
 
-        # Get exclusive subjets for N-subjettiness axes
-        n_const = len(constituents)
-        max_n = min(3, n_const)
+    ecf2_np = ak.to_numpy(ecf2)
+    ecf3_np = ak.to_numpy(ecf3)
 
-        if max_n >= 1:
-            subjets_1 = jet.exclusive_subjets_up_to(1)
-            subjets_2 = jet.exclusive_subjets_up_to(2) if max_n >= 2 else subjets_1
-            subjets_3 = jet.exclusive_subjets_up_to(3) if max_n >= 3 else subjets_2
-        else:
-            subjets_1 = [jet]
-            subjets_2 = [jet]
-            subjets_3 = [jet]
+    # D2 = e3 / (e2)^2
+    d2 = np.where(ecf2_np > 1e-10, ecf3_np / (ecf2_np * ecf2_np), 0.0)
 
-        # Compute N-subjettiness
-        tau1 = _n_subjettiness(constituents, subjets_1)
-        tau2 = _n_subjettiness(constituents, subjets_2) if max_n >= 2 else tau1
-        tau3 = _n_subjettiness(constituents, subjets_3) if max_n >= 3 else tau2
+    # Stack into (N, 6) array
+    features = np.column_stack([mass, pt, eta, tau21, tau32, d2])
 
-        # Ratios (avoid division by zero)
-        tau21 = tau2 / tau1 if tau1 > 1e-10 else 1.0
-        tau32 = tau3 / tau2 if tau2 > 1e-10 else 1.0
-
-        # Energy correlation functions
-        d2 = _d2(constituents)
-
-        features[i] = [mass, pt, eta, tau21, tau32, d2]
-
-    return features
-
-
-def _n_subjettiness(constituents, axes):
-    """
-    Compute N-subjettiness tau_N.
-
-    tau_N = (1/d0) * sum_i pT_i * min(dR_i1, dR_i2, ..., dR_iN)
-
-    where d0 = sum_i pT_i * R (normalization), and R is the jet radius.
-    We use R = 1.0 as normalization (standard convention).
-    """
-    if len(constituents) == 0 or len(axes) == 0:
-        return 1.0
-
-    # Get axis directions
-    ax_eta = np.array([a.eta() for a in axes])
-    ax_phi = np.array([a.phi() for a in axes])
-
-    total = 0.0
-    d0 = 0.0
-
-    for p in constituents:
-        pt_i = p.pt()
-        eta_i = p.eta()
-        phi_i = p.phi()
-
-        # Min delta-R to any axis
-        dphi = np.abs(phi_i - ax_phi)
-        dphi = np.minimum(dphi, 2 * np.pi - dphi)
-        deta = eta_i - ax_eta
-        dr = np.sqrt(deta**2 + dphi**2)
-        min_dr = np.min(dr)
-
-        total += pt_i * min_dr
-        d0 += pt_i  # normalization: sum pT (R=1 convention)
-
-    if d0 > 1e-10:
-        return total / d0
-    return 1.0
-
-
-def _d2(constituents):
-    """
-    Compute D2 energy correlation function ratio.
-
-    D2 = e3 / (e2)^2
-
-    where:
-        e2 = sum_{i<j} pTi pTj * dRij
-        e3 = sum_{i<j<k} pTi pTj pTk * dRij * dRik * dRjk
-
-    Uses efficient loop-over-j approach (O(n^3) time but O(n^2) memory).
-    """
-    n = len(constituents)
-    if n < 3:
-        return 0.0
-
-    # Extract pT, eta, phi as numpy arrays
-    pts = np.array([p.pt() for p in constituents], dtype=np.float64)
-    etas = np.array([p.eta() for p in constituents], dtype=np.float64)
-    phis = np.array([p.phi() for p in constituents], dtype=np.float64)
-
-    # Compute pairwise delta-R matrix (O(n^2) memory, fine for n~200)
-    deta = etas[:, np.newaxis] - etas[np.newaxis, :]
-    dphi = phis[:, np.newaxis] - phis[np.newaxis, :]
-    dphi = np.abs(dphi)
-    dphi = np.minimum(dphi, 2 * np.pi - dphi)
-    dr = np.sqrt(deta**2 + dphi**2)
-
-    # e2 = sum_{i<j} pTi * pTj * dRij
-    pt_prod_2 = pts[:, np.newaxis] * pts[np.newaxis, :]
-    e2 = np.sum(np.triu(pt_prod_2 * dr, k=1))
-
-    # e3 = sum_{i<j<k} pTi * pTj * pTk * dRij * dRik * dRjk
-    # Loop over middle index j to avoid O(n^3) memory
-    e3 = 0.0
-    for j in range(1, n - 1):
-        # i < j: indices 0..j-1
-        i_slice = slice(0, j)
-        # k > j: indices j+1..n-1
-        k_slice = slice(j + 1, n)
-
-        # pT_i * pT_j * pT_k for all i<j<k
-        # Shape: (j, 1) * (n-j-1,) -> (j, n-j-1)
-        pt_ijk = pts[i_slice, np.newaxis] * pts[j] * pts[k_slice]
-
-        # dR_ij * dR_jk * dR_ik for all i<j<k
-        dr_ij = dr[i_slice, j]          # (j,)
-        dr_jk = dr[j, k_slice]          # (n-j-1,)
-        dr_ik = dr[i_slice, k_slice]    # (j, n-j-1)
-
-        # Sum over i and k
-        term = pt_ijk * dr_ij[:, np.newaxis] * dr_jk[np.newaxis, :] * dr_ik
-        e3 += np.sum(term)
-
-    if e2 > 1e-10:
-        return float(e3 / (e2 ** 2))
-    return 0.0
+    return features.astype(np.float32)
 
 
 def print_feature_stats(features, label="Features"):
@@ -211,7 +111,7 @@ def print_feature_stats(features, label="Features"):
 # ---- Main ----
 if __name__ == '__main__':
     print("=" * 60)
-    print("PIPELINE STEP 2: FastJet Feature Extraction")
+    print("PIPELINE STEP 2: FastJet Feature Extraction (Vectorized)")
     print("=" * 60)
 
     from to_awkward import load_awkward

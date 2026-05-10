@@ -1,0 +1,90 @@
+# Top Tagging Project — Cline Rules & Context
+
+## Project Overview
+Top Tagging with DeepSets + Prototype Layer (xAI) architecture.
+Classify jets as Top (signal) vs QCD (background) using jet constituents.
+
+## Data
+- Files: train.h5, val.h5, test.h5 (HDF5 format)
+- Column layout: INTERLEAVED (E, PX, PY, PZ) per particle
+  - Particle i: cols 4i+0=E, 4i+1=PX, 4i+2=PY, 4i+3=PZ
+- Labels: values_block_1 has 2 columns:
+  - col 0 = ttv (0=train, 1=test, 2=val)
+  - col 1 = is_signal_new (0=QCD, 1=Top)
+- No binarization needed — labels are already 0/1
+- ~800k-2M events per split
+
+## HDF5 Reading
+- MUST import hdf5plugin BEFORE import h5py
+- Use: import hdf5plugin; import h5py
+
+## Architecture
+- DeepSets: permutation-invariant neural network with sum pooling over particles
+  - Input: (E, px, py, pz) per particle — Cartesian coordinates
+  - Output: 128-dim jet embedding
+- FastJet Features: 6 physics observables per jet
+  - mass, pT, eta, tau21, tau32, D2
+  - Extracted via vectorized AwkwardClusterSequence API (NOT per-event loop)
+- Prototype Layer: 20 prototypes (10 Top, 10 QCD)
+  - EDM (Euclidean distance) similarity: exp(-dist/temperature)
+  - Concatenated with DeepSets embedding before prototype layer
+- Final classifier: linear layer on prototype similarities
+
+## FastJet Configuration
+- Algorithm: C/A (cambridge_algorithm) with R=10.0
+- Exclusive clustering: cs.exclusive_jets(n_jets=1) for 1 jet per event
+- Vectorized API: fastjet._pyjet.AwkwardClusterSequence
+  - Input: float64 Awkward Array with fields {px, py, pz, E}
+  - All events processed in one C++ call — NO per-event Python loop
+- N-subjettiness: cs.njettiness() with defaults (NormalizedMeasure, OnePass_KT_Axes, beta=1.0, R0=0.8)
+  - Returns shape (N_events, 4) for njets=[1,2,3,4]
+  - tau1 = nj[:, 0], tau2 = nj[:, 1], tau3 = nj[:, 2]
+- Energy Correlators: cs.exclusive_jets_energy_correlator()
+  - Default: njets=1, beta=1, npoint=0, func="generalized", normalized=True
+- SoftDrop: cs.exclusive_jets_softdrop_grooming()
+  - Returns structured record with msoftdrop, ptsoftdrop, etc.
+- Subjets: cs.exclusive_subjets_up_to(data, nsub) — requires jet data as first arg
+
+## Model Details
+- 88,536 parameters total
+- constituent_dim=4, n_constituents=200 (padded)
+- particle_dim=128, jet_dim=128
+- n_fastjet_features=6 (expandable for multi-class)
+- n_prototypes=20, n_classes=2
+- temperature=1.0 for prototype similarity
+- Loss: prototype_loss with lambda_clf=1.0, lambda_clst=0.1, lambda_sep=0.1
+- Class weights computed from class imbalance
+
+## Training
+- Default: 30 epochs, batch_size=256, lr=1e-3
+- --quick flag: uses 2,000 events for testing
+- Optimizer: Adam
+- Scheduler: ReduceLROnPlateau(mode='max', factor=0.5, patience=2)
+  - NOTE: verbose=True removed (PyTorch 2.11 no longer accepts it)
+- Device: CPU only (PyTorch 2.11.0+cpu, no GPU)
+- Outputs: best_model.pt, training_history.json
+
+## Environment
+- Python 3.14
+- PyTorch 2.11.0+cpu (no GPU)
+- FastJet 3.5.1.2 (with AwkwardClusterSequence vectorized API)
+- Numba 0.65.1 (llvmlite 0.47.0)
+- Terminal encoding: cp874 (Thai) — ± character crashes, use workarounds
+
+## Key Design Decisions (DO NOT CHANGE without discussion)
+1. Cartesian (E, px, py, pz) for DeepSets input — NOT cylindrical
+2. FastJet features concatenated to DeepSets embedding before prototype layer
+3. Exclusive C/A clustering with R=10.0 — NOT inclusive jets
+4. Vectorized AwkwardClusterSequence API — NOT per-event Python loop
+5. 6 core features (mass, pT, eta, tau21, tau32, D2) — expandable for multi-class
+6. DeepSets provides non-linear representational power; prototypes provide interpretability
+7. Multiple prototypes per class capture substructure within classes
+8. Novelty detection via max prototype similarity threshold
+
+## Future Directions (discussed, not yet implemented)
+- LHCO2020 anomaly detection: train on QCD only, detect anomalies via low prototype similarity
+- JetNet compatibility: adapter for (Δη, Δφ, pT_rel, mask) format
+- Multi-class extension: W, Z, H, Top, QCD with more prototypes
+- Attention mechanism on DeepSets for particle-level importance
+- t-SNE/UMAP visualization of jet embeddings
+- Expand FastJet features: SoftDrop mass, splitting scales, Lund plane
