@@ -108,7 +108,7 @@ def print_summary(events, labels):
 
 
 if __name__ == '__main__':
-    for split in ['train.h5', 'val.h5', 'test.h5']:
+    for split in ['data/top_tagging/train.h5', 'data/top_tagging/val.h5', 'data/top_tagging/test.h5']:
         try:
             events, labels, weights = load_awkward(split, max_events=1000, trim_padding=True)
             print_summary(events, labels)

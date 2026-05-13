@@ -7,6 +7,7 @@ learned prototypes after training.
 import json
 import time
 import sys
+import os
 import argparse
 import numpy as np
 import awkward as ak
@@ -15,9 +16,9 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 
-from model import TopTaggingModel, arcface_loss, count_parameters
-from fastjet_features import compute_features
-from to_awkward import load_awkward
+from jet_tagging.models.efn_arcface import TopTaggingModel, arcface_loss, count_parameters
+from jet_tagging.utils.physics import compute_features
+from jet_tagging.data.loader import load_awkward
 
 
 # ============================================================================
@@ -41,30 +42,14 @@ class JetTaggingDataset(Dataset):
         print(f"  Pre-computing padded constituent arrays ({self.n} events)...")
         t0 = time.time()
 
-        counts = ak.num(self.events)
-        self.counts_np = ak.to_numpy(counts).astype(np.int32)
+        # Vectorized Padding (MUCH FASTER)
+        padded_E = ak.to_numpy(ak.fill_none(ak.pad_none(self.events.E, max_constituents, clip=True), 0)).astype(np.float32)
+        padded_px = ak.to_numpy(ak.fill_none(ak.pad_none(self.events.px, max_constituents, clip=True), 0)).astype(np.float32)
+        padded_py = ak.to_numpy(ak.fill_none(ak.pad_none(self.events.py, max_constituents, clip=True), 0)).astype(np.float32)
+        padded_pz = ak.to_numpy(ak.fill_none(ak.pad_none(self.events.pz, max_constituents, clip=True), 0)).astype(np.float32)
 
-        # Flatten for fast processing
-        E_flat = ak.to_numpy(ak.flatten(self.events.E)).astype(np.float32)
-        px_flat = ak.to_numpy(ak.flatten(self.events.px)).astype(np.float32)
-        py_flat = ak.to_numpy(ak.flatten(self.events.py)).astype(np.float32)
-        pz_flat = ak.to_numpy(ak.flatten(self.events.pz)).astype(np.float32)
-
-        self.constituents = np.zeros((self.n, max_constituents, 4), dtype=np.float32)
-        self.mask = np.zeros((self.n, max_constituents), dtype=bool)
-
-        start = 0
-        for i in range(self.n):
-            n_p = self.counts_np[i]
-            n_use = min(n_p, max_constituents)
-            if n_use > 0:
-                end = start + n_use
-                self.constituents[i, :n_use, 0] = E_flat[start:end]
-                self.constituents[i, :n_use, 1] = px_flat[start:end]
-                self.constituents[i, :n_use, 2] = py_flat[start:end]
-                self.constituents[i, :n_use, 3] = pz_flat[start:end]
-                self.mask[i, :n_use] = True
-                start = end
+        self.constituents = np.stack([padded_E, padded_px, padded_py, padded_pz], axis=-1)
+        self.mask = (padded_E != 0)
 
         t1 = time.time()
         print(f"  Done in {t1-t0:.2f}s")
@@ -256,9 +241,9 @@ def plot_results(history, metrics, test_sims, save_path='training_results_efn.pn
     ax.legend()
 
     plt.tight_layout()
-    plt.savefig(save_path, dpi=150)
+    plt.savefig('results/training_results_efn.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"Saved EFN summary to {save_path}")
+    print(f"Saved EFN summary to results/training_results_efn.png")
 
 
 # ============================================================================
@@ -281,11 +266,15 @@ def interpret_prototypes(model, loader, dataset, device, n_prototypes=20):
         feats = compute_features(ak.Array([event_p4]))[0]
         
         proto_class = "Top" if i >= (n_prototypes // 2) else "QCD"
-        print(f"Proto {i:2d} ({proto_class}): Match #{real_idx}, Mass={feats[0]:.2f}, pT={feats[1]:.2f}, tau32={feats[4]:.3f}")
+        print(f"Proto {i:2d} ({proto_class}): Match #{real_idx}, Mass={feats[0]:.1f}, mSD={feats[1]:.1f}, Mult={feats[2]:.0f}, Tau32={feats[5]:.3f}")
         
         proto_physics_data.append({
             'proto_id': i, 'proto_class': proto_class, 'event_idx': real_idx, 'features': feats.tolist()
         })
+    
+    os.makedirs('results', exist_ok=True)
+    with open('results/efn_results.json', 'w') as f:
+        json.dump(proto_physics_data, f, indent=2)
     return proto_physics_data, all_labels, all_sims
 
 
@@ -296,15 +285,16 @@ def interpret_prototypes(model, loader, dataset, device, n_prototypes=20):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', type=int, default=50)
-    parser.add_argument('--quick', action='store_true')
+    parser.add_argument('--quick', action='store_true', help='Use small subset (5k events)')
+    parser.add_argument('--max_events', type=int, default=None, help='Specific number of events to use')
     args = parser.parse_args()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    max_events = 5000 if args.quick else None
+    max_events = args.max_events if args.max_events else (5000 if args.quick else None)
 
-    train_ds = JetTaggingDataset('train.h5', max_events=max_events)
-    val_ds = JetTaggingDataset('val.h5', max_events=max_events)
-    test_ds = JetTaggingDataset('test.h5', max_events=max_events)
+    train_ds = JetTaggingDataset('data/top_tagging/train.h5', max_events=max_events)
+    val_ds = JetTaggingDataset('data/top_tagging/val.h5', max_events=max_events)
+    test_ds = JetTaggingDataset('data/top_tagging/test.h5', max_events=max_events)
 
     train_loader = DataLoader(train_ds, batch_size=1024, shuffle=True, collate_fn=collate_fn)
     val_loader = DataLoader(val_ds, batch_size=1024, collate_fn=collate_fn)
@@ -328,17 +318,15 @@ def main():
 
         if v_acc > best_acc:
             best_acc = v_acc
-            torch.save(model.state_dict(), 'best_model_efn.pt')
+            os.makedirs('checkpoints', exist_ok=True)
+    torch.save(model.state_dict(), 'checkpoints/best_model_efn.pt')
 
-    model.load_state_dict(torch.load('best_model_efn.pt'))
+    model.load_state_dict(torch.load('checkpoints/best_model_efn.pt'))
     proto_data, test_labels, test_sims = interpret_prototypes(model, test_loader, test_ds, device)
     eval_metrics = comprehensive_evaluation(test_labels, test_sims)
     eval_metrics['labels_np'] = test_labels.numpy()
     plot_results(history, eval_metrics, test_sims)
     
-    with open('efn_results.json', 'w') as f:
-        json.dump({'history': history, 'prototypes': proto_data}, f, indent=2)
-
     print("\nTraining Complete: EFN + ArcFace ready.")
 
 if __name__ == '__main__':

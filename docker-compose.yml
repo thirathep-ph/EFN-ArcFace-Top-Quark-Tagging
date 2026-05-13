@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  jet-tagging:
+    build: .
+    container_name: jet_tagging_container
+    volumes:
+      - .:/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: python scripts/train_top.py --quick --epochs 10
