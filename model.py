@@ -1,13 +1,18 @@
 """
-DeepSets + Prototype Layer Model for Top Tagging
-=================================================
-Architecture:
-    Constituents (E, px, py, pz) -> DeepSets -> jet_embedding
-    Constituents -> FastJet -> 6 features
-    Concat [jet_embedding, fastjet_features] -> Prototype Layer -> Classification
+PFN (Particle Flow Network) + ArcFace Prototype Layer for Top Tagging
+=====================================================================
+Ante-hoc (Intrinsic) Interpretability Architecture:
+    Constituents (E, px, py, pz) -> Relative Features -> PFN -> jet_embedding
+    jet_embedding -> ArcFace Prototype Layer -> Classification
 
-Prototype Layer uses Energy Distance (EDM) similarity metric.
-20 prototypes: 10 for Top class, 10 for QCD class.
+Interpretability:
+    The model is inherently interpretable because classification is based
+    on similarity to learned 'Prototypes' in the latent space.
+    FastJet features are used post-training to GROUND these prototypes
+    in physical observables (mass, tau32, etc.).
+
+ArcFace Loss:
+    Used to enhance class separation and prototype clustering.
 """
 import torch
 import torch.nn as nn
@@ -16,14 +21,76 @@ import numpy as np
 
 
 # ============================================================================
-# DeepSets
+# PFN (Particle Flow Network)
 # ============================================================================
 
-class ParticleEncoder(nn.Module):
+def get_relative_features(constituents, mask=None):
     """
-    Per-particle MLP: (E, px, py, pz) -> particle_embedding
+    Transform (E, px, py, pz) to PFN-style relative features:
+    (ln pT, ln E, Delta eta, Delta phi, pT_rel, E_rel)
+
+    Args:
+        constituents: (B, N, 4) - (E, px, py, pz)
+        mask: (B, N) - True for valid particles
     """
-    def __init__(self, input_dim=4, hidden_dim=128, output_dim=128):
+    E = constituents[:, :, 0]
+    px = constituents[:, :, 1]
+    py = constituents[:, :, 2]
+    pz = constituents[:, :, 3]
+
+    # Particle-level pT and eta/phi
+    pt = torch.sqrt(px**2 + py**2 + 1e-10)
+    # Rapidity y = 0.5 * ln((E+pz)/(E-pz))
+    y = 0.5 * torch.log((E + pz + 1e-10) / (E - pz + 1e-10))
+    phi = torch.atan2(py, px)
+
+    # Jet-level 4-momentum (sum of constituents)
+    if mask is not None:
+        # Zero out masked particles
+        m = mask.unsqueeze(-1).float()
+        jet_p4 = (constituents * m).sum(dim=1)
+    else:
+        jet_p4 = constituents.sum(dim=1)
+
+    jet_E = jet_p4[:, 0]
+    jet_px = jet_p4[:, 1]
+    jet_py = jet_p4[:, 2]
+    jet_pz = jet_p4[:, 3]
+
+    jet_pt = torch.sqrt(jet_px**2 + jet_py**2 + 1e-10)
+    jet_y = 0.5 * torch.log((jet_E + jet_pz + 1e-10) / (jet_E - jet_pz + 1e-10))
+    jet_phi = torch.atan2(jet_py, jet_px)
+
+    # Relative coordinates
+    # Note: Wrap phi to [-pi, pi]
+    d_phi = phi - jet_phi.unsqueeze(1)
+    d_phi = (d_phi + np.pi) % (2 * np.pi) - np.pi
+    d_y = y - jet_y.unsqueeze(1)
+
+    # Normalized pT and E
+    pt_rel = pt / jet_pt.unsqueeze(1)
+    E_rel = E / jet_E.unsqueeze(1)
+
+    # Log features (standard in PFN)
+    ln_pt = torch.log(pt + 1e-10)
+    ln_E = torch.log(E + 1e-10)
+
+    # Stack features: (B, N, 6)
+    # [ln_pt, ln_E, d_y, d_phi, pt_rel, E_rel]
+    features = torch.stack([ln_pt, ln_E, d_y, d_phi, pt_rel, E_rel], dim=2)
+
+    # Apply mask again to be safe
+    if mask is not None:
+        features = features * mask.unsqueeze(-1).float()
+
+    return features
+
+
+class PFNEncoder(nn.Module):
+    """
+    Per-particle MLP: particle_features -> particle_embedding
+    """
+    def __init__(self, input_dim=6, hidden_dim=256, output_dim=256):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -33,32 +100,33 @@ class ParticleEncoder(nn.Module):
             nn.BatchNorm1d(hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, output_dim),
+            nn.BatchNorm1d(output_dim),
+            nn.ReLU(),
         )
 
     def forward(self, x):
         """
-        x: (batch_size, n_constituents, 4) - (E, px, py, pz)
+        x: (batch_size, n_constituents, input_dim)
         Returns: (batch_size, n_constituents, output_dim)
         """
         b, n, d = x.shape
-        # Flatten particles for batchnorm
         x_flat = x.reshape(b * n, d)
         out_flat = self.net(x_flat)
         return out_flat.reshape(b, n, -1)
 
 
-class DeepSets(nn.Module):
+class PFN(nn.Module):
     """
-    DeepSets: permutation-invariant set processing.
-    
-    phi: per-particle MLP
-    rho: set-level MLP (after sum pooling)
+    Particle Flow Network: permutation-invariant set processing.
     """
-    def __init__(self, input_dim=4, particle_dim=128, jet_dim=128):
+    def __init__(self, input_dim=6, particle_dim=256, jet_dim=256):
         super().__init__()
-        self.phi = ParticleEncoder(input_dim, hidden_dim=particle_dim, output_dim=particle_dim)
+        self.phi = PFNEncoder(input_dim, hidden_dim=particle_dim, output_dim=particle_dim)
         self.rho = nn.Sequential(
             nn.Linear(particle_dim, jet_dim),
+            nn.BatchNorm1d(jet_dim),
+            nn.ReLU(),
+            nn.Linear(jet_dim, jet_dim),
             nn.BatchNorm1d(jet_dim),
             nn.ReLU(),
             nn.Linear(jet_dim, jet_dim),
@@ -66,59 +134,46 @@ class DeepSets(nn.Module):
 
     def forward(self, x, mask=None):
         """
-        x: (batch_size, n_constituents, 4) - (E, px, py, pz)
-        mask: (batch_size, n_constituents) - True for valid particles, False for padding
-        
-        Returns: (batch_size, jet_dim) - jet embedding
+        x: (batch_size, n_constituents, input_dim)
         """
         # Per-particle encoding
         particle_emb = self.phi(x)  # (B, N, particle_dim)
-        
-        # Sum pooling (permutation invariant)
+
+        # Sum pooling
         if mask is not None:
-            # Zero out padded particles
             particle_emb = particle_emb * mask.unsqueeze(-1).float()
-            jet_emb = particle_emb.sum(dim=1)  # (B, particle_dim)
-            # Normalize by number of valid particles
-            n_valid = mask.sum(dim=1, keepdim=True).float()
-            n_valid = n_valid.clamp(min=1.0)
-            jet_emb = jet_emb / n_valid
+            jet_emb = particle_emb.sum(dim=1)
         else:
-            jet_emb = particle_emb.mean(dim=1)  # (B, particle_dim)
-        
+            jet_emb = particle_emb.mean(dim=1)
+
         # Jet-level encoding
-        jet_emb = self.rho(jet_emb)  # (B, jet_dim)
+        jet_emb = self.rho(jet_emb)
         return jet_emb
 
 
 # ============================================================================
-# Prototype Layer (xAI) — Energy-Based Model
+# ArcFace Prototype Layer (Ante-hoc Interpretability)
 # ============================================================================
 
-class PrototypeLayer(nn.Module):
+class ArcFacePrototypeLayer(nn.Module):
     """
-    Prototype layer with cosine similarity (Energy-Based Model).
-    
-    Architecture:
-        - Normalize inputs and prototypes to unit sphere
-        - Compute cosine similarity: sim = z·p  (range [-1, 1])
-        - Convert to distance: d = 1 - sim  (range [0, 2])
-        - Per-class energy: min distance to that class's prototypes
-        - Classification via softmax over negative energies
-    
-    20 prototypes: 10 for Top class, 10 for QCD class.
-    No learned classifier layer — pure prototype-based decision.
+    Ante-hoc interpretability layer using ArcFace (Additive Angular Margin).
+
+    20 Prototypes: 10 for QCD (class 0), 10 for Top (class 1).
+    During training: Adds angular margin to target class prototypes.
     """
-    def __init__(self, input_dim, n_prototypes=20, n_classes=2):
+    def __init__(self, input_dim, n_prototypes=20, n_classes=2, s=32.0, m=0.5):
         super().__init__()
         self.n_prototypes = n_prototypes
         self.n_classes = n_classes
-        
-        # Prototype vectors: (n_prototypes, input_dim)
-        self.prototypes = nn.Parameter(torch.randn(n_prototypes, input_dim) * 0.1)
-        
-        # Class mapping: which prototypes belong to which class
-        # First n_prototypes//2 for class 0 (QCD), rest for class 1 (Top)
+        self.s = s  # Scale factor
+        self.m = m  # Angular margin
+
+        # Prototypes: (n_prototypes, input_dim)
+        self.prototypes = nn.Parameter(torch.randn(n_prototypes, input_dim))
+        nn.init.xavier_uniform_(self.prototypes)
+
+        # Prototype labels: 0 for first half, 1 for second half
         self.register_buffer(
             'prototype_class',
             torch.cat([
@@ -127,45 +182,53 @@ class PrototypeLayer(nn.Module):
             ])
         )
 
-    def forward(self, x):
+    def forward(self, x, labels=None):
         """
-        x: (batch_size, input_dim) - concatenated [jet_embedding, fastjet_features]
-        
+        x: (batch_size, input_dim) - jet embedding
+        labels: (batch_size,) - ground truth class (only for training)
+
         Returns:
-            d_qcd: (batch_size,) - min cosine distance to QCD prototypes
-            d_top: (batch_size,) - min cosine distance to Top prototypes
-            similarities: (batch_size, n_prototypes) - cosine similarities to all prototypes
+            logits: (batch_size, 2) - class scores for ArcFace
+            similarities: (batch_size, n_prototypes) - raw cosine similarities
         """
-        # Normalize to unit sphere
+        # Normalize to hypersphere
         x_norm = F.normalize(x, dim=1)  # (B, D)
         p_norm = F.normalize(self.prototypes, dim=1)  # (P, D)
-        
-        # Cosine similarity: (B, P), range [-1, 1]
+
+        # Cosine similarity: (B, P)
         similarities = x_norm @ p_norm.T
-        
-        # Convert to distance: d = 1 - sim, range [0, 2]
-        # d = 0 means identical direction, d = 2 means opposite direction
-        distances = 1.0 - similarities  # (B, P)
-        
-        # Per-class min distance (energy)
+
+        # --- Ante-hoc Decision Logic ---
+        # Get max similarity for each class
+        # (B, 10) -> (B,)
         n_qcd = self.n_prototypes // 2
-        d_qcd = distances[:, :n_qcd].min(dim=1)[0]  # (B,)
-        d_top = distances[:, n_qcd:].min(dim=1)[0]  # (B,)
-        
-        return d_qcd, d_top, similarities
+        sim_qcd = similarities[:, :n_qcd].max(dim=1)[0]
+        sim_top = similarities[:, n_qcd:].max(dim=1)[0]
 
-    def get_prototype_labels(self):
-        """Return class label for each prototype."""
-        return self.prototype_class
+        # Combine into class-level logits: (B, 2)
+        logits = torch.stack([sim_qcd, sim_top], dim=1)
 
-    def get_prototype_activations(self, x):
-        """
-        Get per-prototype similarity for interpretability.
-        Returns: (batch_size, n_prototypes)
-        """
-        with torch.no_grad():
-            _, _, similarities = self.forward(x)
-        return similarities
+        # --- ArcFace Margin (Training only) ---
+        if self.training and labels is not None:
+            # Clamp for numerical stability in acos
+            logits_clamped = logits.clamp(-1.0 + 1e-7, 1.0 - 1e-7)
+            theta = torch.acos(logits_clamped)
+
+            # Target class index
+            target_mask = F.one_hot(labels, num_classes=self.n_classes).bool()
+
+            # Apply additive angular margin: cos(theta + m)
+            # This makes it harder for the embedding to belong to the target class
+            # forcing them to be even closer to the prototypes.
+            m_logits = torch.cos(theta + self.m)
+
+            # Replace target logits with margin-adjusted versions
+            logits = torch.where(target_mask, m_logits, logits)
+
+        # Scale for softmax
+        logits = logits * self.s
+
+        return logits, similarities
 
 
 # ============================================================================
@@ -174,198 +237,90 @@ class PrototypeLayer(nn.Module):
 
 class TopTaggingModel(nn.Module):
     """
-    Complete model: DeepSets + FastJet features + Prototype Layer.
-    
-    Input: (batch_size, 200, 4) constituent 4-momenta (E, px, py, pz)
-    + (batch_size, 6) FastJet features [mass, pT, eta, tau21, tau32, D2]
-    
-    Output: (batch_size, 2) class scores [P(QCD), P(Top)]
+    Complete Model: PFN + ArcFace Prototype Layer.
+    Ante-hoc architecture with physical feature interpretation.
     """
-    def __init__(self, 
-                 constituent_dim=4,
+    def __init__(self,
+                 constituent_dim=6,  # PFN features
                  n_constituents=200,
-                 particle_dim=128,
-                 jet_dim=128,
-                 n_fastjet_features=6,
+                 particle_dim=256,
+                 jet_dim=256,
                  n_prototypes=20,
                  n_classes=2,
-                 temperature=1.0):
+                 s=32.0,
+                 m=0.5):
         super().__init__()
-        
-        self.n_constituents = n_constituents
-        self.jet_dim = jet_dim
-        self.n_fastjet_features = n_fastjet_features
-        
-        # DeepSets
-        self.deepsets = DeepSets(
+
+        self.pfn = PFN(
             input_dim=constituent_dim,
             particle_dim=particle_dim,
             jet_dim=jet_dim,
         )
-        
-        # Combine jet embedding + FastJet features
-        combined_dim = jet_dim + n_fastjet_features
-        
-        # Project combined features
-        self.combined_proj = nn.Sequential(
-            nn.Linear(combined_dim, combined_dim),
-            nn.BatchNorm1d(combined_dim),
-            nn.ReLU(),
-        )
-        
-        # Prototype Layer
-        self.prototype_layer = PrototypeLayer(
-            input_dim=combined_dim,
+
+        self.prototype_layer = ArcFacePrototypeLayer(
+            input_dim=jet_dim,
             n_prototypes=n_prototypes,
             n_classes=n_classes,
+            s=s,
+            m=m,
         )
 
-    def forward(self, constituents, fastjet_features, mask=None):
+    def forward(self, constituents, labels=None, mask=None):
         """
-        constituents: (batch_size, 200, 4) - (E, px, py, pz)
-        fastjet_features: (batch_size, 6) - [mass, pT, eta, tau21, tau32, D2]
-        mask: (batch_size, 200) - True for valid particles
-        
-        Returns:
-            d_qcd: (batch_size,) - min cosine distance to QCD prototypes
-            d_top: (batch_size,) - min cosine distance to Top prototypes
-            similarities: (batch_size, 20) - cosine similarities to all prototypes
-            jet_emb: (batch_size, jet_dim) - jet embedding from DeepSets
+        Input: Raw (E, px, py, pz)
         """
-        # DeepSets jet embedding
-        jet_emb = self.deepsets(constituents, mask)  # (B, jet_dim)
-        
-        # Concatenate with FastJet features
-        combined = torch.cat([jet_emb, fastjet_features], dim=1)  # (B, jet_dim + 6)
-        combined = self.combined_proj(combined)
-        
-        # Prototype layer
-        d_qcd, d_top, similarities = self.prototype_layer(combined)
-        
-        return d_qcd, d_top, similarities, jet_emb
+        # 1. Transform to PFN relative features on-the-fly
+        pfn_features = get_relative_features(constituents, mask)
 
-    def predict(self, constituents, fastjet_features, mask=None):
-        """Get class probabilities from energy-based model."""
-        d_qcd, d_top, similarities, jet_emb = self.forward(constituents, fastjet_features, mask)
-        # P = softmax(-E) where E = min distance to class prototypes
-        energies = torch.stack([d_qcd, d_top], dim=1)  # (B, 2)
-        probs = F.softmax(-energies, dim=1)  # lower energy = higher probability
+        # 2. Extract jet embedding
+        jet_emb = self.pfn(pfn_features, mask)
+
+        # 3. Prototype layer (ArcFace)
+        logits, similarities = self.prototype_layer(jet_emb, labels)
+
+        return logits, similarities, jet_emb
+
+    @torch.no_grad()
+    def predict(self, constituents, mask=None):
+        """Standard prediction (no margin)."""
+        self.eval()
+        logits, similarities, jet_emb = self.forward(constituents, labels=None, mask=mask)
+        probs = F.softmax(logits, dim=1)
         return probs, similarities, jet_emb
 
 
 # ============================================================================
-# Loss Functions — Energy-Based Model
+# Loss & Utility
 # ============================================================================
 
-def energy_loss(d_qcd, d_top, labels, class_weight=None):
-    """
-    Energy-Based Model loss function.
-    
-    Energy for each class = min cosine distance to that class's prototypes.
-    Classification via softmax over negative energies:
-        P(class=c) = exp(-E_c) / (exp(-E_qcd) + exp(-E_top))
-    
-    Lower energy = higher probability = better match to class prototypes.
-    
-    Args:
-        d_qcd: (batch_size,) - min cosine distance to QCD prototypes [0, 2]
-        d_top: (batch_size,) - min cosine distance to Top prototypes [0, 2]
-        labels: (batch_size,) - 0=QCD, 1=Top
-        class_weight: (2,) tensor - weight for each class (handles imbalance)
-    
-    Returns:
-        loss: scalar tensor
-    """
-    # Stack energies: (B, 2) where col 0 = E_qcd, col 1 = E_top
-    energies = torch.stack([d_qcd, d_top], dim=1)
-    
-    # Softmax over negative energies: P = softmax(-E)
-    # Lower energy -> higher probability
-    log_probs = F.log_softmax(-energies, dim=1)
-    
-    # Negative log-likelihood with optional class weighting
-    if class_weight is not None:
-        # class_weight: (2,) -> weight per class
-        # For each sample, weight = class_weight[label]
-        sample_weights = class_weight[labels]
-        loss = -log_probs[range(len(labels)), labels] * sample_weights
-        loss = loss.mean()
-    else:
-        loss = F.nll_loss(log_probs, labels)
-    
-    return loss
+def arcface_loss(logits, labels, class_weight=None):
+    """Simple CrossEntropy on ArcFace logits."""
+    return F.cross_entropy(logits, labels, weight=class_weight)
 
-
-
-# ============================================================================
-# Utility
-# ============================================================================
 
 def count_parameters(model):
-    """Count trainable parameters."""
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-# Quick test
 if __name__ == '__main__':
-    print("=" * 60)
-    print("Model Architecture Test")
-    print("=" * 60)
-    
+    print("PFN + ArcFace Prototype Model")
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"Device: {device}")
-    
-    # Create model
-    model = TopTaggingModel(
-        constituent_dim=4,
-        n_constituents=200,
-        particle_dim=128,
-        jet_dim=128,
-        n_fastjet_features=6,
-        n_prototypes=20,
-        n_classes=2,
-        temperature=1.0,
-    ).to(device)
-    
-    print(f"\nModel parameters: {count_parameters(model):,}")
-    
-    # Test forward pass
+
+    model = TopTaggingModel().to(device)
+    print(f"Parameters: {count_parameters(model):,}")
+
+    # Test forward
     batch_size = 4
-    constituents = torch.randn(batch_size, 200, 4).to(device)
-    fastjet_features = torch.randn(batch_size, 6).to(device)
+    x = torch.randn(batch_size, 200, 4).to(device) # E, px, py, pz
+    y = torch.randint(0, 2, (batch_size,)).to(device)
     mask = torch.ones(batch_size, 200, dtype=torch.bool).to(device)
-    # Simulate some padding
-    mask[:, 150:] = False
-    constituents[:, 150:] = 0.0
-    
-    d_qcd, d_top, similarities, jet_emb = model(constituents, fastjet_features, mask)
-    
-    print(f"\nForward pass shapes:")
-    print(f"  constituents: {constituents.shape}")
-    print(f"  fastjet_features: {fastjet_features.shape}")
-    print(f"  mask: {mask.shape}")
-    print(f"  d_qcd: {d_qcd.shape}")
-    print(f"  d_top: {d_top.shape}")
-    print(f"  similarities: {similarities.shape}")
-    print(f"  jet_emb: {jet_emb.shape}")
-    
-    # Test energy loss
-    labels = torch.randint(0, 2, (batch_size,)).to(device)
-    loss = energy_loss(d_qcd, d_top, labels)
-    
-    print(f"\nEnergy loss: {loss.item():.4f}")
-    
-    # Test with class weights
-    class_weight = torch.tensor([1.0, 1.0]).to(device)
-    loss_w = energy_loss(d_qcd, d_top, labels, class_weight=class_weight)
-    print(f"Energy loss (weighted): {loss_w.item():.4f}")
-    
-    # Test prediction
-    probs, sims, emb = model.predict(constituents, fastjet_features, mask)
-    print(f"\nPredictions: {probs}")
-    print(f"  Predicted classes: {probs.argmax(dim=1)}")
-    print(f"  True labels: {labels}")
-    print(f"  Energies: d_qcd={d_qcd}, d_top={d_top}")
+
+    logits, sims, emb = model(x, y, mask)
+    loss = arcface_loss(logits, y)
+
+    print(f"Logits shape: {logits.shape}")
+    print(f"Loss: {loss.item():.4f}")
+    print("Success!")
 
     
     print("\n" + "=" * 60)
