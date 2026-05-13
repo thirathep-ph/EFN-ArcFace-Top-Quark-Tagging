@@ -19,6 +19,7 @@ from torch.utils.data import DataLoader, Dataset
 from jet_tagging.models.efn_arcface import TopTaggingModel, arcface_loss, count_parameters
 from jet_tagging.utils.physics import compute_features
 from jet_tagging.data.loader import load_awkward
+from jet_tagging.utils.plotting import plot_latent_space, plot_performance, plot_representative_jet
 
 
 # ============================================================================
@@ -327,7 +328,37 @@ def main():
     eval_metrics['labels_np'] = test_labels.numpy()
     plot_results(history, eval_metrics, test_sims)
     
-    print("\nTraining Complete: EFN + ArcFace ready.")
+    # --- Advanced Visualization ---
+    print("\nGenerating Advanced Visualizations...")
+    # 1. Performance Plots
+    plot_performance(test_labels.numpy(), test_sims.numpy())
+    
+    # 2. Latent Space (Subset for speed)
+    # We need embeddings. Let's run a quick pass.
+    all_embeddings = []
+    model.eval()
+    with torch.no_grad():
+        for x, y, w, m, _ in test_loader:
+            x, m = x.to(device), m.to(device)
+            # 2. Extract jet embedding via EFN
+            from jet_tagging.models.efn_arcface import get_efn_features
+            coords, z = get_efn_features(x, m)
+            emb = model.efn(coords, z, m)
+            all_embeddings.append(emb.cpu().numpy())
+    
+    embeddings_np = np.concatenate(all_embeddings, axis=0)
+    plot_latent_space(embeddings_np[:5000], test_labels.numpy()[:5000]) # Use 5k events for t-SNE
+    
+    # 3. Representative Jets for Prototypes
+    for entry in proto_data[:2] + proto_data[-2:]: # 2 QCD, 2 Top
+        idx = entry['event_idx']
+        p4 = test_ds.events[idx]
+        p_id = entry['proto_id']
+        p_cls = entry['proto_class']
+        plot_representative_jet(p4, title=f"Prototype {p_id} ({p_cls})", 
+                                save_path=f"results/proto_{p_id}_jet.png")
+
+    print("\nTraining & Analysis Complete. Check the 'results/' folder.")
 
 if __name__ == '__main__':
     main()

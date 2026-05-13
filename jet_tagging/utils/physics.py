@@ -64,6 +64,33 @@ def compute_features(events):
 
     return features.astype(np.float32)
 
+def get_lund_coordinates(events):
+    """
+    Compute Lund Plane coordinates (ln(1/Delta), ln(kt)) for a batch of events.
+    Uses C/A de-clustering.
+    """
+    import fastjet
+    jet_def = fastjet.JetDefinition(fastjet.cambridge_algorithm, 1.0)
+    cs = fastjet.ClusterSequence(events, jet_def)
+    
+    # We take the leading jet for each event
+    jets = cs.exclusive_jets(n_jets=1)
+    
+    all_ln_delta = []
+    all_ln_kt = []
+    
+    # Simplified declustering for the primary branch
+    # FastJet Python wrapper allows us to access the parents
+    # This is a vectorized approach where possible
+    # For now, we use a simplified version for visualization
+    for i in range(len(events)):
+        # Get history or use specialized Lund Generator if available
+        # In this wrapper, we can use the splitting scales as a proxy 
+        # or manually walk the tree
+        pass # To be fully implemented in the next step
+    
+    return np.array(all_ln_delta), np.array(all_ln_kt)
+
 def print_feature_stats(features, label="Features"):
     names = ["Mass", "mSD", "Mult", "sqrt(d12)", "sqrt(d23)", "Tau32", "Tau21", "D2"]
     print(f"\n  {label}:")
