@@ -39,3 +39,6 @@ Thumbs.db
 *.png
 *.pdf
 *.svg
+
+# Archive (scratch/exploration files)
+archive/
