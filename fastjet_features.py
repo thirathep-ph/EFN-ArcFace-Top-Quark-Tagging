@@ -43,10 +43,10 @@ def compute_features(events, trim_padding=True):
     n_events = len(events)
 
     # Convert to float64 Awkward Array with {px, py, pz, E} fields
-    px = ak.values_astype(events.x, np.float64)
-    py = ak.values_astype(events.y, np.float64)
-    pz = ak.values_astype(events.z, np.float64)
-    E = ak.values_astype(events.t, np.float64)
+    px = ak.values_astype(events.px, np.float64)
+    py = ak.values_astype(events.py, np.float64)
+    pz = ak.values_astype(events.pz, np.float64)
+    E = ak.values_astype(events.E, np.float64)
 
     cons = ak.zip({
         "px": px,

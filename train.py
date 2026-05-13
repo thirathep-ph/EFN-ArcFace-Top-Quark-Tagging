@@ -1,11 +1,8 @@
 """
-Training Pipeline for PFN + ArcFace Prototype Layer
+Training Pipeline for EFN + ArcFace Prototype Layer
 ===================================================
 Ante-hoc interpretability: FastJet is used ONLY for interpreting
 learned prototypes after training.
-
-Usage:
-    python train.py --quick --epochs 5
 """
 import json
 import time
@@ -24,13 +21,12 @@ from to_awkward import load_awkward
 
 
 # ============================================================================
-# Dataset Wrapper for PyTorch (PFN Version - No FastJet at training)
+# Dataset Wrapper for PyTorch (EFN Version)
 # ============================================================================
 
 class JetTaggingDataset(Dataset):
     """
-    Optimized PFN Dataset. Pre-computes padded constituent arrays.
-    Does NOT compute FastJet features during training (Ante-hoc).
+    Optimized EFN Dataset. Pre-computes padded constituent arrays.
     """
     def __init__(self, h5_path, max_events=None, max_constituents=200):
         self.h5_path = h5_path
@@ -100,7 +96,7 @@ def collate_fn(batch):
 # Training & Evaluation Loops
 # ============================================================================
 
-def train_epoch(model, loader, optimizer, device, class_weight=None):
+def train_epoch(model, loader, optimizer, device):
     model.train()
     total_loss = 0.0
     total_correct = 0
@@ -112,7 +108,7 @@ def train_epoch(model, loader, optimizer, device, class_weight=None):
         optimizer.zero_grad()
         # Training: ArcFace margin applied
         logits, sims, emb = model(constituents, labels=labels, mask=mask)
-        loss = arcface_loss(logits, labels, class_weight=class_weight)
+        loss = arcface_loss(logits, labels)
         
         loss.backward()
         optimizer.step()
@@ -126,7 +122,7 @@ def train_epoch(model, loader, optimizer, device, class_weight=None):
 
 
 @torch.no_grad()
-def evaluate(model, loader, device, class_weight=None):
+def evaluate(model, loader, device):
     model.eval()
     total_loss = 0.0
     total_correct = 0
@@ -141,7 +137,7 @@ def evaluate(model, loader, device, class_weight=None):
 
         # Eval: No margin
         logits, similarities, emb = model(constituents, mask=mask)
-        loss = arcface_loss(logits, labels, class_weight=class_weight)
+        loss = arcface_loss(logits, labels)
 
         preds = logits.argmax(dim=1)
         total_correct += (preds == labels).sum().item()
@@ -160,15 +156,13 @@ def evaluate(model, loader, device, class_weight=None):
 
 
 # ============================================================================
-# Comprehensive Evaluation & Plotting
+# Evaluation & Plotting
 # ============================================================================
 
 def comprehensive_evaluation(test_labels, test_sims):
-    """Compute metrics for PFN + ArcFace model."""
     from sklearn.metrics import (accuracy_score, precision_score, recall_score,
-                                 f1_score, confusion_matrix, classification_report,
-                                 roc_curve, auc, precision_recall_curve,
-                                 average_precision_score)
+                                 f1_score, confusion_matrix, roc_curve, auc, 
+                                 precision_recall_curve, average_precision_score)
     
     labels_np = test_labels.numpy()
     sims_np = test_sims.numpy()
@@ -178,14 +172,10 @@ def comprehensive_evaluation(test_labels, test_sims):
     sim_top = sims_np[:, n_qcd:].max(axis=1)
     
     preds = (sim_top > sim_qcd).astype(np.int64)
-    scores = sim_top - sim_qcd # Higher = more Top-like
+    scores = sim_top - sim_qcd
     
     cm = confusion_matrix(labels_np, preds)
     acc = accuracy_score(labels_np, preds)
-    prec = precision_score(labels_np, preds, zero_division=0)
-    rec = recall_score(labels_np, preds, zero_division=0)
-    f1 = f1_score(labels_np, preds, zero_division=0)
-    
     fpr, tpr, _ = roc_curve(labels_np, scores)
     roc_auc = auc(fpr, tpr)
     
@@ -193,153 +183,109 @@ def comprehensive_evaluation(test_labels, test_sims):
     avg_prec = average_precision_score(labels_np, scores)
     
     return {
-        'accuracy': acc, 'precision': prec, 'recall': rec, 'f1': f1,
-        'cm': cm, 'roc_auc': roc_auc, 'avg_prec': avg_prec,
+        'accuracy': acc, 'cm': cm, 'roc_auc': roc_auc, 'avg_prec': avg_prec,
         'fpr': fpr, 'tpr': tpr, 'precision_curve': precision_curve, 'recall_curve': recall_curve,
         'scores': scores, 'sim_qcd': sim_qcd, 'sim_top': sim_top, 'preds': preds
     }
 
 
-def plot_results(history, metrics, test_sims, save_path='training_results_pfn.png'):
-    """Generate a 9-panel summary figure for PFN + ArcFace."""
+def plot_results(history, metrics, test_sims, save_path='training_results_efn.png'):
     try:
-        import matplotlib
-        matplotlib.use('Agg')
         import matplotlib.pyplot as plt
         import seaborn as sns
     except ImportError:
-        print("Matplotlib/Seaborn not found. Skipping plots.")
         return
 
-    sns.set_style("whitegrid")
+    plt.style.use('seaborn-v0_8-whitegrid')
     fig, axes = plt.subplots(3, 3, figsize=(18, 18))
-    fig.suptitle('PFN + ArcFace Prototype Model (Ante-hoc Interpretability)', fontsize=16, fontweight='bold', y=1.02)
+    fig.suptitle('EFN + ArcFace Prototype Model (IRC-Safe xAI)', fontsize=16, fontweight='bold', y=1.02)
 
     epochs = range(1, len(history['train_loss']) + 1)
     labels_np = metrics['labels_np']
     qcd_mask = labels_np == 0
     top_mask = labels_np == 1
 
-    # 1. Loss
     axes[0, 0].plot(epochs, history['train_loss'], label='Train')
     axes[0, 0].plot(epochs, history['val_loss'], label='Val')
-    axes[0, 0].set_title('Loss Curves')
+    axes[0, 0].set_title('Loss (EFN)')
     axes[0, 0].legend()
 
-    # 2. Accuracy
     axes[0, 1].plot(epochs, history['train_acc'], label='Train')
     axes[0, 1].plot(epochs, history['val_acc'], label='Val')
-    axes[0, 1].set_title(f'Accuracy Curves (Test: {metrics["accuracy"]*100:.2f}%)')
+    axes[0, 1].set_title(f'Accuracy (Test: {metrics["accuracy"]*100:.2f}%)')
     axes[0, 1].legend()
 
-    # 3. Similarity Distribution
     ax = axes[0, 2]
     bins = np.linspace(-1, 1, 50)
-    ax.hist(metrics['sim_qcd'][qcd_mask], bins=bins, alpha=0.5, label='QCD -> Sim_QCD', color='blue', density=True)
-    ax.hist(metrics['sim_top'][top_mask], bins=bins, alpha=0.5, label='Top -> Sim_Top', color='red', density=True)
-    ax.set_title('Max Prototype Similarity')
-    ax.legend(fontsize=8)
+    ax.hist(metrics['sim_qcd'][qcd_mask], bins=bins, alpha=0.5, label='QCD Sim', color='blue', density=True)
+    ax.hist(metrics['sim_top'][top_mask], bins=bins, alpha=0.5, label='Top Sim', color='red', density=True)
+    ax.set_title('Prototype Similarities')
+    ax.legend()
 
-    # 4. Decision Boundary (Similarity Space)
     ax = axes[1, 0]
-    ax.scatter(metrics['sim_qcd'][qcd_mask], metrics['sim_top'][qcd_mask], c='blue', alpha=0.1, s=2, label='QCD')
-    ax.scatter(metrics['sim_qcd'][top_mask], metrics['sim_top'][top_mask], c='red', alpha=0.1, s=2, label='Top')
+    ax.scatter(metrics['sim_qcd'][qcd_mask], metrics['sim_top'][qcd_mask], c='blue', alpha=0.1, s=2)
+    ax.scatter(metrics['sim_qcd'][top_mask], metrics['sim_top'][top_mask], c='red', alpha=0.1, s=2)
     ax.plot([-1, 1], [-1, 1], 'k--', alpha=0.5)
-    ax.set_xlabel('Max Sim QCD Prototypes')
-    ax.set_ylabel('Max Sim Top Prototypes')
-    ax.set_title('Decision Boundary')
-    ax.legend(markerscale=5)
+    ax.set_title('Similarity Space')
 
-    # 5. Prototype Activations (Mean)
     ax = axes[1, 1]
     mean_sims = test_sims.mean(dim=0).numpy()
     n_proto = len(mean_sims)
-    colors = ['blue'] * (n_proto // 2) + ['red'] * (n_proto - n_proto // 2)
-    ax.bar(range(n_proto), mean_sims, color=colors, alpha=0.7)
-    ax.set_xticks(range(n_proto))
-    ax.set_xticklabels([f'P{i}' for i in range(n_proto)], rotation=45, fontsize=8)
-    ax.set_title('Mean Prototype Similarity')
+    ax.bar(range(n_proto), mean_sims, color=['blue']*10 + ['red']*10, alpha=0.7)
+    ax.set_title('Mean Prototype Activations')
 
-    # 6. ROC Curve
     ax = axes[1, 2]
-    ax.plot(metrics['fpr'], metrics['tpr'], color='green', label=f'AUC = {metrics["roc_auc"]:.4f}')
+    ax.plot(metrics['fpr'], metrics['tpr'], color='green', label=f'AUC={metrics["roc_auc"]:.4f}')
     ax.plot([0, 1], [0, 1], 'k--', alpha=0.5)
-    ax.set_title('ROC Curve')
+    ax.set_title('ROC Curve (EFN)')
     ax.legend()
 
-    # 7. Confusion Matrix
     ax = axes[2, 0]
     sns.heatmap(metrics['cm'], annot=True, fmt='d', cmap='Blues', ax=ax, cbar=False)
-    ax.set_xticklabels(['QCD', 'Top'])
-    ax.set_yticklabels(['QCD', 'Top'])
     ax.set_title('Confusion Matrix')
 
-    # 8. PR Curve
     ax = axes[2, 1]
-    ax.plot(metrics['recall_curve'], metrics['precision_curve'], color='purple', label=f'AP = {metrics["avg_prec"]:.4f}')
-    ax.set_title('Precision-Recall Curve')
+    ax.plot(metrics['recall_curve'], metrics['precision_curve'], color='purple', label=f'AP={metrics["avg_prec"]:.4f}')
+    ax.set_title('PR Curve')
     ax.legend()
 
-    # 9. Score Distribution
     ax = axes[2, 2]
     ax.hist(metrics['scores'][qcd_mask], bins=50, alpha=0.5, label='QCD', color='blue', density=True)
     ax.hist(metrics['scores'][top_mask], bins=50, alpha=0.5, label='Top', color='red', density=True)
-    ax.set_title('Score Distribution (SimTop - SimQCD)')
+    ax.set_title('Decision Score (EFN)')
     ax.legend()
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=150)
     plt.close()
-    print(f"Saved summary figure to {save_path}")
+    print(f"Saved EFN summary to {save_path}")
 
 
 # ============================================================================
-# Ante-hoc Prototype Interpretation
+# Interpretation
 # ============================================================================
 
 def interpret_prototypes(model, loader, dataset, device, n_prototypes=20):
-    """
-    Ante-hoc Interpretation: Find the real events closest to each prototype 
-    and ground them in physics using FastJet.
-    """
     print("\n" + "=" * 60)
-    print("ANTE-HOC PROTOTYPE INTERPRETATION (Physics Grounding)")
+    print("EFN PROTOTYPE INTERPRETATION")
     print("=" * 60)
-    
     model.eval()
     _, _, all_sims, all_labels, all_indices = evaluate(model, loader, device)
-    
-    # best_match_indices: for each prototype, index of event with max similarity
-    best_match_indices = all_sims.argmax(dim=0) # (P,)
+    best_match_indices = all_sims.argmax(dim=0)
     
     proto_physics_data = []
-    
     for i in range(n_prototypes):
         match_idx = best_match_indices[i].item()
         real_idx = all_indices[match_idx].item()
-        
         event_p4 = dataset.events[real_idx]
-        actual_label = "Top" if all_labels[match_idx] == 1 else "QCD"
-        similarity = all_sims[match_idx, i].item()
-        
-        # Grounding: Use FastJet ONLY here
         feats = compute_features(ak.Array([event_p4]))[0]
         
         proto_class = "Top" if i >= (n_prototypes // 2) else "QCD"
-        
-        print(f"Prototype {i:2d} ({proto_class}):")
-        print(f"  Match Event: #{real_idx} (True Label: {actual_label})")
-        print(f"  Similarity: {similarity:.4f}")
-        print(f"  Physics: Mass={feats[0]:.2f} GeV, pT={feats[1]:.2f} GeV, tau32={feats[4]:.3f}")
+        print(f"Proto {i:2d} ({proto_class}): Match #{real_idx}, Mass={feats[0]:.2f}, pT={feats[1]:.2f}, tau32={feats[4]:.3f}")
         
         proto_physics_data.append({
-            'proto_id': i,
-            'proto_class': proto_class,
-            'event_idx': real_idx,
-            'similarity': similarity,
-            'features': feats.tolist()
+            'proto_id': i, 'proto_class': proto_class, 'event_idx': real_idx, 'features': feats.tolist()
         })
-        
     return proto_physics_data, all_labels, all_sims
 
 
@@ -350,29 +296,24 @@ def interpret_prototypes(model, loader, dataset, device, n_prototypes=20):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', type=int, default=50)
-    parser.add_argument('--batch_size', type=int, default=1024)
-    parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--quick', action='store_true')
-    parser.add_argument('--n_events', type=int, default=5000)
     args = parser.parse_args()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    max_events = args.n_events if args.quick else None
+    max_events = 5000 if args.quick else None
 
-    # Load data
     train_ds = JetTaggingDataset('train.h5', max_events=max_events)
     val_ds = JetTaggingDataset('val.h5', max_events=max_events)
     test_ds = JetTaggingDataset('test.h5', max_events=max_events)
 
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn)
-    val_loader = DataLoader(val_ds, batch_size=args.batch_size, collate_fn=collate_fn)
-    test_loader = DataLoader(test_ds, batch_size=args.batch_size, collate_fn=collate_fn)
+    train_loader = DataLoader(train_ds, batch_size=1024, shuffle=True, collate_fn=collate_fn)
+    val_loader = DataLoader(val_ds, batch_size=1024, collate_fn=collate_fn)
+    test_loader = DataLoader(test_ds, batch_size=1024, collate_fn=collate_fn)
 
-    # Init Model (PFN + ArcFace)
-    model = TopTaggingModel(s=32.0, m=0.5).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    model = TopTaggingModel().to(device)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
     
-    print(f"\nTraining PFN with ArcFace (Params: {count_parameters(model):,})")
+    print(f"\nTraining EFN + ArcFace (Params: {count_parameters(model):,})")
     
     history = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': []}
     best_acc = 0.0
@@ -380,38 +321,25 @@ def main():
     for epoch in range(args.epochs):
         t_loss, t_acc = train_epoch(model, train_loader, optimizer, device)
         v_loss, v_acc, _, _, _ = evaluate(model, val_loader, device)
-        
-        history['train_loss'].append(t_loss)
-        history['train_acc'].append(t_acc)
-        history['val_loss'].append(v_loss)
-        history['val_acc'].append(v_acc)
+        history['train_loss'].append(t_loss); history['train_acc'].append(t_acc)
+        history['val_loss'].append(v_loss); history['val_acc'].append(v_acc)
 
         print(f"Epoch {epoch+1:2d}: Train Loss={t_loss:.4f} Acc={t_acc:.4f} | Val Loss={v_loss:.4f} Acc={v_acc:.4f}")
 
         if v_acc > best_acc:
             best_acc = v_acc
-            torch.save(model.state_dict(), 'best_model_pfn.pt')
+            torch.save(model.state_dict(), 'best_model_efn.pt')
 
-    # Final Interpretation & Plotting
-    print("\nLoading best model for interpretation and plotting...")
-    model.load_state_dict(torch.load('best_model_pfn.pt'))
-    
-    # Run Ante-hoc Interpretation
+    model.load_state_dict(torch.load('best_model_efn.pt'))
     proto_data, test_labels, test_sims = interpret_prototypes(model, test_loader, test_ds, device)
-    
-    # Comprehensive Evaluation
     eval_metrics = comprehensive_evaluation(test_labels, test_sims)
     eval_metrics['labels_np'] = test_labels.numpy()
-    
-    # Plotting
     plot_results(history, eval_metrics, test_sims)
     
-    # Save results
-    with open('pfn_results.json', 'w') as f:
+    with open('efn_results.json', 'w') as f:
         json.dump({'history': history, 'prototypes': proto_data}, f, indent=2)
 
-    print("\nUpgrade Complete: PFN + ArcFace + Ante-hoc Interpretability ready.")
-
+    print("\nTraining Complete: EFN + ArcFace ready.")
 
 if __name__ == '__main__':
     main()
