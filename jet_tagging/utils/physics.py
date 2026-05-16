@@ -22,8 +22,9 @@ def compute_features(events):
     E = ak.values_astype(events.E, np.float64)
     cons = ak.zip({"px": px, "py": py, "pz": pz, "E": E})
 
-    # 2. Cluster Sequence (C/A R=1.0)
-    jet_def = fastjet.JetDefinition(fastjet.cambridge_algorithm, 1.0)
+    # 2. Cluster Sequence (Agnostic R=1.5 for Exclusive Clustering)
+    # Using a larger R ensures we don't cut off radiation when forcing n_jets=1.
+    jet_def = fastjet.JetDefinition(fastjet.cambridge_algorithm, 1.5)
     cs = fastjet.ClusterSequence(cons, jet_def)
     
     # --- Native SoftDrop Grooming ---
@@ -32,7 +33,7 @@ def compute_features(events):
         njets=1, 
         beta=0.0, 
         symmetry_cut=0.1, 
-        R0=1.0
+        R0=1.5
     )
     m_sd = ak.to_numpy(sd_jets.msoftdrop)
 
@@ -57,50 +58,58 @@ def compute_features(events):
     ecf3 = ak.to_numpy(cs.exclusive_jets_energy_correlator(npoint=3, normalized=False))
     d2 = np.where(ecf2 > 1e-10, ecf3 * (ecf1**3) / (ecf2**3), 0.0)
 
-    # 3. Final Stack (Perfect Order)
+    # --- Groomed Variables (zg, theta_g, nSD) ---
+    # Using specific field names from fastjet Python wrapper
+    zg = ak.to_numpy(sd_jets.symmetrysoftdrop)
+    theta_g = ak.to_numpy(sd_jets.deltaRsoftdrop)
+    n_sd = ak.to_numpy(ak.num(sd_jets.constituents)).astype(np.float32)
+
+    # 3. Final Stack (Perfect Order: ML + Basic Physics + Advanced Substructure)
     features = np.column_stack([
-        mass, m_sd, multiplicity, d12, d23, tau32, tau21, d2
+        mass, m_sd, multiplicity, n_sd, d12, d23, tau21, tau32, zg, theta_g
     ])
 
     return features.astype(np.float32)
 
 def get_lund_coordinates(events):
     """
-    Compute Lund Plane coordinates (ln(1/Delta), ln(kt)) for a batch of events.
-    Uses C/A de-clustering.
+    Compute actual Lund Plane coordinates (ln(1/Delta), ln(kt)) for a batch of events.
+    Iteratively de-clusters the primary branch using C/A history.
     """
-    import fastjet
-    jet_def = fastjet.JetDefinition(fastjet.cambridge_algorithm, 1.0)
-    cs = fastjet.ClusterSequence(events, jet_def)
+    jet_def = fastjet.JetDefinition(fastjet.cambridge_algorithm, 1.5)
+    # 1. Zip constituents (Force float64 for FastJet C++ interface)
+    px = ak.values_astype(events.px, np.float64)
+    py = ak.values_astype(events.py, np.float64)
+    pz = ak.values_astype(events.pz, np.float64)
+    E = ak.values_astype(events.E, np.float64)
+    cons = ak.zip({"px": px, "py": py, "pz": pz, "E": E})
     
-    # We take the leading jet for each event
-    jets = cs.exclusive_jets(n_jets=1)
+    # 2. Cluster
+    cs = fastjet.ClusterSequence(cons, jet_def)
     
-    all_ln_delta = []
-    all_ln_kt = []
+    # 3. Use FastJet's native Lund Declustering (Much faster and more stable)
+    # This returns all declusterings along the primary branch for the hardest jet (njets=1)
+    lund_data = cs.exclusive_jets_lund_declusterings(njets=1)
     
-    # Simplified declustering for the primary branch
-    # FastJet Python wrapper allows us to access the parents
-    # This is a vectorized approach where possible
-    # For now, we use a simplified version for visualization
-    for i in range(len(events)):
-        # Get history or use specialized Lund Generator if available
-        # In this wrapper, we can use the splitting scales as a proxy 
-        # or manually walk the tree
-        pass # To be fully implemented in the next step
+    # Flatten the results to a single 1D array (axis=None)
+    delta = ak.flatten(lund_data.Delta, axis=None)
+    kt = ak.flatten(lund_data.kt, axis=None)
     
-    return np.array(all_ln_delta), np.array(all_ln_kt)
+    # Filter out non-physical values and apply logs
+    mask = (delta > 0) & (kt > 0)
+    # Convert to numpy explicitly
+    delta_np = ak.to_numpy(delta[mask])
+    kt_np = ak.to_numpy(kt[mask])
+    
+    ln_inv_delta = np.log(1.0 / delta_np)
+    ln_kt = np.log(kt_np)
+    
+    return ln_inv_delta, ln_kt
 
 def print_feature_stats(features, label="Features"):
-    names = ["Mass", "mSD", "Mult", "sqrt(d12)", "sqrt(d23)", "Tau32", "Tau21", "D2"]
+    names = ["Mass", "mSD", "Mult", "nSD", "sqrt(d12)", "sqrt(d23)", "Tau21", "Tau32", "zg", "theta_g"]
     print(f"\n  {label}:")
     for i, name in enumerate(names):
         vals = features[:, i]
         print(f"    {name:10s}: mean={np.mean(vals):.4f}, std={np.std(vals):.4f}")
 
-if __name__ == '__main__':
-    from jet_tagging.data.loader import load_awkward
-    events, labels, _ = load_awkward('data/top_tagging/test.h5', max_events=1000)
-    feats = compute_features(events)
-    print_feature_stats(feats[labels==1], "Top Quark")
-    print_feature_stats(feats[labels==0], "QCD Jets")

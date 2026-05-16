@@ -38,7 +38,7 @@ def plot_latent_space(embeddings, labels, prototypes=None, save_path='results/la
     plt.figure(figsize=(11, 9))
     # Plot jet embeddings
     sns.scatterplot(x=latent_2d[:, 0], y=latent_2d[:, 1], hue=labels, 
-                    palette='viridis', alpha=0.4, s=15, label="Jet Embeddings")
+                    palette='viridis', alpha=0.4, s=15)
     
     # Plot prototypes as distinct markers
     if proto_2d is not None:
@@ -128,37 +128,153 @@ def plot_representative_jet(event_p4, title="Representative Jet", save_path=None
 
 def plot_lund_plane(events, label="Jets", save_path='results/lund_plane.png'):
     """
-    Simplified Lund Plane using Splitting Scales as a proxy.
+    Accurate Lund Plane using Iterative C/A de-clustering.
     x = ln(1/Delta), y = ln(kt)
     """
-    jet_def = fastjet.JetDefinition(fastjet.cambridge_algorithm, 1.0)
-    cs = fastjet.ClusterSequence(events, jet_def)
+    from jet_tagging.utils.physics import get_lund_coordinates
     
-    # kt approx: sqrt(d_merge)
-    # Delta approx: 1.0 / n_merge (rough proxy for angular scale)
-    # A true Lund Plane needs iterative declustering of the harder branch
-    d12 = ak.to_numpy(cs.exclusive_dmerge(1))
-    d23 = ak.to_numpy(cs.exclusive_dmerge(2))
-    d34 = ak.to_numpy(cs.exclusive_dmerge(3))
+    print(f"Computing Lund Plane for {label}...")
+    ln_inv_delta, ln_kt = get_lund_coordinates(events)
     
-    kt1 = np.sqrt(np.abs(d12))
-    kt2 = np.sqrt(np.abs(d23))
-    kt3 = np.sqrt(np.abs(d34))
-    
-    # We'll plot a density of these splitting scales
-    all_kt = np.concatenate([kt1, kt2, kt3])
-    # Delta is much harder to get without walking tree, using a distribution proxy
-    deltas = np.random.uniform(0.1, 0.8, size=len(all_kt)) 
-    
-    ln_kt = np.log(all_kt + 1e-10)
-    ln_inv_delta = np.log(1.0 / deltas)
-    
+    if len(ln_inv_delta) == 0:
+        print(f"Warning: No Lund coordinates found for {label}")
+        return
+
     plt.figure(figsize=(9, 7))
-    plt.hist2d(ln_inv_delta, ln_kt, bins=40, cmap='Blues', cmin=1)
-    plt.colorbar(label='Density')
+    plt.hist2d(ln_inv_delta, ln_kt, bins=50, cmap='viridis', cmin=1)
+    plt.colorbar(label='Splitting Density')
     plt.xlabel(r'$\ln(1/\Delta)$')
     plt.ylabel(r'$\ln(k_t)$')
-    plt.title(f"Lund Plane Representation ({label})")
+    plt.title(f"Lund Plane ({label})")
+    plt.grid(True, alpha=0.1)
     plt.savefig(save_path, dpi=200, bbox_inches='tight')
     plt.close()
-    print(f"Saved Lund Plane plot to {save_path}")
+    print(f"Saved physical Lund Plane plot to {save_path}")
+
+def plot_training_results(history, cm, save_path='results/training_results_efn.png'):
+    """Plot Loss, Accuracy, Prototype Separation, and Confusion Matrix."""
+    plt.figure(figsize=(16, 12))
+    
+    # 1. Loss
+    plt.subplot(2, 2, 1)
+    plt.plot(history['train_loss'], label='Train Loss', color='blue', lw=2)
+    plt.plot(history['val_loss'], label='Val Loss', color='orange', lw=2)
+    plt.title("Training & Validation Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.grid(True, alpha=0.1)
+    
+    # 2. Accuracy
+    plt.subplot(2, 2, 2)
+    plt.plot(history['train_acc'], label='Train Acc', color='green', lw=2)
+    plt.plot(history['val_acc'], label='Val Acc', color='red', lw=2)
+    plt.title("Training & Validation Accuracy")
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.legend()
+    plt.grid(True, alpha=0.1)
+    
+    # 3. Prototype Separation
+    plt.subplot(2, 2, 3)
+    plt.plot(history['sep_qcd'], label='QCD Sim', color='purple', alpha=0.7)
+    plt.plot(history['sep_top'], label='Top Sim', color='darkorange', alpha=0.7)
+    plt.title("Latent Space Compression (Avg Cosine Similarity)")
+    plt.xlabel("Epoch")
+    plt.ylabel("Similarity to Prototype")
+    plt.legend()
+    plt.grid(True, alpha=0.1)
+    
+    # 4. Confusion Matrix
+    plt.subplot(2, 2, 4)
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    plt.title("Confusion Matrix")
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150)
+    
+    # Save standalone CM for better visibility
+    plt.figure(figsize=(6, 5))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    plt.title("Confusion Matrix (Detailed)")
+    plt.savefig('results/confusion_matrix.png', dpi=150, bbox_inches='tight')
+    plt.close('all')
+
+def plot_decision_boundary(labels, class_scores, save_path='results/decision_boundary.png'):
+    """Visualize the ArcFace decision boundary on the Similarity Plane."""
+    plt.figure(figsize=(8, 8))
+    qcd_sim = class_scores[:, 0]
+    top_sim = class_scores[:, 1]
+    
+    # Plot points
+    plt.scatter(qcd_sim[labels==0], top_sim[labels==0], s=10, alpha=0.3, label='True QCD', color='blue')
+    plt.scatter(qcd_sim[labels==1], top_sim[labels==1], s=10, alpha=0.3, label='True Top', color='red')
+    
+    # Plot the diagonal (Decision Boundary for ArcFace)
+    lims = [min(plt.xlim()[0], plt.ylim()[0]), max(plt.xlim()[1], plt.ylim()[1])]
+    plt.plot(lims, lims, 'k--', lw=2, label='Decision Boundary (Sim_Q = Sim_T)')
+    
+    plt.xlabel("Max Similarity to QCD Prototypes")
+    plt.ylabel("Max Similarity to Top Prototypes")
+    plt.title("ArcFace Decision Boundary & Cluster Separation")
+    plt.legend()
+    plt.grid(True, alpha=0.2)
+    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    plt.close()
+
+def plot_feature_distributions(labels, features, feature_names, save_path='results/feature_distributions.png'):
+    """
+    Plot statistical distributions of physics features for Top vs QCD.
+    """
+    n_features = len(feature_names)
+    rows = (n_features + 2) // 3
+    cols = min(n_features, 3)
+    
+    plt.figure(figsize=(cols * 6, rows * 5))
+    qcd_mask = labels == 0
+    top_mask = labels == 1
+    
+    for i, name in enumerate(feature_names):
+        plt.subplot(rows, cols, i + 1)
+        sns.kdeplot(features[qcd_mask, i], label='QCD', fill=True, color='blue', alpha=0.4)
+        sns.kdeplot(features[top_mask, i], label='Top', fill=True, color='red', alpha=0.4)
+        plt.title(f"Distribution: {name}", fontsize=14)
+        plt.xlabel(name)
+        plt.legend()
+        plt.grid(True, alpha=0.1)
+    
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"Saved feature distribution analysis to {save_path}")
+
+def plot_physics_correlations(labels, scores, features, feature_names, save_path='results/correlations.png'):
+    """
+    Plot correlation between model scores and physical observables.
+    Helps detect mass sculpting or reliance on specific features.
+    """
+    import pandas as pd
+    
+    data = pd.DataFrame(features, columns=feature_names)
+    data['Model Score'] = scores
+    data['Class'] = ['Top' if l == 1 else 'QCD' for l in labels]
+    
+    # Calculate correlations
+    corr = data.drop(columns=['Class']).corr()
+    
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f", linewidths=0.5)
+    plt.title("Correlation: Model Decision vs. Physical Observables", fontsize=15)
+    
+    plt.savefig(save_path, dpi=200, bbox_inches='tight')
+    plt.close()
+    
+    # Also plot Model Score vs Mass specifically (Mass Sculpting check)
+    plt.figure(figsize=(10, 6))
+    sns.kdeplot(data=data, x='Mass', y='Model Score', hue='Class', fill=True, alpha=0.5)
+    plt.title("Model Decision vs. Jet Mass (Mass Sculpting Check)")
+    plt.savefig('results/mass_sculpting.png', dpi=200, bbox_inches='tight')
+    plt.close()
+    print(f"Saved correlation analysis to {save_path} and results/mass_sculpting.png")
