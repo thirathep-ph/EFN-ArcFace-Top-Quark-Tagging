@@ -55,7 +55,7 @@ def plot_latent_space(embeddings, labels, prototypes=None, save_path='results/la
     plt.grid(True, alpha=0.2)
     plt.savefig(save_path, dpi=200, bbox_inches='tight')
     plt.close()
-    print(f"✅ Saved updated latent space plot to {save_path}")
+    print(f"Saved updated latent space plot to {save_path}")
 
 def plot_performance(labels, sims, save_path='results/performance.png'):
     """Plot ROC and Background Rejection."""
@@ -97,7 +97,7 @@ def plot_performance(labels, sims, save_path='results/performance.png'):
     plt.tight_layout()
     plt.savefig(save_path, dpi=200, bbox_inches='tight')
     plt.close()
-    print(f"✅ Saved performance plots to {save_path}")
+    print(f"Saved performance plots to {save_path}")
 
 def plot_representative_jet(event_p4, title="Representative Jet", save_path=None):
     """Plot jet constituents in eta-phi plane with energy weighting."""
@@ -161,4 +161,4 @@ def plot_lund_plane(events, label="Jets", save_path='results/lund_plane.png'):
     plt.title(f"Lund Plane Representation ({label})")
     plt.savefig(save_path, dpi=200, bbox_inches='tight')
     plt.close()
-    print(f"✅ Saved Lund Plane plot to {save_path}")
+    print(f"Saved Lund Plane plot to {save_path}")
