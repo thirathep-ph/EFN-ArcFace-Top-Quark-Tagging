@@ -82,7 +82,7 @@ def collate_fn(batch):
 # Training & Evaluation Loops
 # ============================================================================
 
-def train_epoch(model, loader, optimizer, device):
+def train_epoch(model, loader, optimizer, device, scheduler=None):
     model.train()
     total_loss = 0.0
     total_correct = 0
@@ -98,6 +98,8 @@ def train_epoch(model, loader, optimizer, device):
         
         loss.backward()
         optimizer.step()
+        if scheduler:
+            scheduler.step()
 
         preds = logits.argmax(dim=1)
         total_correct += (preds == labels).sum().item()
@@ -301,26 +303,39 @@ def main():
     val_loader = DataLoader(val_ds, batch_size=1024, collate_fn=collate_fn)
     test_loader = DataLoader(test_ds, batch_size=1024, collate_fn=collate_fn)
 
-    model = TopTaggingModel().to(device)
+    model = TopTaggingModel(n_prototypes=20, s=32.0, m=0.0).to(device) # Start with m=0
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     
+    # OneCycleLR Scheduler
+    total_steps = len(train_loader) * args.epochs
+    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=2e-3, total_steps=total_steps)
+    
+    # Margin Warm-up configuration
+    warmup_epochs = 10
+    final_margin = 0.5
+
     print(f"\nTraining EFN + ArcFace (Params: {count_parameters(model):,})")
+    print(f"Strategy: Fixed Polar Prototypes, Margin Warm-up ({warmup_epochs} epochs)")
     
     history = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': []}
     best_acc = 0.0
 
     for epoch in range(args.epochs):
-        t_loss, t_acc = train_epoch(model, train_loader, optimizer, device)
+        # Calculate and set current margin
+        current_m = final_margin * min(1.0, (epoch + 1) / warmup_epochs)
+        model.prototype_layer.set_margin(current_m)
+
+        t_loss, t_acc = train_epoch(model, train_loader, optimizer, device, scheduler=scheduler)
         v_loss, v_acc, _, _, _ = evaluate(model, val_loader, device)
         history['train_loss'].append(t_loss); history['train_acc'].append(t_acc)
         history['val_loss'].append(v_loss); history['val_acc'].append(v_acc)
 
-        print(f"Epoch {epoch+1:2d}: Train Loss={t_loss:.4f} Acc={t_acc:.4f} | Val Loss={v_loss:.4f} Acc={v_acc:.4f}")
+        print(f"Epoch {epoch+1:2d}/{args.epochs}: m={current_m:.2f} | Train Loss={t_loss:.4f} Acc={t_acc:.4f} | Val Loss={v_loss:.4f} Acc={v_acc:.4f}")
 
         if v_acc > best_acc:
             best_acc = v_acc
             os.makedirs('checkpoints', exist_ok=True)
-    torch.save(model.state_dict(), 'checkpoints/best_model_efn.pt')
+            torch.save(model.state_dict(), 'checkpoints/best_model_efn.pt')
 
     model.load_state_dict(torch.load('checkpoints/best_model_efn.pt'))
     proto_data, test_labels, test_sims = interpret_prototypes(model, test_loader, test_ds, device)
@@ -347,7 +362,8 @@ def main():
             all_embeddings.append(emb.cpu().numpy())
     
     embeddings_np = np.concatenate(all_embeddings, axis=0)
-    plot_latent_space(embeddings_np[:5000], test_labels.numpy()[:5000]) # Use 5k events for t-SNE
+    prototypes_np = model.prototype_layer.prototypes.detach().cpu().numpy()
+    plot_latent_space(embeddings_np[:5000], test_labels.numpy()[:5000], prototypes=prototypes_np) # Use 5k events + 20 protos
     
     # 3. Representative Jets for Prototypes
     for entry in proto_data[:2] + proto_data[-2:]: # 2 QCD, 2 Top

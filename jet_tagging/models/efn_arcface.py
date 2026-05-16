@@ -111,20 +111,49 @@ class EFN(nn.Module):
 
 
 class ArcFacePrototypeLayer(nn.Module):
-    def __init__(self, input_dim, n_prototypes=20, n_classes=2, s=32.0, m=0.5):
+    def __init__(self, input_dim, n_prototypes=20, n_classes=2, s=32.0, m=0.5, fixed=True):
         super().__init__()
         self.n_prototypes = n_prototypes
         self.n_classes = n_classes
         self.s = s
         self.m = m
+        self.fixed = fixed
 
-        self.prototypes = nn.Parameter(torch.randn(n_prototypes, input_dim))
-        nn.init.xavier_uniform_(self.prototypes)
+        # 1. Initialize Prototypes in opposite hemispheres
+        # Class 0 (QCD) will cluster around [1, 0, 0, ...]
+        # Class 1 (Top) will cluster around [-1, 0, 0, ...]
+        n_per_class = n_prototypes // 2
+        protos = torch.zeros(n_prototypes, input_dim)
+        
+        # Anchor vectors
+        anchor_qcd = torch.zeros(input_dim)
+        anchor_qcd[0] = 1.0
+        
+        anchor_top = torch.zeros(input_dim)
+        anchor_top[0] = -1.0
+        
+        # Add small random noise to separate sub-centers within the same class
+        # This allows prototypes to act as distinct "bins" even if fixed
+        noise_scale = 0.1
+        
+        # QCD Prototypes
+        protos[:n_per_class] = anchor_qcd + torch.randn(n_per_class, input_dim) * noise_scale
+        # Top Prototypes
+        protos[n_per_class:] = anchor_top + torch.randn(n_per_class, input_dim) * noise_scale
+        
+        # Normalize to hypersphere
+        protos = F.normalize(protos, dim=1)
+        
+        self.prototypes = nn.Parameter(protos, requires_grad=not fixed)
 
         self.register_buffer('prototype_class', torch.cat([
-            torch.zeros(n_prototypes // 2, dtype=torch.long),
-            torch.ones(n_prototypes - n_prototypes // 2, dtype=torch.long),
+            torch.zeros(n_per_class, dtype=torch.long),
+            torch.ones(n_prototypes - n_per_class, dtype=torch.long),
         ]))
+
+    def set_margin(self, m):
+        """Dynamic update for margin warm-up"""
+        self.m = m
 
     def forward(self, x, labels=None):
         x_norm = F.normalize(x, dim=1)
@@ -132,15 +161,23 @@ class ArcFacePrototypeLayer(nn.Module):
         similarities = x_norm @ p_norm.T
 
         n_qcd = self.n_prototypes // 2
+        # Max similarity to sub-centers of each class
         sim_qcd = similarities[:, :n_qcd].max(dim=1)[0]
         sim_top = similarities[:, n_qcd:].max(dim=1)[0]
         logits = torch.stack([sim_qcd, sim_top], dim=1)
 
         if self.training and labels is not None:
+            # Apply ArcFace margin penalty only to the ground-truth class
             logits_clamped = logits.clamp(-1.0 + 1e-7, 1.0 - 1e-7)
             theta = torch.acos(logits_clamped)
+            
+            # target_mask identifies which class's logit should receive the margin
             target_mask = F.one_hot(labels, num_classes=self.n_classes).bool()
+            
+            # cos(theta + m)
             m_logits = torch.cos(theta + self.m)
+            
+            # Replace ground truth logit with margin-penalized version
             logits = torch.where(target_mask, m_logits, logits)
 
         return logits * self.s, similarities

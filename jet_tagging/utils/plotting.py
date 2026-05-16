@@ -14,28 +14,48 @@ from sklearn.manifold import TSNE
 import awkward as ak
 import fastjet
 
-def plot_latent_space(embeddings, labels, save_path='results/latent_space.png'):
-    """Plot t-SNE of the latent space."""
-    print("Computing t-SNE for latent space...")
-    # Filter out any NaNs if present
-    mask = ~np.any(np.isnan(embeddings), axis=1)
-    embeddings = embeddings[mask]
-    labels = labels[mask]
+def plot_latent_space(embeddings, labels, prototypes=None, save_path='results/latent_space.png'):
+    """Plot t-SNE of the latent space including prototypes."""
+    print("Computing t-SNE for latent space and prototypes...")
+    
+    n_emb = len(embeddings)
+    if prototypes is not None:
+        # Combine embeddings and prototypes for consistent t-SNE mapping
+        combined = np.concatenate([embeddings, prototypes], axis=0)
+    else:
+        combined = embeddings
+
+    # Filter out any NaNs
+    mask = ~np.any(np.isnan(combined), axis=1)
+    combined = combined[mask]
     
     tsne = TSNE(n_components=2, random_state=42)
-    latent_2d = tsne.fit_transform(embeddings)
+    combined_2d = tsne.fit_transform(combined)
     
-    plt.figure(figsize=(10, 8))
+    latent_2d = combined_2d[:n_emb]
+    proto_2d = combined_2d[n_emb:] if prototypes is not None else None
+    
+    plt.figure(figsize=(11, 9))
+    # Plot jet embeddings
     sns.scatterplot(x=latent_2d[:, 0], y=latent_2d[:, 1], hue=labels, 
-                    palette='viridis', alpha=0.6, s=15)
-    plt.title("EFN Latent Space Clustering (ArcFace Prototypes)")
-    plt.xlabel("t-SNE dimension 1")
-    plt.ylabel("t-SNE dimension 2")
-    plt.legend(title="Class (0:QCD, 1:Top)")
-    plt.grid(True, alpha=0.3)
+                    palette='viridis', alpha=0.4, s=15, label="Jet Embeddings")
+    
+    # Plot prototypes as distinct markers
+    if proto_2d is not None:
+        n_p = len(proto_2d)
+        plt.scatter(proto_2d[:n_p//2, 0], proto_2d[:n_p//2, 1], 
+                    marker='*', s=300, color='red', edgecolors='black', label='QCD Prototypes', zorder=5)
+        plt.scatter(proto_2d[n_p//2:, 0], proto_2d[n_p//2:, 1], 
+                    marker='*', s=300, color='cyan', edgecolors='black', label='Top Prototypes', zorder=5)
+
+    plt.title("EFN Latent Space & ArcFace Prototypes")
+    plt.xlabel("t-SNE 1")
+    plt.ylabel("t-SNE 2")
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.grid(True, alpha=0.2)
     plt.savefig(save_path, dpi=200, bbox_inches='tight')
     plt.close()
-    print(f"✅ Saved latent space plot to {save_path}")
+    print(f"✅ Saved updated latent space plot to {save_path}")
 
 def plot_performance(labels, sims, save_path='results/performance.png'):
     """Plot ROC and Background Rejection."""
