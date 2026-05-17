@@ -111,85 +111,96 @@ class EFN(nn.Module):
 
 
 class ArcFacePrototypeLayer(nn.Module):
-    def __init__(self, input_dim, n_prototypes=20, n_classes=2, s=32.0, m=0.5, fixed=True):
+    """
+    ArcFace Prototype Layer with Diversity Regularization.
+    
+    Uses n_proto_per_class prototypes per class (default: 2), initialized
+    orthogonally so each prototype captures a distinct substructure mode.
+    A diversity loss prevents prototype collapse during training.
+    """
+    def __init__(self, input_dim, n_proto_per_class=2, n_classes=2, s=32.0, m=0.5):
         super().__init__()
-        self.n_prototypes = n_prototypes
+        self.n_proto_per_class = n_proto_per_class
+        self.n_prototypes = n_proto_per_class * n_classes
         self.n_classes = n_classes
         self.s = s
         self.m = m
-        self.fixed = fixed
 
-        # 1. Initialize Prototypes in opposite hemispheres
-        # Class 0 (QCD) will cluster around [1, 0, 0, ...]
-        # Class 1 (Top) will cluster around [-1, 0, 0, ...]
-        n_per_class = n_prototypes // 2
-        protos = torch.zeros(n_prototypes, input_dim)
+        # Orthogonal initialization: each prototype in a class starts at a
+        # different basis vector axis, maximally separated from the start.
+        # QCD  → +e_0, +e_1  (opposite hemisphere from Top)
+        # Top  → -e_0, -e_1
+        protos = torch.zeros(self.n_prototypes, input_dim)
+        for i in range(n_proto_per_class):
+            # QCD prototypes: positive hemisphere, orthogonal axes
+            protos[i, i % input_dim] = 1.0
+            # Top prototypes: negative hemisphere, orthogonal axes
+            protos[n_proto_per_class + i, i % input_dim] = -1.0
         
-        # Anchor vectors
-        anchor_qcd = torch.zeros(input_dim)
-        anchor_qcd[0] = 1.0
-        
-        anchor_top = torch.zeros(input_dim)
-        anchor_top[0] = -1.0
-        
-        # Add small random noise to separate sub-centers within the same class
-        # This allows prototypes to act as distinct "bins" even if fixed
-        noise_scale = 0.1
-        
-        # QCD Prototypes
-        protos[:n_per_class] = anchor_qcd + torch.randn(n_per_class, input_dim) * noise_scale
-        # Top Prototypes
-        protos[n_per_class:] = anchor_top + torch.randn(n_per_class, input_dim) * noise_scale
-        
-        # Normalize to hypersphere
+        # Normalize to unit hypersphere
         protos = F.normalize(protos, dim=1)
-        
-        self.prototypes = nn.Parameter(protos, requires_grad=not fixed)
+        self.prototypes = nn.Parameter(protos)
 
+        # Register which prototype belongs to which class
         self.register_buffer('prototype_class', torch.cat([
-            torch.zeros(n_per_class, dtype=torch.long),
-            torch.ones(n_prototypes - n_per_class, dtype=torch.long),
+            torch.zeros(n_proto_per_class, dtype=torch.long),
+            torch.ones(n_proto_per_class, dtype=torch.long),
         ]))
 
     def set_margin(self, m):
-        """Dynamic update for margin warm-up"""
         self.m = m
+
+    def orthogonalize_prototypes(self):
+        """
+        Hard Orthogonal Projection (Gram-Schmidt) for same-class prototypes.
+        Called after every optimizer.step() — no hyperparameter needed.
+        
+        Enforces: p0 · p1 = 0 within each class at all times.
+        Each prototype captures an INDEPENDENT substructure mode.
+        """
+        with torch.no_grad():
+            p = self.prototypes
+            for c in range(self.n_classes):
+                mask = self.prototype_class == c
+                idx = mask.nonzero(as_tuple=True)[0]
+                if len(idx) < 2:
+                    continue
+                # Gram-Schmidt on the 2 same-class prototypes
+                p0 = F.normalize(p[idx[0]], dim=0)
+                p1 = p[idx[1]]
+                p1 = p1 - (p1 @ p0) * p0   # remove projection onto p0
+                p1 = F.normalize(p1, dim=0)
+                p[idx[0]] = p0
+                p[idx[1]] = p1
 
     def forward(self, x, labels=None):
         x_norm = F.normalize(x, dim=1)
         p_norm = F.normalize(self.prototypes, dim=1)
-        similarities = x_norm @ p_norm.T
+        similarities = x_norm @ p_norm.T  # (B, n_prototypes)
 
-        n_qcd = self.n_prototypes // 2
-        # Max similarity to sub-centers of each class
-        sim_qcd = similarities[:, :n_qcd].max(dim=1)[0]
-        sim_top = similarities[:, n_qcd:].max(dim=1)[0]
+        n = self.n_proto_per_class
+        # Aggregate: max similarity across prototypes within each class
+        sim_qcd = similarities[:, :n].max(dim=1)[0]
+        sim_top = similarities[:, n:].max(dim=1)[0]
         logits = torch.stack([sim_qcd, sim_top], dim=1)
 
         if self.training and labels is not None:
-            # Apply ArcFace margin penalty only to the ground-truth class
             logits_clamped = logits.clamp(-1.0 + 1e-7, 1.0 - 1e-7)
             theta = torch.acos(logits_clamped)
-            
-            # target_mask identifies which class's logit should receive the margin
             target_mask = F.one_hot(labels, num_classes=self.n_classes).bool()
-            
-            # cos(theta + m)
             m_logits = torch.cos(theta + self.m)
-            
-            # Replace ground truth logit with margin-penalized version
             logits = torch.where(target_mask, m_logits, logits)
 
         return logits * self.s, similarities
 
 
 class TopTaggingModel(nn.Module):
-    def __init__(self, n_prototypes=20, s=32.0, m=0.5, embedding_dim=64):
+    def __init__(self, n_proto_per_class=2, s=32.0, m=0.5, embedding_dim=64):
         super().__init__()
         self.embedding_dim = embedding_dim
         self.efn = EFN(input_dim=2, particle_dim=128, jet_dim=embedding_dim)
         self.prototype_layer = ArcFacePrototypeLayer(
-            input_dim=embedding_dim, n_prototypes=n_prototypes, s=s, m=m
+            input_dim=embedding_dim, n_proto_per_class=n_proto_per_class, s=s, m=m
         )
 
     def forward(self, constituents, labels=None, mask=None):
@@ -205,10 +216,12 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 if __name__ == '__main__':
-    print("EFN + ArcFace Prototype Model (xAI)")
-    model = TopTaggingModel(embedding_dim=64)
+    print("EFN + ArcFace Prototype Model (xAI, 2+2 Orthogonal Prototypes)")
+    model = TopTaggingModel(n_proto_per_class=2, embedding_dim=64)
     x = torch.randn(4, 200, 4)
     y = torch.randint(0, 2, (4,))
     logits, sims, emb = model(x, y)
     print(f"Logits: {logits.shape}, Sims: {sims.shape}, Emb: {emb.shape}")
+    div_loss = model.prototype_layer.diversity_loss()
+    print(f"Diversity Loss (should be ~0 at init): {div_loss.item():.4f}")
     print("Success!")

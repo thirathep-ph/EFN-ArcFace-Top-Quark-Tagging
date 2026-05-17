@@ -39,10 +39,13 @@ def train_epoch(model, loader, optimizer, device, scheduler=None):
         
         optimizer.zero_grad()
         logits, sims, _ = model(x, mask=m)
-        
         loss = criterion_cls(logits, y)
         loss.backward()
         optimizer.step()
+        
+        # Hard Orthogonal Projection: no lambda, no hyperparameter
+        model.prototype_layer.orthogonalize_prototypes()
+        
         if scheduler: scheduler.step()
         
         total_loss += loss.item()
@@ -118,6 +121,7 @@ def main():
     parser.add_argument('--epochs', type=int, default=15)
     parser.add_argument('--max_events', type=int, default=None)
     parser.add_argument('--quick', action='store_true')
+    parser.add_argument('--data_dir', type=str, default='data')
     args = parser.parse_args()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -128,9 +132,14 @@ def main():
         max_events = 5000 if args.quick else None
 
     print("Loading datasets...")
-    tr_ev, tr_lab, tr_w = load_awkward('data/top_tagging/train.h5', max_events=max_events)
-    val_ev, val_lab, val_w = load_awkward('data/top_tagging/val.h5', max_events=max_events)
-    te_ev, te_lab, te_w = load_awkward('data/top_tagging/test.h5', max_events=max_events)
+    import os
+    tr_path = os.path.join(args.data_dir, 'top_tagging/train.h5')
+    val_path = os.path.join(args.data_dir, 'top_tagging/val.h5')
+    te_path = os.path.join(args.data_dir, 'top_tagging/test.h5')
+    
+    tr_ev, tr_lab, tr_w = load_awkward(tr_path, max_events=max_events)
+    val_ev, val_lab, val_w = load_awkward(val_path, max_events=max_events)
+    te_ev, te_lab, te_w = load_awkward(te_path, max_events=max_events)
 
     train_ds = JetTaggingDataset(tr_ev, tr_lab, tr_w)
     val_ds = JetTaggingDataset(val_ev, val_lab, val_w)
@@ -140,7 +149,7 @@ def main():
     val_loader = DataLoader(val_ds, batch_size=1024)
     test_loader = DataLoader(test_ds, batch_size=1024)
 
-    model = TopTaggingModel(n_prototypes=20, s=32.0, m=0.0, embedding_dim=64).to(device)
+    model = TopTaggingModel(n_proto_per_class=2, s=32.0, m=0.0, embedding_dim=64).to(device)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=2e-3, total_steps=len(train_loader)*args.epochs)
     
@@ -161,9 +170,10 @@ def main():
         v_loss, v_acc, v_sims, v_labels, _, v_logits = evaluate(model, val_loader, device)
         t1 = time.time()
         
+        n = model.prototype_layer.n_proto_per_class
         qcd_mask, top_mask = v_labels.numpy() == 0, v_labels.numpy() == 1
-        sep_qcd = v_sims[qcd_mask][:, :10].max(dim=1)[0].mean().item()
-        sep_top = v_sims[top_mask][:, 10:].max(dim=1)[0].mean().item()
+        sep_qcd = v_sims[qcd_mask][:, :n].max(dim=1)[0].mean().item()
+        sep_top = v_sims[top_mask][:, n:].max(dim=1)[0].mean().item()
 
         history['train_loss'].append(t_loss); history['train_acc'].append(t_acc)
         history['val_loss'].append(v_loss); history['val_acc'].append(v_acc)
@@ -183,15 +193,16 @@ def main():
 
     # FINAL ANALYSIS
     model.load_state_dict(torch.load('checkpoints/best_model_efn.pt'))
-    proto_data, t_labels, t_sims = interpret_prototypes(model, test_loader, test_ds, device)
+    proto_data, t_labels, t_sims = interpret_prototypes(model, test_loader, test_ds, device, n_prototypes=4)
     
     # 0. Global Metrics & Training Results
     from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
     from jet_tagging.utils.plotting import plot_decision_boundary
     
     # Correctly aggregate prototype similarities into class scores
-    qcd_scores = t_sims[:, :10].max(dim=1)[0]
-    top_scores = t_sims[:, 10:].max(dim=1)[0]
+    n = model.prototype_layer.n_proto_per_class
+    qcd_scores = t_sims[:, :n].max(dim=1)[0]
+    top_scores = t_sims[:, n:].max(dim=1)[0]
     class_scores = torch.stack([qcd_scores, top_scores], dim=1)
     
     test_preds = class_scores.argmax(dim=1).numpy()
