@@ -121,7 +121,7 @@ def main():
     parser.add_argument('--epochs', type=int, default=15)
     parser.add_argument('--max_events', type=int, default=None)
     parser.add_argument('--quick', action='store_true')
-    parser.add_argument('--data_dir', type=str, default='data')
+    parser.add_argument('--data_dir', type=str, default='data/top_tagging')
     args = parser.parse_args()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -133,13 +133,9 @@ def main():
 
     print("Loading datasets...")
     import os
-    tr_path = os.path.join(args.data_dir, 'top_tagging/train.h5')
-    val_path = os.path.join(args.data_dir, 'top_tagging/val.h5')
-    te_path = os.path.join(args.data_dir, 'top_tagging/test.h5')
-    
-    tr_ev, tr_lab, tr_w = load_awkward(tr_path, max_events=max_events)
-    val_ev, val_lab, val_w = load_awkward(val_path, max_events=max_events)
-    te_ev, te_lab, te_w = load_awkward(te_path, max_events=max_events)
+    tr_ev, tr_lab, tr_w = load_awkward(os.path.join(args.data_dir, 'train.h5'), max_events=max_events)
+    val_ev, val_lab, val_w = load_awkward(os.path.join(args.data_dir, 'val.h5'), max_events=max_events)
+    te_ev, te_lab, te_w = load_awkward(os.path.join(args.data_dir, 'test.h5'), max_events=max_events)
 
     train_ds = JetTaggingDataset(tr_ev, tr_lab, tr_w)
     val_ds = JetTaggingDataset(val_ev, val_lab, val_w)
