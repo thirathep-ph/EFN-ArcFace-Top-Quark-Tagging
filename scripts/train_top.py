@@ -29,25 +29,18 @@ from jet_tagging.utils.plotting import (plot_latent_space, plot_performance,
 # Training & Evaluation Loops
 # ============================================================================
 
-def train_epoch(model, loader, optimizer, device, scheduler=None, lambda_adv=10.0):
+def train_epoch(model, loader, optimizer, device, scheduler=None):
     model.train()
     total_loss, total_acc = 0, 0
     criterion_cls = arcface_loss
-    criterion_mass = nn.MSELoss()
     
-    for x, y, w, m, true_mass, _ in loader:
-        x, y, w, m, true_mass = x.to(device), y.to(device), w.to(device), m.to(device), true_mass.to(device)
+    for x, y, w, m, _ in loader:
+        x, y, w, m = x.to(device), y.to(device), w.to(device), m.to(device)
         
         optimizer.zero_grad()
-        # Alpha=1.0 for GRL during training
-        logits, sims, _, pred_mass = model(x, mask=m, alpha=1.0)
+        logits, sims, _ = model(x, mask=m)
         
-        loss_cls = criterion_cls(logits, y)
-        loss_mass = criterion_mass(pred_mass / 200.0, true_mass / 200.0)
-        
-        # Total Loss with Adversarial Component
-        loss = loss_cls + lambda_adv * loss_mass
-        
+        loss = criterion_cls(logits, y)
         loss.backward()
         optimizer.step()
         if scheduler: scheduler.step()
@@ -64,9 +57,9 @@ def evaluate(model, loader, device):
     criterion_cls = arcface_loss
     
     with torch.no_grad():
-        for x, y, w, m, true_mass, idx in loader:
+        for x, y, w, m, idx in loader:
             x, y, w, m = x.to(device), y.to(device), w.to(device), m.to(device)
-            logits, sims, _, _ = model(x, mask=m)
+            logits, sims, _ = model(x, mask=m)
             
             loss = criterion_cls(logits, y)
             total_loss += loss.item()
@@ -152,7 +145,7 @@ def main():
     scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=2e-3, total_steps=len(train_loader)*args.epochs)
     
     warmup_epochs, final_margin = 10, 0.5
-    print(f"\nTraining EFN + ArcFace with Mass Decorrelation (Params: {count_parameters(model):,})")
+    print(f"\nTraining EFN + ArcFace (xAI Prototype Model, Params: {count_parameters(model):,})")
     
     history = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': [], 
                'sep_qcd': [], 'sep_top': []}
@@ -164,8 +157,7 @@ def main():
         model.prototype_layer.set_margin(current_m)
 
         t0 = time.time()
-        # Pass lambda_adv=10.0 for mass decorrelation
-        t_loss, t_acc = train_epoch(model, train_loader, optimizer, device, scheduler=scheduler, lambda_adv=10.0)
+        t_loss, t_acc = train_epoch(model, train_loader, optimizer, device, scheduler=scheduler)
         v_loss, v_acc, v_sims, v_labels, _, v_logits = evaluate(model, val_loader, device)
         t1 = time.time()
         
@@ -213,7 +205,7 @@ def main():
     model.eval()
     t_start = time.time()
     with torch.no_grad():
-        for x, _, _, m, _, _ in test_loader:
+        for x, _, _, m, _ in test_loader:
             _ = model(x.to(device), mask=m.to(device))
     inf_time = (time.time() - t_start) / len(test_ds) * 1000 # ms/jet
     
@@ -234,8 +226,8 @@ def main():
     all_emb = []
     model.eval()
     with torch.no_grad():
-        for x, _, _, m, _, _ in test_loader:
-            _, _, emb, _ = model(x.to(device), mask=m.to(device))
+        for x, _, _, m, _ in test_loader:
+            _, _, emb = model(x.to(device), mask=m.to(device))
             all_emb.append(emb.cpu())
     all_emb = torch.cat(all_emb).numpy()
     plot_latent_space(all_emb[:5000], t_labels.numpy()[:5000], prototypes=model.prototype_layer.prototypes.detach().cpu().numpy())

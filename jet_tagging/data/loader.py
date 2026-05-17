@@ -113,24 +113,13 @@ class JetTaggingDataset(Dataset):
         self.pz = torch.tensor(ak.to_numpy(ak.fill_none(ak.pad_none(events.pz, 200, clip=True), 0)), dtype=torch.float32)
         self.E = torch.tensor(ak.to_numpy(ak.fill_none(ak.pad_none(events.E, 200, clip=True), 0)), dtype=torch.float32)
         
-        # 3. Calculate Mass for Decorrelation
-        # Use awkward's native sum which handles jagged arrays correctly
-        sum_px = ak.to_numpy(ak.sum(events.px, axis=1))
-        sum_py = ak.to_numpy(ak.sum(events.py, axis=1))
-        sum_pz = ak.to_numpy(ak.sum(events.pz, axis=1))
-        sum_e = ak.to_numpy(ak.sum(events.E, axis=1))
-        
-        self.mass = np.sqrt(np.maximum(0, sum_e**2 - (sum_px**2 + sum_py**2 + sum_pz**2)))
-        self.mass = torch.tensor(self.mass, dtype=torch.float32)
-
     def __len__(self):
         return len(self.labels)
 
     def __getitem__(self, idx):
-        # x: (n_particles, 4) -> px, py, pz, E
         x = torch.stack([self.px[idx], self.py[idx], self.pz[idx], self.E[idx]], dim=-1)
         mask = (x[:, 3] > 0).float()
-        return x, self.labels[idx], self.weights[idx], mask, self.mass[idx], idx
+        return x, self.labels[idx], self.weights[idx], mask, idx
 
 def print_summary(events, labels):
     n_events = len(events)

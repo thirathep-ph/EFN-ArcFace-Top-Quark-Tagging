@@ -183,47 +183,20 @@ class ArcFacePrototypeLayer(nn.Module):
         return logits * self.s, similarities
 
 
-class GradientReversal(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x, alpha):
-        ctx.alpha = alpha
-        return x.view_as(x)
-    @staticmethod
-    def backward(ctx, grad_output):
-        # The backward pass flips the gradient
-        return grad_output.neg() * ctx.alpha, None
-
 class TopTaggingModel(nn.Module):
     def __init__(self, n_prototypes=20, s=32.0, m=0.5, embedding_dim=64):
         super().__init__()
         self.embedding_dim = embedding_dim
-        # Use EFN with the specified embedding dimension
         self.efn = EFN(input_dim=2, particle_dim=128, jet_dim=embedding_dim)
-        self.prototype_layer = ArcFacePrototypeLayer(input_dim=embedding_dim, n_prototypes=n_prototypes, s=s, m=m)
-        
-        # Mass Predictor (The Adversary)
-        self.mass_predictor = nn.Sequential(
-            nn.Linear(embedding_dim, 64), nn.ReLU(),
-            nn.Linear(64, 32), nn.ReLU(),
-            nn.Linear(32, 1)
+        self.prototype_layer = ArcFacePrototypeLayer(
+            input_dim=embedding_dim, n_prototypes=n_prototypes, s=s, m=m
         )
 
-    def forward(self, constituents, labels=None, mask=None, alpha=1.0):
-        # 1. Get EFN features (geometry + energy weights)
+    def forward(self, constituents, labels=None, mask=None):
         coords, z = get_efn_features(constituents, mask)
-
-        # 2. Extract jet embedding via EFN
         jet_emb = self.efn(coords, z, mask)
-
-        # 3. Prototype layer (ArcFace)
         logits, similarities = self.prototype_layer(jet_emb, labels)
-        
-        # 4. Mass Prediction (Adversarial Branch)
-        # Gradient is reversed during backprop to force jet_emb to be mass-independent
-        rev_emb = GradientReversal.apply(jet_emb, alpha)
-        pred_mass = self.mass_predictor(rev_emb).squeeze(-1)
-
-        return logits, similarities, jet_emb, pred_mass
+        return logits, similarities, jet_emb
 
 def arcface_loss(logits, labels):
     return F.cross_entropy(logits, labels)
@@ -232,10 +205,10 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 if __name__ == '__main__':
-    print("EFN + ArcFace Prototype Model (Decorrelated)")
+    print("EFN + ArcFace Prototype Model (xAI)")
     model = TopTaggingModel(embedding_dim=64)
     x = torch.randn(4, 200, 4)
     y = torch.randint(0, 2, (4,))
-    logits, sims, emb, m_pred = model(x, y)
-    print(f"Logits shape: {logits.shape}, Mass Pred shape: {m_pred.shape}")
+    logits, sims, emb = model(x, y)
+    print(f"Logits: {logits.shape}, Sims: {sims.shape}, Emb: {emb.shape}")
     print("Success!")
