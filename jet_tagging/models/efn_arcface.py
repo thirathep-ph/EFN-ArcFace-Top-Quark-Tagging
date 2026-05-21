@@ -118,7 +118,7 @@ class ArcFacePrototypeLayer(nn.Module):
     orthogonally so each prototype captures a distinct substructure mode.
     A diversity loss prevents prototype collapse during training.
     """
-    def __init__(self, input_dim, n_proto_per_class=2, n_classes=2, s=32.0, m=0.5):
+    def __init__(self, input_dim, n_proto_per_class=1, n_classes=2, s=32.0, m=0.5):
         super().__init__()
         self.n_proto_per_class = n_proto_per_class
         self.n_prototypes = n_proto_per_class * n_classes
@@ -195,7 +195,7 @@ class ArcFacePrototypeLayer(nn.Module):
 
 
 class TopTaggingModel(nn.Module):
-    def __init__(self, n_proto_per_class=2, s=32.0, m=0.5, embedding_dim=64):
+    def __init__(self, n_proto_per_class=1, s=32.0, m=0.5, embedding_dim=64):
         super().__init__()
         self.embedding_dim = embedding_dim
         self.efn = EFN(input_dim=2, particle_dim=128, jet_dim=embedding_dim)
@@ -212,16 +212,63 @@ class TopTaggingModel(nn.Module):
 def arcface_loss(logits, labels):
     return F.cross_entropy(logits, labels)
 
+def distance_corr_loss(x, y, mask=None):
+    """
+    Computes the Distance Correlation (DisCo) between x and y.
+    x: (B,) - model predictions/scores
+    y: (B,) - physical parameter (e.g., jet mass)
+    mask: (B,) - boolean mask to filter (e.g., only background/QCD events)
+    """
+    if mask is not None:
+        x = x[mask]
+        y = y[mask]
+    
+    n = x.size(0)
+    if n <= 1:
+        return torch.tensor(0.0, device=x.device, requires_grad=True)
+    
+    # Pairwise distance matrices
+    x_dist = torch.abs(x.unsqueeze(0) - x.unsqueeze(1))
+    y_dist = torch.abs(y.unsqueeze(0) - y.unsqueeze(1))
+    
+    # Double centering
+    x_mean_row = x_dist.mean(dim=1, keepdim=True)
+    x_mean_col = x_dist.mean(dim=0, keepdim=True)
+    x_mean_all = x_dist.mean()
+    A = x_dist - x_mean_row - x_mean_col + x_mean_all
+    
+    y_mean_row = y_dist.mean(dim=1, keepdim=True)
+    y_mean_col = y_dist.mean(dim=0, keepdim=True)
+    y_mean_all = y_dist.mean()
+    B = y_dist - y_mean_row - y_mean_col + y_mean_all
+    
+    # Distance covariance
+    dcov2 = (A * B).mean()
+    
+    # Distance variance
+    dvarx2 = (A * A).mean()
+    dvary2 = (B * B).mean()
+    
+    # Distance correlation
+    dcor = torch.sqrt(dcov2 / (torch.sqrt(dvarx2 * dvary2) + 1e-10) + 1e-10)
+    return dcor
+
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 if __name__ == '__main__':
-    print("EFN + ArcFace Prototype Model (xAI, 2+2 Orthogonal Prototypes)")
-    model = TopTaggingModel(n_proto_per_class=2, embedding_dim=64)
+    print("EFN + ArcFace Prototype Model (xAI, 1 Prototype Per Class)")
+    model = TopTaggingModel(n_proto_per_class=1, embedding_dim=64)
     x = torch.randn(4, 200, 4)
     y = torch.randint(0, 2, (4,))
     logits, sims, emb = model(x, y)
     print(f"Logits: {logits.shape}, Sims: {sims.shape}, Emb: {emb.shape}")
-    div_loss = model.prototype_layer.diversity_loss()
-    print(f"Diversity Loss (should be ~0 at init): {div_loss.item():.4f}")
+    # Compute sample mass from constituents for test
+    E_tot = x[:, :, 0].sum(dim=1)
+    px_tot = x[:, :, 1].sum(dim=1)
+    py_tot = x[:, :, 2].sum(dim=1)
+    pz_tot = x[:, :, 3].sum(dim=1)
+    mass = torch.sqrt(torch.clamp(E_tot**2 - (px_tot**2 + py_tot**2 + pz_tot**2), min=1e-10))
+    dcor = distance_corr_loss(logits[:, 1], mass)
+    print(f"DisCo Loss (between top logits & mass): {dcor.item():.4f}")
     print("Success!")

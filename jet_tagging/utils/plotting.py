@@ -6,6 +6,7 @@ Plotting Utilities for Jet Tagging Analysis
 - Representative Jet Display
 - Lund Plane Visualization
 """
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -13,6 +14,7 @@ from sklearn.metrics import roc_curve, auc
 from sklearn.manifold import TSNE
 import awkward as ak
 import fastjet
+
 
 def plot_latent_space(embeddings, labels, prototypes=None, save_path='results/latent_space.png'):
     """Plot t-SNE of the latent space including prototypes."""
@@ -199,7 +201,8 @@ def plot_training_results(history, cm, save_path='results/training_results_efn.p
     plt.figure(figsize=(6, 5))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
     plt.title("Confusion Matrix (Detailed)")
-    plt.savefig('results/confusion_matrix.png', dpi=150, bbox_inches='tight')
+    out_dir = os.path.dirname(save_path) if os.path.dirname(save_path) else '.'
+    plt.savefig(os.path.join(out_dir, 'confusion_matrix.png'), dpi=150, bbox_inches='tight')
     plt.close('all')
 
 def plot_decision_boundary(labels, class_scores, save_path='results/decision_boundary.png'):
@@ -275,6 +278,7 @@ def plot_physics_correlations(labels, scores, features, feature_names, save_path
     plt.figure(figsize=(10, 6))
     sns.kdeplot(data=data, x='Mass', y='Model Score', hue='Class', fill=True, alpha=0.5)
     plt.title("Model Decision vs. Jet Mass (Mass Sculpting Check)")
-    plt.savefig('results/mass_sculpting.png', dpi=200, bbox_inches='tight')
+    out_dir = os.path.dirname(save_path) if os.path.dirname(save_path) else '.'
+    plt.savefig(os.path.join(out_dir, 'mass_sculpting.png'), dpi=200, bbox_inches='tight')
     plt.close()
-    print(f"Saved correlation analysis to {save_path} and results/mass_sculpting.png")
+    print(f"Saved correlation analysis to {save_path} and {os.path.join(out_dir, 'mass_sculpting.png')}")

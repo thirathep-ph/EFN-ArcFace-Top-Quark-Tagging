@@ -117,8 +117,8 @@ class JetTaggingDataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
-        x = torch.stack([self.px[idx], self.py[idx], self.pz[idx], self.E[idx]], dim=-1)
-        mask = (x[:, 3] > 0).float()
+        x = torch.stack([self.E[idx], self.px[idx], self.py[idx], self.pz[idx]], dim=-1)
+        mask = (x[:, 0] > 0).float()
         return x, self.labels[idx], self.weights[idx], mask, idx
 
 def print_summary(events, labels):
