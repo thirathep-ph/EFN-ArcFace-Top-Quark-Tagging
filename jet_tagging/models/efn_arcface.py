@@ -126,16 +126,11 @@ class ArcFacePrototypeLayer(nn.Module):
         self.s = s
         self.m = m
 
-        # Orthogonal initialization: each prototype in a class starts at a
-        # different basis vector axis, maximally separated from the start.
-        # QCD  → +e_0, +e_1  (opposite hemisphere from Top)
-        # Top  → -e_0, -e_1
-        protos = torch.zeros(self.n_prototypes, input_dim)
-        for i in range(n_proto_per_class):
-            # QCD prototypes: positive hemisphere, orthogonal axes
-            protos[i, i % input_dim] = 1.0
-            # Top prototypes: negative hemisphere, orthogonal axes
-            protos[n_proto_per_class + i, i % input_dim] = -1.0
+        # Dense initialization: prototypes are initialized randomly on the unit hypersphere.
+        # This prevents the model from ignoring 62-63 dimensions of the 64D embedding space,
+        # which previously caused the cosine similarities to be artificially diluted to ~0.07.
+        # By making prototypes dense, the EFN must utilize all dimensions of the latent space.
+        protos = torch.randn(self.n_prototypes, input_dim)
         
         # Normalize to unit hypersphere
         protos = F.normalize(protos, dim=1)

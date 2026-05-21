@@ -40,7 +40,7 @@ def train_epoch(model, loader, optimizer, device, scheduler=None, decorrelate=Fa
         x, y, w, m = x.to(device), y.to(device), w.to(device), m.to(device)
         
         optimizer.zero_grad()
-        logits, sims, _ = model(x, mask=m)
+        logits, sims, _ = model(x, labels=y, mask=m)
         cls_loss = criterion_cls(logits, y)
         
         if decorrelate:
