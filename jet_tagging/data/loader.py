@@ -18,13 +18,70 @@ vector.register_awkward()
 N_CONS = 200  # max constituents per event
 
 
-def load_awkward(path, max_events=None, trim_padding=True):
+class LazyAwkwardEvents:
+    def __init__(self, es, pxs, pys, pzs, trim_padding=True):
+        self.E = es
+        self.px = pxs
+        self.py = pys
+        self.pz = pzs
+        self.trim_padding = trim_padding
+
+    def __len__(self):
+        return len(self.E)
+
+    def __getitem__(self, idx):
+        E_sub = self.E[idx]
+        px_sub = self.px[idx]
+        py_sub = self.py[idx]
+        pz_sub = self.pz[idx]
+
+        is_single = isinstance(idx, (int, np.integer))
+        if is_single:
+            E_sub = np.expand_dims(E_sub, 0)
+            px_sub = np.expand_dims(px_sub, 0)
+            py_sub = np.expand_dims(py_sub, 0)
+            pz_sub = np.expand_dims(pz_sub, 0)
+
+        if self.trim_padding:
+            mask = E_sub > 0
+            n_per_event = mask.sum(axis=1)
+
+            E_flat = E_sub[mask]
+            px_flat = px_sub[mask]
+            py_flat = py_sub[mask]
+            pz_flat = pz_sub[mask]
+
+            counts = n_per_event.tolist()
+            e_jagged   = ak.unflatten(E_flat, counts)
+            px_jagged  = ak.unflatten(px_flat, counts)
+            py_jagged  = ak.unflatten(py_flat, counts)
+            pz_jagged  = ak.unflatten(pz_flat, counts)
+        else:
+            e_jagged  = ak.from_numpy(E_sub)
+            px_jagged = ak.from_numpy(px_sub)
+            py_jagged = ak.from_numpy(py_sub)
+            pz_jagged = ak.from_numpy(pz_sub)
+
+        events_sliced = ak.zip({
+            'E': e_jagged,
+            'px': px_jagged,
+            'py': py_jagged,
+            'pz': pz_jagged,
+        }, with_name="Momentum4D")
+
+        if is_single:
+            return events_sliced[0]
+        return events_sliced
+
+
+def load_awkward(path, max_events=None, trim_padding=True, lazy=True):
     """
     Load H5 file into awkward arrays of particle 4-vectors.
+    If lazy=True, returns a LazyAwkwardEvents wrapper.
 
     Returns
     -------
-    events : ak.Array
+    events : ak.Array or LazyAwkwardEvents
         Jagged array of Momentum4D (LorentzVectors)
     labels : np.ndarray
         Binary labels (0=QCD, 1=Top)
@@ -66,6 +123,10 @@ def load_awkward(path, max_events=None, trim_padding=True):
     f.close()
     weights = np.ones(n, dtype=np.float32)
 
+    if lazy:
+        events = LazyAwkwardEvents(es, pxs, pys, pzs, trim_padding=trim_padding)
+        return events, labels, weights
+
     if trim_padding:
         # E=0 means zero-padded
         mask = es > 0
@@ -103,15 +164,22 @@ from torch.utils.data import Dataset
 
 class JetTaggingDataset(Dataset):
     def __init__(self, events, labels, weights):
-        self.events = events # Store for interpretation
         self.labels = torch.tensor(labels, dtype=torch.long)
         self.weights = torch.tensor(weights, dtype=torch.float32)
         
-        # Convert awkward to padded numpy
-        self.px = torch.tensor(ak.to_numpy(ak.fill_none(ak.pad_none(events.px, 200, clip=True), 0)), dtype=torch.float32)
-        self.py = torch.tensor(ak.to_numpy(ak.fill_none(ak.pad_none(events.py, 200, clip=True), 0)), dtype=torch.float32)
-        self.pz = torch.tensor(ak.to_numpy(ak.fill_none(ak.pad_none(events.pz, 200, clip=True), 0)), dtype=torch.float32)
-        self.E = torch.tensor(ak.to_numpy(ak.fill_none(ak.pad_none(events.E, 200, clip=True), 0)), dtype=torch.float32)
+        if isinstance(events, LazyAwkwardEvents):
+            self.events = events
+            self.E = torch.from_numpy(events.E).float()
+            self.px = torch.from_numpy(events.px).float()
+            self.py = torch.from_numpy(events.py).float()
+            self.pz = torch.from_numpy(events.pz).float()
+        else:
+            self.events = events
+            # Convert awkward to padded numpy
+            self.px = torch.tensor(ak.to_numpy(ak.fill_none(ak.pad_none(events.px, 200, clip=True), 0)), dtype=torch.float32)
+            self.py = torch.tensor(ak.to_numpy(ak.fill_none(ak.pad_none(events.py, 200, clip=True), 0)), dtype=torch.float32)
+            self.pz = torch.tensor(ak.to_numpy(ak.fill_none(ak.pad_none(events.pz, 200, clip=True), 0)), dtype=torch.float32)
+            self.E = torch.tensor(ak.to_numpy(ak.fill_none(ak.pad_none(events.E, 200, clip=True), 0)), dtype=torch.float32)
         
     def __len__(self):
         return len(self.labels)
@@ -123,9 +191,12 @@ class JetTaggingDataset(Dataset):
 
 def print_summary(events, labels):
     n_events = len(events)
-    n_per = ak.num(events)
+    if isinstance(events, LazyAwkwardEvents):
+        n_per = (events.E > 0).sum(axis=1)
+    else:
+        n_per = ak.num(events)
     print(f"  Events: {n_events:,}")
-    print(f"  Constituents: mean={ak.mean(n_per):.1f}, max={ak.max(n_per)}")
+    print(f"  Constituents: mean={np.mean(n_per):.1f}, max={np.max(n_per)}")
     n_top = int(labels.sum())
     print(f"  Labels: {n_top} Top, {n_events - n_top} QCD")
 

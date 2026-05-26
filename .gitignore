@@ -42,3 +42,7 @@ Thumbs.db
 
 # Archive (scratch/exploration files)
 archive/
+
+# Results & outputs
+results/
+scratch/check_sc_zg.py

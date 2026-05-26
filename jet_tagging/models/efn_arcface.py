@@ -112,88 +112,57 @@ class EFN(nn.Module):
 
 class ArcFacePrototypeLayer(nn.Module):
     """
-    ArcFace Prototype Layer with Diversity Regularization.
-    
-    Uses n_proto_per_class prototypes per class (default: 2), initialized
-    orthogonally so each prototype captures a distinct substructure mode.
-    A diversity loss prevents prototype collapse during training.
+    Standard ArcFace Head using Class Prototypes (Weights).
+    Highly optimized, mathematically clean, and fits the standard ArcFace formulation.
     """
     def __init__(self, input_dim, n_proto_per_class=1, n_classes=2, s=32.0, m=0.5):
         super().__init__()
-        self.n_proto_per_class = n_proto_per_class
-        self.n_prototypes = n_proto_per_class * n_classes
+        self.n_proto_per_class = 1  # Standard ArcFace has exactly 1 prototype per class
         self.n_classes = n_classes
+        self.n_prototypes = n_classes
         self.s = s
         self.m = m
-
-        # Dense initialization: prototypes are initialized randomly on the unit hypersphere.
-        # This prevents the model from ignoring 62-63 dimensions of the 64D embedding space,
-        # which previously caused the cosine similarities to be artificially diluted to ~0.07.
-        # By making prototypes dense, the EFN must utilize all dimensions of the latent space.
-        protos = torch.randn(self.n_prototypes, input_dim)
         
-        # Normalize to unit hypersphere
-        protos = F.normalize(protos, dim=1)
-        self.prototypes = nn.Parameter(protos)
-
-        # Register which prototype belongs to which class
-        self.register_buffer('prototype_class', torch.cat([
-            torch.zeros(n_proto_per_class, dtype=torch.long),
-            torch.ones(n_proto_per_class, dtype=torch.long),
-        ]))
+        # Class weights (prototypes) on the hypersphere
+        self.prototypes = nn.Parameter(torch.FloatTensor(n_classes, input_dim))
+        nn.init.xavier_uniform_(self.prototypes)
 
     def set_margin(self, m):
         self.m = m
 
     def orthogonalize_prototypes(self):
-        """
-        Hard Orthogonal Projection (Gram-Schmidt) for same-class prototypes.
-        Called after every optimizer.step() — no hyperparameter needed.
-        
-        Enforces: p0 · p1 = 0 within each class at all times.
-        Each prototype captures an INDEPENDENT substructure mode.
-        """
-        with torch.no_grad():
-            p = self.prototypes
-            for c in range(self.n_classes):
-                mask = self.prototype_class == c
-                idx = mask.nonzero(as_tuple=True)[0]
-                if len(idx) < 2:
-                    continue
-                # Gram-Schmidt on the 2 same-class prototypes
-                p0 = F.normalize(p[idx[0]], dim=0)
-                p1 = p[idx[1]]
-                p1 = p1 - (p1 @ p0) * p0   # remove projection onto p0
-                p1 = F.normalize(p1, dim=0)
-                p[idx[0]] = p0
-                p[idx[1]] = p1
+        # Standard ArcFace has 1 prototype per class, so no orthogonalization is needed.
+        pass
 
     def forward(self, x, labels=None):
-        x_norm = F.normalize(x, dim=1)
-        p_norm = F.normalize(self.prototypes, dim=1)
-        similarities = x_norm @ p_norm.T  # (B, n_prototypes)
-
-        n = self.n_proto_per_class
-        # Aggregate: max similarity across prototypes within each class
-        sim_qcd = similarities[:, :n].max(dim=1)[0]
-        sim_top = similarities[:, n:].max(dim=1)[0]
-        logits = torch.stack([sim_qcd, sim_top], dim=1)
-
+        # Normalize inputs and class prototypes
+        x_norm = F.normalize(x, p=2, dim=1)
+        p_norm = F.normalize(self.prototypes, p=2, dim=1)
+        
+        # Cosine similarity between embeddings and class prototypes
+        cosine = F.linear(x_norm, p_norm)  # Shape: (B, 2)
+        
         if self.training and labels is not None:
-            logits_clamped = logits.clamp(-1.0 + 1e-7, 1.0 - 1e-7)
-            theta = torch.acos(logits_clamped)
-            target_mask = F.one_hot(labels, num_classes=self.n_classes).bool()
-            m_logits = torch.cos(theta + self.m)
-            logits = torch.where(target_mask, m_logits, logits)
-
-        return logits * self.s, similarities
+            cosine_clamped = cosine.clamp(-1.0 + 1e-7, 1.0 - 1e-7)
+            theta = torch.acos(cosine_clamped)
+            
+            # Clamp theta + m to np.pi to prevent gradient reversal
+            theta_m = torch.clamp(theta + self.m, max=np.pi)
+            cosine_m = torch.cos(theta_m)
+            
+            one_hot = F.one_hot(labels, num_classes=self.n_classes).bool()
+            logits = torch.where(one_hot, cosine_m, cosine)
+        else:
+            logits = cosine
+            
+        return logits * self.s, cosine
 
 
 class TopTaggingModel(nn.Module):
-    def __init__(self, n_proto_per_class=1, s=32.0, m=0.5, embedding_dim=64):
+    def __init__(self, n_proto_per_class=1, s=32.0, m=0.5, embedding_dim=128, particle_dim=256):
         super().__init__()
         self.embedding_dim = embedding_dim
-        self.efn = EFN(input_dim=2, particle_dim=128, jet_dim=embedding_dim)
+        self.efn = EFN(input_dim=2, particle_dim=particle_dim, jet_dim=embedding_dim)
         self.prototype_layer = ArcFacePrototypeLayer(
             input_dim=embedding_dim, n_proto_per_class=n_proto_per_class, s=s, m=m
         )

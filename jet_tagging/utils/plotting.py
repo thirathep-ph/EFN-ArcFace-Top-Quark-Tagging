@@ -21,11 +21,17 @@ def plot_latent_space(embeddings, labels, prototypes=None, save_path='results/la
     print("Computing t-SNE for latent space and prototypes...")
     
     n_emb = len(embeddings)
+    
+    # L2-normalize embeddings and prototypes to unit hypersphere
+    # since ArcFace operates in angular/cosine similarity space
+    eps = 1e-10
+    embeddings_norm = embeddings / (np.linalg.norm(embeddings, axis=1, keepdims=True) + eps)
+    
     if prototypes is not None:
-        # Combine embeddings and prototypes for consistent t-SNE mapping
-        combined = np.concatenate([embeddings, prototypes], axis=0)
+        prototypes_norm = prototypes / (np.linalg.norm(prototypes, axis=1, keepdims=True) + eps)
+        combined = np.concatenate([embeddings_norm, prototypes_norm], axis=0)
     else:
-        combined = embeddings
+        combined = embeddings_norm
 
     # Filter out any NaNs
     mask = ~np.any(np.isnan(combined), axis=1)
