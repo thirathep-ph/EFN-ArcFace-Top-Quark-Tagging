@@ -671,26 +671,26 @@ fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 for i, sc in enumerate(active_qcd_sc):
     m = t4_qcd & (t4_subclass == sc)
     if m.sum() > 5:
-        zg_sc = zg[m]; zg_sc = zg_sc[(zg_sc > 0.05) & (zg_sc < 0.5)]
+        zg_sc = zg[m]; zg_sc = zg_sc[(zg_sc >= 0.1) & (zg_sc < 0.5)]
         if len(zg_sc) > 5:
             sns.kdeplot(zg_sc, ax=axes[0], label=f"QCD SC {i} (N={m.sum()})", fill=True, alpha=0.15)
 axes[0].axvline(0.1, ls='--', color='gray', lw=1, label='$z_{cut}=0.1$')
 axes[0].set_title(r"QCD: $z_g$ (Altarelli-Parisi Splitting)", fontsize=12)
 axes[0].set_xlabel(r"$z_g$"); axes[0].legend(fontsize=9); axes[0].grid(True, alpha=0.15)
-axes[0].text(0.97, 0.95, r"QCD: $z_g \to 0$ (soft divergence)",
+axes[0].text(0.97, 0.95, r"QCD: $P(z_g) \propto 1/z_g$" "\n" r"(soft/collinear divergence)",
              transform=axes[0].transAxes, ha='right', va='top', fontsize=9, color='gray',
              bbox=dict(boxstyle='round', facecolor='white', alpha=0.7))
 
 for i, sc in enumerate(active_top_sc):
     m = t4_top & (t4_subclass == sc)
     if m.sum() > 5:
-        zg_sc = zg[m]; zg_sc = zg_sc[(zg_sc > 0.05) & (zg_sc < 0.5)]
+        zg_sc = zg[m]; zg_sc = zg_sc[(zg_sc >= 0.1) & (zg_sc < 0.5)]
         if len(zg_sc) > 5:
             sns.kdeplot(zg_sc, ax=axes[1], label=f"Top SC {i} (N={m.sum()})", fill=True, alpha=0.15)
-axes[1].axvline(0.5, ls='--', color='blue', lw=1, label=r'$z_g=0.5$ (symmetric)')
-axes[1].set_title(r"Top: $z_g$ ($W \to q\bar{q}$ decay)", fontsize=12)
+axes[1].axvline(0.1, ls='--', color='gray', lw=1, label='$z_{cut}=0.1$')
+axes[1].set_title(r"Top: $z_g$ ($W \to q\bar{q}$ vs. QCD Background)", fontsize=12)
 axes[1].set_xlabel(r"$z_g$"); axes[1].legend(fontsize=9); axes[1].grid(True, alpha=0.15)
-axes[1].text(0.97, 0.95, r"Top: $z_g \to 0.5$ ($W \to q\bar{q}$)",
+axes[1].text(0.97, 0.95, r"W-like (high-purity): flat $z_g$" "\n" r"QCD-like (background): peaks at $z_{cut}$",
              transform=axes[1].transAxes, ha='right', va='top', fontsize=9, color='blue',
              bbox=dict(boxstyle='round', facecolor='white', alpha=0.7))
 plt.suptitle(r"Altarelli-Parisi Splitting Verification via $z_g$", fontsize=13, y=1.02)
