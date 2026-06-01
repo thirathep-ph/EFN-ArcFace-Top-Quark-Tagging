@@ -74,7 +74,7 @@ class LazyAwkwardEvents:
         return events_sliced
 
 
-def load_awkward(path, max_events=None, trim_padding=True, lazy=True):
+def load_awkward(path, max_events=None, start_event=0, trim_padding=True, lazy=True):
     """
     Load H5 file into awkward arrays of particle 4-vectors.
     If lazy=True, returns a LazyAwkwardEvents wrapper.
@@ -96,14 +96,21 @@ def load_awkward(path, max_events=None, trim_padding=True, lazy=True):
     else:
         tbl = f[list(f.keys())[0]]
         
-    n = min(tbl.shape[0], max_events) if max_events else tbl.shape[0]
+    total_len = tbl.shape[0]
+    start = start_event
+    end = min(total_len, start + max_events) if max_events is not None else total_len
+    n = end - start
 
-    print(f"  Reading {n:,} entries from {path}...")
+    if n <= 0:
+        f.close()
+        raise ValueError(f"Invalid range: start_event={start_event}, max_events={max_events} for dataset of length {total_len}")
+
+    print(f"  Reading {n:,} entries (range {start:,} to {end:,}) from {path}...")
     
     # Layout check: values_block_0 (804 cols) vs values_block_1 (2 cols)
     if 'values_block_0' in tbl.dtype.names:
-        v0 = tbl['values_block_0'][:n]
-        v1 = tbl['values_block_1'][:n]
+        v0 = tbl['values_block_0'][start:end]
+        v1 = tbl['values_block_1'][start:end]
         
         # Extract 4-momenta: interleaved (E, px, py, pz) per particle
         es  = v0[:, 0:N_CONS*4:4]
@@ -113,7 +120,7 @@ def load_awkward(path, max_events=None, trim_padding=True, lazy=True):
         labels = v1[:, 1].astype(np.int8)
     else:
         # Fallback for alternative layouts (e.g. flat array)
-        raw = tbl[:n].astype(np.float32)
+        raw = tbl[start:end].astype(np.float32)
         es  = raw[:, 0:N_CONS*4:4]
         pxs = raw[:, 1:N_CONS*4:4]
         pys = raw[:, 2:N_CONS*4:4]
@@ -157,6 +164,79 @@ def load_awkward(path, max_events=None, trim_padding=True, lazy=True):
     }, with_name="Momentum4D")
 
     return events, labels, weights
+
+
+def get_h5_len(path):
+    with h5py.File(path, 'r') as f:
+        if 'table' in f:
+            tbl = f['table']['table']
+        else:
+            tbl = f[list(f.keys())[0]]
+        return tbl.shape[0]
+
+
+def load_events_by_indices(path, indices, trim_padding=True):
+    """
+    Load specific events by their global indices from the H5 file.
+    Returns Momentum4D awkward array.
+    """
+    indices = np.array(indices, dtype=np.int64)
+    sort_idx = np.argsort(indices)
+    sorted_indices = indices[sort_idx]
+    
+    unique_indices, unique_inverse = np.unique(sorted_indices, return_inverse=True)
+    
+    with h5py.File(path, 'r') as f:
+        if 'table' in f:
+            tbl = f['table']['table']
+        else:
+            tbl = f[list(f.keys())[0]]
+            
+        if 'values_block_0' in tbl.dtype.names:
+            v0 = tbl['values_block_0'][unique_indices]
+        else:
+            v0 = tbl[unique_indices].astype(np.float32)
+            
+    # Restore the original requested order (including duplicates)
+    v0_sorted = v0[unique_inverse]
+    # Invert sorting index
+    inv_sort_idx = np.zeros_like(sort_idx)
+    inv_sort_idx[sort_idx] = np.arange(len(indices))
+    v0_original = v0_sorted[inv_sort_idx]
+    
+    es  = v0_original[:, 0:N_CONS*4:4]
+    pxs = v0_original[:, 1:N_CONS*4:4]
+    pys = v0_original[:, 2:N_CONS*4:4]
+    pzs = v0_original[:, 3:N_CONS*4:4]
+        
+    if trim_padding:
+        mask = es > 0
+        n_per_event = mask.sum(axis=1)
+        
+        es_flat  = es[mask]
+        pxs_flat = pxs[mask]
+        pys_flat = pys[mask]
+        pzs_flat = pzs[mask]
+
+        counts = n_per_event.tolist()
+        e_jagged   = ak.unflatten(es_flat, counts)
+        px_jagged  = ak.unflatten(pxs_flat, counts)
+        py_jagged  = ak.unflatten(pys_flat, counts)
+        pz_jagged  = ak.unflatten(pzs_flat, counts)
+    else:
+        e_jagged  = ak.from_numpy(es)
+        px_jagged = ak.from_numpy(pxs)
+        py_jagged = ak.from_numpy(pys)
+        pz_jagged = ak.from_numpy(pzs)
+
+    events = ak.zip({
+        'E': e_jagged,
+        'px': px_jagged,
+        'py': py_jagged,
+        'pz': pz_jagged,
+    }, with_name="Momentum4D")
+
+    return events
 
 
 import torch

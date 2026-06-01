@@ -22,9 +22,9 @@ def compute_features(events):
     E = ak.values_astype(events.E, np.float64)
     cons = ak.zip({"px": px, "py": py, "pz": pz, "E": E})
 
-    # 2. Cluster Sequence (Agnostic R=1.5 for Exclusive Clustering)
+    # 2. Cluster Sequence (Agnostic R=2.0 for Exclusive Clustering)
     # Using a larger R ensures we don't cut off radiation when forcing n_jets=1.
-    jet_def = fastjet.JetDefinition(fastjet.cambridge_algorithm, 1.5)
+    jet_def = fastjet.JetDefinition(fastjet.cambridge_algorithm, 2.0)
     cs = fastjet.ClusterSequence(cons, jet_def)
     
     # --- Native SoftDrop Grooming ---
@@ -33,7 +33,7 @@ def compute_features(events):
         njets=1, 
         beta=0.0, 
         symmetry_cut=0.1, 
-        R0=1.5
+        R0=2.0
     )
     m_sd = ak.to_numpy(sd_jets.msoftdrop)
 
@@ -76,7 +76,7 @@ def get_lund_coordinates(events):
     Compute actual Lund Plane coordinates (ln(1/Delta), ln(kt)) for a batch of events.
     Iteratively de-clusters the primary branch using C/A history.
     """
-    jet_def = fastjet.JetDefinition(fastjet.cambridge_algorithm, 1.5)
+    jet_def = fastjet.JetDefinition(fastjet.cambridge_algorithm, 2.0)
     # 1. Zip constituents (Force float64 for FastJet C++ interface)
     px = ak.values_astype(events.px, np.float64)
     py = ak.values_astype(events.py, np.float64)

@@ -27,8 +27,8 @@ def evaluate_model(model_path, data_dir, split, max_events, mode):
     print(f"Using device: {device}")
     
     # 1. Load Model Checkpoint
-    # We use n_proto_per_class=1 (1 QCD + 1 Top prototype)
-    model = TopTaggingModel(n_proto_per_class=1, s=32.0, m=0.0, embedding_dim=64).to(device)
+    # We use 1 QCD + 1 Top class center
+    model = TopTaggingModel(s=32.0, m=0.0, embedding_dim=64).to(device)
     
     if not os.path.exists(model_path):
         print(f"Error: Checkpoint file '{model_path}' not found.")

@@ -16,20 +16,20 @@ import awkward as ak
 import fastjet
 
 
-def plot_latent_space(embeddings, labels, prototypes=None, save_path='results/latent_space.png'):
-    """Plot t-SNE of the latent space including prototypes."""
-    print("Computing t-SNE for latent space and prototypes...")
+def plot_latent_space(embeddings, labels, class_centers=None, save_path='results/latent_space.png'):
+    """Plot t-SNE of the latent space including class centers."""
+    print("Computing t-SNE for latent space and class centers...")
     
     n_emb = len(embeddings)
     
-    # L2-normalize embeddings and prototypes to unit hypersphere
+    # L2-normalize embeddings and class centers to unit hypersphere
     # since ArcFace operates in angular/cosine similarity space
     eps = 1e-10
     embeddings_norm = embeddings / (np.linalg.norm(embeddings, axis=1, keepdims=True) + eps)
     
-    if prototypes is not None:
-        prototypes_norm = prototypes / (np.linalg.norm(prototypes, axis=1, keepdims=True) + eps)
-        combined = np.concatenate([embeddings_norm, prototypes_norm], axis=0)
+    if class_centers is not None:
+        centers_norm = class_centers / (np.linalg.norm(class_centers, axis=1, keepdims=True) + eps)
+        combined = np.concatenate([embeddings_norm, centers_norm], axis=0)
     else:
         combined = embeddings_norm
 
@@ -41,22 +41,22 @@ def plot_latent_space(embeddings, labels, prototypes=None, save_path='results/la
     combined_2d = tsne.fit_transform(combined)
     
     latent_2d = combined_2d[:n_emb]
-    proto_2d = combined_2d[n_emb:] if prototypes is not None else None
+    centers_2d = combined_2d[n_emb:] if class_centers is not None else None
     
     plt.figure(figsize=(11, 9))
     # Plot jet embeddings
     sns.scatterplot(x=latent_2d[:, 0], y=latent_2d[:, 1], hue=labels, 
                     palette='viridis', alpha=0.4, s=15)
     
-    # Plot prototypes as distinct markers
-    if proto_2d is not None:
-        n_p = len(proto_2d)
-        plt.scatter(proto_2d[:n_p//2, 0], proto_2d[:n_p//2, 1], 
-                    marker='*', s=300, color='red', edgecolors='black', label='QCD Prototypes', zorder=5)
-        plt.scatter(proto_2d[n_p//2:, 0], proto_2d[n_p//2:, 1], 
-                    marker='*', s=300, color='cyan', edgecolors='black', label='Top Prototypes', zorder=5)
+    # Plot class centers as distinct markers
+    if centers_2d is not None:
+        n_c = len(centers_2d)
+        plt.scatter(centers_2d[:n_c//2, 0], centers_2d[:n_c//2, 1], 
+                    marker='*', s=300, color='red', edgecolors='black', label='QCD Center', zorder=5)
+        plt.scatter(centers_2d[n_c//2:, 0], centers_2d[n_c//2:, 1], 
+                    marker='*', s=300, color='cyan', edgecolors='black', label='Top Center', zorder=5)
 
-    plt.title("EFN Latent Space & ArcFace Prototypes")
+    plt.title("EFN Latent Space & ArcFace Class Centers")
     plt.xlabel("t-SNE 1")
     plt.ylabel("t-SNE 2")
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
@@ -183,13 +183,13 @@ def plot_training_results(history, cm, save_path='results/training_results_efn.p
     plt.legend()
     plt.grid(True, alpha=0.1)
     
-    # 3. Prototype Separation
+    # 3. Class Center Separation
     plt.subplot(2, 2, 3)
     plt.plot(history['sep_qcd'], label='QCD Sim', color='purple', alpha=0.7)
     plt.plot(history['sep_top'], label='Top Sim', color='darkorange', alpha=0.7)
     plt.title("Latent Space Compression (Avg Cosine Similarity)")
     plt.xlabel("Epoch")
-    plt.ylabel("Similarity to Prototype")
+    plt.ylabel("Similarity to Class Center")
     plt.legend()
     plt.grid(True, alpha=0.1)
     
@@ -225,8 +225,8 @@ def plot_decision_boundary(labels, class_scores, save_path='results/decision_bou
     lims = [min(plt.xlim()[0], plt.ylim()[0]), max(plt.xlim()[1], plt.ylim()[1])]
     plt.plot(lims, lims, 'k--', lw=2, label='Decision Boundary (Sim_Q = Sim_T)')
     
-    plt.xlabel("Max Similarity to QCD Prototypes")
-    plt.ylabel("Max Similarity to Top Prototypes")
+    plt.xlabel("Max Similarity to QCD Center")
+    plt.ylabel("Max Similarity to Top Center")
     plt.title("ArcFace Decision Boundary & Cluster Separation")
     plt.legend()
     plt.grid(True, alpha=0.2)

@@ -21,117 +21,241 @@ import matplotlib.pyplot as plt
 
 from jet_tagging.models.efn_arcface import TopTaggingModel, arcface_loss, count_parameters, distance_corr_loss
 from jet_tagging.utils.physics import compute_features
-from jet_tagging.data.loader import load_awkward, JetTaggingDataset
+from jet_tagging.data.loader import load_awkward, JetTaggingDataset, get_h5_len, load_events_by_indices
 from jet_tagging.utils.plotting import (plot_latent_space, plot_performance, 
                                       plot_representative_jet, plot_physics_correlations, 
                                       plot_lund_plane, plot_training_results)
+import gc
+import math
 
 
 # ============================================================================
 # Training & Evaluation Loops
 # ============================================================================
 
-def train_epoch(model, loader, optimizer, device, scheduler=None, decorrelate=False, lambda_disco=10.0):
+def train_chunk(model, loader, optimizer, device, scheduler=None, accumulation_steps=8):
     model.train()
     total_loss, total_acc = 0, 0
-    total_disco = 0.0
     criterion_cls = arcface_loss
     
-    for x, y, w, m, _ in loader:
+    optimizer.zero_grad()
+    n_batches = len(loader)
+    
+    for batch_idx, (x, y, w, m, _) in enumerate(loader):
         x, y, w, m = x.to(device), y.to(device), w.to(device), m.to(device)
         
-        optimizer.zero_grad()
         logits, sims, _ = model(x, labels=y, mask=m)
-        cls_loss = criterion_cls(logits, y)
-        
-        if decorrelate:
-            # Calculate analytical jet mass in PyTorch from constituent 4-vectors
-            E_tot = x[:, :, 0].sum(dim=1)
-            px_tot = x[:, :, 1].sum(dim=1)
-            py_tot = x[:, :, 2].sum(dim=1)
-            pz_tot = x[:, :, 3].sum(dim=1)
-            mass = torch.sqrt(torch.clamp(E_tot**2 - (px_tot**2 + py_tot**2 + pz_tot**2), min=1e-10))
+        loss = criterion_cls(logits, y)
             
-            # Compute DisCo loss only on QCD (background) events
-            qcd_mask = (y == 0)
-            scores = logits[:, 1] - logits[:, 0]
-            disco_val = distance_corr_loss(scores, mass, mask=qcd_mask)
-            
-            loss = cls_loss + lambda_disco * disco_val
-            total_disco += disco_val.item()
-        else:
-            loss = cls_loss
-            
+        loss = loss / accumulation_steps
         loss.backward()
-        optimizer.step()
         
-        # Hard Orthogonal Projection
-        model.prototype_layer.orthogonalize_prototypes()
-        
-        if scheduler: scheduler.step()
-        
-        total_loss += loss.item()
+        if (batch_idx + 1) % accumulation_steps == 0 or (batch_idx + 1) == n_batches:
+            optimizer.step()
+            optimizer.zero_grad()
+            
+            if scheduler: scheduler.step()
+            
+        total_loss += loss.item() * accumulation_steps
         total_acc += (logits.argmax(dim=1) == y).float().mean().item()
         
-    return total_loss / len(loader), total_acc / len(loader), total_disco / len(loader)
+    return total_loss / n_batches, total_acc / n_batches
 
-def evaluate(model, loader, device):
+
+def evaluate_chunked(model, file_path, device, batch_size=1024, chunk_size=100000, max_events=None, return_details=False):
     model.eval()
-    total_loss, total_acc = 0, 0
+    
+    total_len = get_h5_len(file_path)
+    if max_events is not None:
+        total_len = min(total_len, max_events)
+        
+    num_chunks = int(np.ceil(total_len / chunk_size))
+    
+    total_loss = 0.0
+    total_acc = 0.0
+    total_batches = 0
+    
     all_sims, all_labels, all_indices, all_logits = [], [], [], []
     criterion_cls = arcface_loss
     
     with torch.no_grad():
-        for x, y, w, m, idx in loader:
-            x, y, w, m = x.to(device), y.to(device), w.to(device), m.to(device)
-            logits, sims, _ = model(x, mask=m)
+        for chunk_idx in range(num_chunks):
+            start = chunk_idx * chunk_size
+            n_events = min(chunk_size, total_len - start)
             
-            loss = criterion_cls(logits, y)
-            total_loss += loss.item()
-            total_acc += (logits.argmax(dim=1) == y).float().mean().item()
+            ev, lab, w = load_awkward(file_path, max_events=n_events, start_event=start, lazy=True)
+            ds = JetTaggingDataset(ev, lab, w)
+            loader = DataLoader(ds, batch_size=batch_size, shuffle=False)
             
-            all_logits.append(logits.cpu())
-            all_sims.append(sims.cpu())
-            all_labels.append(y.cpu())
-            all_indices.append(idx.cpu())
+            for x, y, w_b, m, idx in loader:
+                x, y, w_b, m = x.to(device), y.to(device), w_b.to(device), m.to(device)
+                logits, sims, _ = model(x, mask=m)
+                
+                loss = criterion_cls(logits, y)
+                total_loss += loss.item()
+                total_acc += (logits.argmax(dim=1) == y).float().mean().item()
+                total_batches += 1
+                
+                if return_details:
+                    global_idx = idx + start
+                    all_logits.append(logits.cpu())
+                    all_sims.append(sims.cpu())
+                    all_labels.append(y.cpu())
+                    all_indices.append(global_idx.cpu())
             
-    return total_loss / len(loader), total_acc / len(loader), \
-           torch.cat(all_sims), torch.cat(all_labels), torch.cat(all_indices), torch.cat(all_logits)
+            del loader, ds, ev, lab, w
+            gc.collect()
+            torch.cuda.empty_cache()
+            
+    avg_loss = total_loss / total_batches if total_batches > 0 else 0.0
+    avg_acc = total_acc / total_batches if total_batches > 0 else 0.0
+    
+    if return_details:
+        return avg_loss, avg_acc, torch.cat(all_sims), torch.cat(all_labels), torch.cat(all_indices), torch.cat(all_logits)
+    else:
+        return avg_loss, avg_acc
 
 
 # ============================================================================
 # Interpretation
 # ============================================================================
 
-def interpret_prototypes(model, loader, dataset, device, n_prototypes=2, output_dir='results'):
+def interpret_class_centers(model, file_path, device, n_classes=2, output_dir='results', chunk_size=100000, max_events=None):
     print("\n" + "=" * 60)
-    print("EFN PROTOTYPE INTERPRETATION (Advanced Physics)")
+    print("EFN CLASS CENTER INTERPRETATION (Advanced Physics)")
     print("=" * 60)
     
-    # 6 values returned from fixed evaluate
-    _, _, all_sims, all_labels, all_indices, all_logits = evaluate(model, loader, device)
+    _, _, all_sims, all_labels, all_indices, _ = evaluate_chunked(
+        model, file_path, device, batch_size=1024, chunk_size=chunk_size, max_events=max_events, return_details=True
+    )
     
-    # Find best match for each prototype (dim=0 is samples)
     best_match_indices = all_sims.argmax(dim=0)
+    match_global_indices = [all_indices[best_match_indices[i].item()].item() for i in range(n_classes)]
     
-    proto_physics_data = []
-    for i in range(n_prototypes):
-        match_idx = best_match_indices[i].item()
-        real_idx = all_indices[match_idx].item()
-        event_p4 = dataset.events[real_idx]
+    matching_events = load_events_by_indices(file_path, match_global_indices)
+    
+    center_physics_data = []
+    for i in range(n_classes):
+        real_idx = match_global_indices[i]
+        event_p4 = matching_events[i]
         feats = compute_features(ak.Array([event_p4]))[0]
         
-        proto_class = "Top" if i >= (n_prototypes // 2) else "QCD"
-        print(f"Proto {i:2d} ({proto_class}): Match #{real_idx}, Mass={feats[0]:.1f}, nSD={feats[3]:.0f}, Tau32={feats[7]:.3f}, zg={feats[8]:.3f}")
+        center_class = "Top" if i == 1 else "QCD"
+        print(f"Center {i:d} ({center_class}): Match #{real_idx}, Mass={feats[0]:.1f}, nSD={feats[3]:.0f}, Tau32={feats[7]:.3f}, zg={feats[8]:.3f}")
         
-        proto_physics_data.append({
-            'proto_id': i, 'proto_class': proto_class, 'event_idx': real_idx, 'features': feats.tolist()
+        center_physics_data.append({
+            'center_id': i, 'center_class': center_class, 'event_idx': real_idx, 'features': feats.tolist()
         })
     
     os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, 'efn_results.json'), 'w') as f:
-        json.dump(proto_physics_data, f, indent=2)
-    return proto_physics_data, all_labels, all_sims
+        json.dump(center_physics_data, f, indent=2)
+    return center_physics_data, all_labels, all_sims, matching_events
+
+
+# ============================================================================
+# KASP (K-means-based Approximate Spectral Clustering) & Eigengap Heuristic
+# ============================================================================
+
+def estimate_clusters_eigengap(X_norm, max_k=10):
+    """
+    Estimates the optimal number of clusters using the eigengap heuristic.
+    Uses 100% parameter-free global Cosine Similarity and sparse ARPACK solver.
+    """
+    from scipy.sparse.linalg import eigsh, LinearOperator
+    
+    n_samples = X_norm.shape[0]
+    if n_samples < 3:
+        return 2, None
+        
+    # Global Cosine Similarity Matrix: A_ij = (1 + cos(theta_ij)) / 2
+    # In matrix form: A = (1 + X_norm @ X_norm.T) / 2
+    # Row sums: d_i = sum_j A_ij = (N + X_norm_i . sum_j X_norm_j) / 2
+    sum_X = np.sum(X_norm, axis=0)
+    d = (n_samples + X_norm @ sum_X) / 2.0
+    d = np.clip(d, 1e-10, None)
+    d_inv_sqrt = 1.0 / np.sqrt(d)
+    
+    # LinearOperator for M = D^{-1/2} A D^{-1/2}
+    def matvec(v):
+        y = d_inv_sqrt * v
+        Ay = (np.sum(y) + X_norm @ (X_norm.T @ y)) / 2.0
+        return d_inv_sqrt * Ay
+        
+    M_op = LinearOperator((n_samples, n_samples), matvec=matvec)
+    
+    try:
+        # Compute the largest eigenvalues of M (which correspond to smallest eigenvalues of L_norm)
+        k_eigen = min(max_k + 2, n_samples - 2)
+        vals, _ = eigsh(M_op, k=k_eigen, which='LM')
+        
+        # eigenvalues of L_norm = 1.0 - vals, sorted in ascending order
+        eigenvalues = np.sort(1.0 - vals)
+        
+        max_k_checked = min(max_k, len(eigenvalues) - 2)
+        if max_k_checked < 2:
+            return 2, eigenvalues
+        gaps = np.diff(eigenvalues[1:max_k_checked + 2])
+        optimal_k = np.argmax(gaps) + 2
+        return optimal_k, eigenvalues
+    except Exception as e:
+        print(f"Warning in eigengap calculation: {e}. Falling back to default k=5.")
+        return 5, None
+
+
+def spectral_clustering_subclass(X, max_k=10):
+    """
+    Standard Spectral Clustering using parameter-free global Cosine Similarity.
+    """
+    from scipy.sparse.linalg import eigsh, LinearOperator
+    from sklearn.cluster import KMeans
+    
+    n_samples = X.shape[0]
+    if n_samples < 2:
+        return np.zeros(n_samples, dtype=int), 1
+        
+    # L2-normalize to ensure Cosine distance is used
+    X_norm = X / (np.linalg.norm(X, axis=1, keepdims=True) + 1e-10)
+    
+    # Step 1: Use Eigengap Heuristic on normalized data directly to find optimal k
+    optimal_k, _ = estimate_clusters_eigengap(X_norm, max_k=max_k)
+    print(f"  Eigengap heuristic suggests optimal subclasses k = {optimal_k}")
+    
+    # Step 2: Run Spectral Clustering using the global cosine similarity matrix
+    sum_X = np.sum(X_norm, axis=0)
+    d = (n_samples + X_norm @ sum_X) / 2.0
+    d = np.clip(d, 1e-10, None)
+    d_inv_sqrt = 1.0 / np.sqrt(d)
+    
+    def matvec(v):
+        y = d_inv_sqrt * v
+        Ay = (np.sum(y) + X_norm @ (X_norm.T @ y)) / 2.0
+        return d_inv_sqrt * Ay
+        
+    M_op = LinearOperator((n_samples, n_samples), matvec=matvec)
+    
+    try:
+        # Find top optimal_k eigenvalues and eigenvectors of M
+        vals, vecs = eigsh(M_op, k=optimal_k, which='LM')
+        
+        # Sort descending by eigenvalues of M
+        idx = np.argsort(vals)[::-1]
+        vecs = vecs[:, idx]
+        
+        # Normalize rows of eigenvectors
+        row_norms = np.linalg.norm(vecs, axis=1, keepdims=True)
+        U = vecs / (row_norms + 1e-10)
+        
+        # Cluster using K-means
+        kmeans = KMeans(n_clusters=optimal_k, random_state=42, n_init=10)
+        labels = kmeans.fit_predict(U)
+        
+        return labels, optimal_k
+    except Exception as e:
+        print(f"Warning in spectral clustering: {e}. Falling back to standard K-means.")
+        kmeans = KMeans(n_clusters=optimal_k, random_state=42, n_init=10)
+        labels = kmeans.fit_predict(X_norm)
+        return labels, optimal_k
 
 
 # ============================================================================
@@ -144,14 +268,15 @@ def main():
     parser.add_argument('--max_events', type=int, default=None)
     parser.add_argument('--quick', action='store_true')
     parser.add_argument('--data_dir', type=str, default='data/top_tagging')
-    parser.add_argument('--n_proto_per_class', type=int, default=1)
-    parser.add_argument('--decorrelate', action='store_true')
-    parser.add_argument('--lambda_disco', type=float, default=10.0)
     parser.add_argument('--scale', type=float, default=16.0, help='ArcFace scale parameter s')
-    parser.add_argument('--embedding_dim', type=int, default=128, help='EFN embedding/latent dimension')
-    parser.add_argument('--particle_dim', type=int, default=256, help='EFN particle/phi hidden dimension')
+    parser.add_argument('--embedding_dim', type=int, default=64, help='EFN embedding/latent dimension')
+    parser.add_argument('--particle_dim', type=int, default=128, help='EFN particle/phi hidden dimension')
     parser.add_argument('--output_dir', type=str, default='results')
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoints')
+    parser.add_argument('--batch_size', type=int, default=128, help='Batch size for training')
+    parser.add_argument('--accumulation_steps', type=int, default=8, help='Gradient accumulation steps')
+    parser.add_argument('--chunk_size', type=int, default=100000, help='Chunk size for reading datasets')
+    parser.add_argument('--analysis_only', action='store_true', help='Skip training and run only final evaluation & KASP analysis using existing checkpoint')
     args = parser.parse_args()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -161,93 +286,173 @@ def main():
     else:
         max_events = 5000 if args.quick else None
 
-    print("Loading datasets...")
     import os
-    tr_ev, tr_lab, tr_w = load_awkward(os.path.join(args.data_dir, 'train.h5'), max_events=max_events)
-    val_ev, val_lab, val_w = load_awkward(os.path.join(args.data_dir, 'val.h5'), max_events=max_events)
-    te_ev, te_lab, te_w = load_awkward(os.path.join(args.data_dir, 'test.h5'), max_events=max_events)
+    train_path = os.path.join(args.data_dir, 'train.h5')
+    val_path = os.path.join(args.data_dir, 'val.h5')
+    test_path = os.path.join(args.data_dir, 'test.h5')
+    
+    # Calculate dataset lengths
+    train_len = get_h5_len(train_path)
+    val_len = get_h5_len(val_path)
+    test_len = get_h5_len(test_path)
+    
+    if max_events:
+        train_len = min(train_len, max_events)
+        val_len = min(val_len, max_events)
+        test_len = min(test_len, max_events)
 
-    train_ds = JetTaggingDataset(tr_ev, tr_lab, tr_w)
-    val_ds = JetTaggingDataset(val_ev, val_lab, val_w)
-    test_ds = JetTaggingDataset(te_ev, te_lab, te_w)
-
-    train_loader = DataLoader(train_ds, batch_size=1024, shuffle=True)
-    val_loader = DataLoader(val_ds, batch_size=1024)
-    test_loader = DataLoader(test_ds, batch_size=1024)
+    num_train_chunks = int(np.ceil(train_len / args.chunk_size))
+    
+    # Pre-calculate training steps per epoch for OneCycleLR
+    total_train_batches = 0
+    for chunk_idx in range(num_train_chunks):
+        start = chunk_idx * args.chunk_size
+        n_events = min(args.chunk_size, train_len - start)
+        total_train_batches += int(np.ceil(n_events / args.batch_size))
+        
+    steps_per_epoch = int(np.ceil(total_train_batches / args.accumulation_steps))
+    total_scheduler_steps = steps_per_epoch * args.epochs
+    
+    print("Dataset configuration:")
+    print(f"  Train events: {train_len:,} ({num_train_chunks} chunks of size {args.chunk_size:,})")
+    print(f"  Val events:   {val_len:,}")
+    print(f"  Test events:  {test_len:,}")
+    print(f"  Total batches per epoch: {total_train_batches:,}")
+    print(f"  Scheduler steps per epoch: {steps_per_epoch:,} (total steps: {total_scheduler_steps:,})")
 
     model = TopTaggingModel(
-        n_proto_per_class=args.n_proto_per_class,
         s=args.scale,
         m=0.0,
         embedding_dim=args.embedding_dim,
         particle_dim=args.particle_dim
     ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
-    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=2e-3, total_steps=len(train_loader)*args.epochs)
+    scheduler = optim.lr_scheduler.OneCycleLR(
+        optimizer, 
+        max_lr=2e-3, 
+        total_steps=total_scheduler_steps if total_scheduler_steps > 0 else 1
+    )
     
     warmup_epochs, final_margin = 10, 0.5
     print(f"\nTraining EFN + ArcFace (xAI Prototype Model, Params: {count_parameters(model):,})")
     
-    history = {'train_loss': [], 'train_acc': [], 'train_disco': [], 'val_loss': [], 'val_acc': [], 
+    history = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': [], 
                'sep_qcd': [], 'sep_top': []}
     best_acc = 0.0
     best_model_path = os.path.join(args.checkpoint_dir, 'best_model_efn.pt')
 
-    epoch_pbar = tqdm(range(args.epochs), desc="Overall Progress")
-    for epoch in epoch_pbar:
-        current_m = final_margin * min(1.0, (epoch + 1) / warmup_epochs)
-        model.prototype_layer.set_margin(current_m)
+    if not args.analysis_only:
+        epoch_pbar = tqdm(range(args.epochs), desc="Overall Progress")
+        for epoch in epoch_pbar:
+            current_m = final_margin * min(1.0, (epoch + 1) / warmup_epochs)
+            model.arcface_head.set_margin(current_m)
 
-        t0 = time.time()
-        t_loss, t_acc, t_disco = train_epoch(model, train_loader, optimizer, device, scheduler=scheduler,
-                                             decorrelate=args.decorrelate, lambda_disco=args.lambda_disco)
-        v_loss, v_acc, v_sims, v_labels, _, v_logits = evaluate(model, val_loader, device)
-        t1 = time.time()
-        
-        n = model.prototype_layer.n_proto_per_class
-        qcd_mask, top_mask = v_labels.numpy() == 0, v_labels.numpy() == 1
-        sep_qcd = v_sims[qcd_mask][:, :n].max(dim=1)[0].mean().item()
-        sep_top = v_sims[top_mask][:, n:].max(dim=1)[0].mean().item()
+            t0 = time.time()
+            
+            # Shuffle chunk order per epoch
+            chunk_indices = list(range(num_train_chunks))
+            np.random.shuffle(chunk_indices)
+            
+            t_loss_sum, t_acc_sum = 0.0, 0.0
+            events_trained = 0
+            
+            # Display progress for chunks and batches within the active epoch
+            epoch_pbar_inner = tqdm(total=total_train_batches, desc=f"Epoch {epoch+1}/{args.epochs} [Chunk 0/{num_train_chunks}]", leave=False)
+            
+            for c_idx, chunk_idx in enumerate(chunk_indices):
+                epoch_pbar_inner.set_description(f"Epoch {epoch+1}/{args.epochs} [Chunk {c_idx+1}/{num_train_chunks}]")
+                
+                start = chunk_idx * args.chunk_size
+                n_events = min(args.chunk_size, train_len - start)
+                
+                # Load chunk
+                tr_ev, tr_lab, tr_w = load_awkward(train_path, max_events=n_events, start_event=start, lazy=True)
+                train_ds = JetTaggingDataset(tr_ev, tr_lab, tr_w)
+                train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, pin_memory=True)
+                
+                # Train chunk
+                c_loss, c_acc = train_chunk(
+                    model, train_loader, optimizer, device, scheduler=scheduler,
+                    accumulation_steps=args.accumulation_steps
+                )
+                
+                # Accumulate weighted training metrics
+                t_loss_sum += c_loss * n_events
+                t_acc_sum += c_acc * n_events
+                events_trained += n_events
+                
+                epoch_pbar_inner.update(len(train_loader))
+                epoch_pbar_inner.set_postfix(Loss=f"{c_loss:.4f}", Acc=f"{c_acc:.4f}")
+                
+                # Memory Cleanup
+                del train_loader, train_ds, tr_ev, tr_lab, tr_w
+                gc.collect()
+                torch.cuda.empty_cache()
+                
+            epoch_pbar_inner.close()
+            
+            t_loss = t_loss_sum / events_trained
+            t_acc = t_acc_sum / events_trained
+            
+            # Evaluate validation set chunk-by-chunk (returning details to CPU for separation calculations)
+            v_loss, v_acc, v_sims, v_labels, _, v_logits = evaluate_chunked(
+                model, val_path, device, batch_size=1024, chunk_size=args.chunk_size, max_events=val_len, return_details=True
+            )
+            t1 = time.time()
+            
+            n = 1
+            qcd_mask, top_mask = v_labels.numpy() == 0, v_labels.numpy() == 1
+            sep_qcd = v_sims[qcd_mask][:, :n].max(dim=1)[0].mean().item()
+            sep_top = v_sims[top_mask][:, n:].max(dim=1)[0].mean().item()
 
-        history['train_loss'].append(t_loss); history['train_acc'].append(t_acc)
-        history['train_disco'].append(t_disco)
-        history['val_loss'].append(v_loss); history['val_acc'].append(v_acc)
-        history['sep_qcd'].append(sep_qcd); history['sep_top'].append(sep_top)
-        
-        curr_lr = optimizer.param_groups[0]['lr']
-        tag = " [NEW BEST]" if v_acc > best_acc else ""
-        if v_acc > best_acc:
-            best_acc = v_acc
-            os.makedirs(args.checkpoint_dir, exist_ok=True)
-            torch.save(model.state_dict(), best_model_path)
+            history['train_loss'].append(t_loss); history['train_acc'].append(t_acc)
+            history['val_loss'].append(v_loss); history['val_acc'].append(v_acc)
+            history['sep_qcd'].append(sep_qcd); history['sep_top'].append(sep_top)
+            
+            curr_lr = optimizer.param_groups[0]['lr']
+            tag = " [NEW BEST]" if v_acc > best_acc else ""
+            if v_acc > best_acc:
+                best_acc = v_acc
+                os.makedirs(args.checkpoint_dir, exist_ok=True)
+                torch.save(model.state_dict(), best_model_path)
 
-        print(f"Epoch {epoch+1:2d}/{args.epochs}: m={current_m:.2f} | LR={curr_lr:.6f} | Time={t1-t0:.1f}s")
-        if args.decorrelate:
-            print(f"  Train: Loss={t_loss:.4f}, Acc={t_acc:.4f}, DisCo={t_disco:.4f} | Val: Acc={v_acc:.4f}{tag}")
-        else:
+            print(f"Epoch {epoch+1:2d}/{args.epochs}: m={current_m:.2f} | LR={curr_lr:.6f} | Time={t1-t0:.1f}s")
             print(f"  Train: Loss={t_loss:.4f}, Acc={t_acc:.4f} | Val: Acc={v_acc:.4f}{tag}")
-        print(f"  Sep:   QCD_Sim={sep_qcd:.4f}, Top_Sim={sep_top:.4f}")
-        print("-" * 65)
+            print(f"  Sep:   QCD_Sim={sep_qcd:.4f}, Top_Sim={sep_top:.4f}")
+            print("-" * 65)
 
-    # Save History JSON
-    os.makedirs(args.output_dir, exist_ok=True)
-    with open(os.path.join(args.output_dir, 'history.json'), 'w') as f:
-        json.dump(history, f, indent=4)
+        # Save History JSON
+        os.makedirs(args.output_dir, exist_ok=True)
+        with open(os.path.join(args.output_dir, 'history.json'), 'w') as f:
+            json.dump(history, f, indent=4)
+    else:
+        # Load existing history if available
+        history_path = os.path.join(args.output_dir, 'history.json')
+        if os.path.exists(history_path):
+            print(f"Loading existing history from {history_path}")
+            with open(history_path, 'r') as f:
+                history = json.load(f)
+        else:
+            print("Warning: history.json not found in output directory. Creating dummy history.")
+            history = {'train_loss': [0.0], 'train_acc': [0.0], 'val_loss': [0.0], 'val_acc': [0.0], 
+                       'sep_qcd': [0.0], 'sep_top': [0.0]}
 
     # FINAL ANALYSIS
     model.load_state_dict(torch.load(best_model_path))
-    proto_data, t_labels, t_sims = interpret_prototypes(
-        model, test_loader, test_ds, device, 
-        n_prototypes=model.prototype_layer.n_prototypes, 
-        output_dir=args.output_dir
+    center_data, t_labels, t_sims, matching_events = interpret_class_centers(
+        model, test_path, device, 
+        n_classes=model.arcface_head.n_classes, 
+        output_dir=args.output_dir,
+        chunk_size=args.chunk_size,
+        max_events=test_len
     )
     
     # 0. Global Metrics & Training Results
     from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
     from jet_tagging.utils.plotting import plot_decision_boundary
     
-    # Correctly aggregate prototype similarities into class scores
-    n = model.prototype_layer.n_proto_per_class
+    # Correctly aggregate similarities into class scores (1 center per class)
+    n = 1
     qcd_scores = t_sims[:, :n].max(dim=1)[0]
     top_scores = t_sims[:, n:].max(dim=1)[0]
     class_scores = torch.stack([qcd_scores, top_scores], dim=1)
@@ -259,13 +464,25 @@ def main():
     # Advanced Metrics
     prec, rec, f1, _ = precision_recall_fscore_support(t_labels.numpy(), test_preds, average='binary')
     
-    # Benchmark Inference Time (Com-Sci)
+    # Benchmark Inference Time (Com-Sci) - chunk-based for memory safety
     model.eval()
     t_start = time.time()
     with torch.no_grad():
-        for x, _, _, m, _ in test_loader:
-            _ = model(x.to(device), mask=m.to(device))
-    inf_time = (time.time() - t_start) / len(test_ds) * 1000 # ms/jet
+        num_test_chunks = int(np.ceil(test_len / args.chunk_size))
+        for chunk_idx in range(num_test_chunks):
+            start = chunk_idx * args.chunk_size
+            n_events = min(args.chunk_size, test_len - start)
+            
+            ev, lab, w = load_awkward(test_path, max_events=n_events, start_event=start, lazy=True)
+            ds = JetTaggingDataset(ev, lab, w)
+            loader = DataLoader(ds, batch_size=1024, shuffle=False)
+            for x, _, _, m, _ in loader:
+                _ = model(x.to(device), mask=m.to(device))
+            del loader, ds, ev, lab, w
+            gc.collect()
+            torch.cuda.empty_cache()
+            
+    inf_time = (time.time() - t_start) / test_len * 1000 # ms/jet
     
     # Save Metrics
     advanced_metrics = {
@@ -280,13 +497,25 @@ def main():
     plot_performance(t_labels.numpy(), class_scores.numpy(), save_path=os.path.join(args.output_dir, 'performance.png'))
     plot_decision_boundary(t_labels.numpy(), class_scores.numpy(), save_path=os.path.join(args.output_dir, 'decision_boundary.png'))
     
-    # 2. Latent Space (Get embeddings)
+    # 2. Latent Space (Get embeddings) - chunk-based for memory safety
     all_emb = []
     model.eval()
     with torch.no_grad():
-        for x, _, _, m, _ in test_loader:
-            _, _, emb = model(x.to(device), mask=m.to(device))
-            all_emb.append(emb.cpu())
+        num_test_chunks = int(np.ceil(test_len / args.chunk_size))
+        for chunk_idx in range(num_test_chunks):
+            start = chunk_idx * args.chunk_size
+            n_events = min(args.chunk_size, test_len - start)
+            
+            ev, lab, w = load_awkward(test_path, max_events=n_events, start_event=start, lazy=True)
+            ds = JetTaggingDataset(ev, lab, w)
+            loader = DataLoader(ds, batch_size=1024, shuffle=False)
+            for x, _, _, m, _ in loader:
+                _, _, emb = model(x.to(device), mask=m.to(device))
+                all_emb.append(emb.cpu())
+            del loader, ds, ev, lab, w
+            gc.collect()
+            torch.cuda.empty_cache()
+            
     all_emb = torch.cat(all_emb).numpy()
     
     # Export jet embeddings and labels post-training
@@ -294,50 +523,47 @@ def main():
     np.savez(emb_path, embeddings=all_emb, labels=t_labels.numpy())
     print(f"Exported {len(all_emb)} jet embeddings to '{emb_path}'")
 
-    # --- ADVANCED UMAP & DPGMM ANALYSIS ---
+    # --- ADVANCED UMAP & SC ANALYSIS ---
     import umap
-    from sklearn.mixture import BayesianGaussianMixture
     import seaborn as sns
     
-    print("\n--- Running Advanced UMAP & DPGMM Subclass Discovery ---")
+    print("\n--- Running Advanced UMAP & SC Subclass Discovery ---")
     all_emb_norm = all_emb / (np.linalg.norm(all_emb, axis=1, keepdims=True) + 1e-10)
-    prototypes = model.prototype_layer.prototypes.detach().cpu().numpy()
-    prototypes_norm = prototypes / (np.linalg.norm(prototypes, axis=1, keepdims=True) + 1e-10)
+    class_centers = model.arcface_head.class_centers.detach().cpu().numpy()
+    centers_norm = class_centers / (np.linalg.norm(class_centers, axis=1, keepdims=True) + 1e-10)
     
     # UMAP Projection
     print("Fitting UMAP (metric='cosine')...")
     reducer = umap.UMAP(n_components=2, metric='cosine', random_state=42)
     umap_coords = reducer.fit_transform(all_emb_norm)
-    proto_umap = reducer.transform(prototypes_norm)
+    centers_umap = reducer.transform(centers_norm)
     
-    # DPGMM Subclass Discovery
+    # Spectral Clustering Subclass Discovery
     subclass_labels = np.zeros(len(all_emb), dtype=int) - 1
     min_samples = 10
     
     top_mask = (test_preds == 1)
     if top_mask.sum() >= min_samples:
-        print("Fitting DPGMM on Top latent space embeddings...")
+        print("Fitting Spectral Clustering on Top latent space embeddings...")
         top_latent = all_emb_norm[top_mask]
-        dpgmm_top = BayesianGaussianMixture(n_components=5, weight_concentration_prior=1e-3, random_state=42, n_init=2)
-        top_subclasses = dpgmm_top.fit_predict(top_latent)
+        top_subclasses, k_top = spectral_clustering_subclass(top_latent, max_k=10)
         active_top, counts_top = np.unique(top_subclasses, return_counts=True)
         print(f"Top Active Subclasses: {active_top} with counts {counts_top}")
         subclass_labels[top_mask] = top_subclasses
     else:
-        print(f"Warning: Too few Top predictions ({top_mask.sum()}) to run DPGMM. Skipping Top subclass discovery.")
+        print(f"Warning: Too few Top predictions ({top_mask.sum()}) to run Spectral Clustering. Skipping Top subclass discovery.")
         active_top = np.array([])
         
     qcd_mask = (test_preds == 0)
     if qcd_mask.sum() >= min_samples:
-        print("Fitting DPGMM on QCD latent space embeddings...")
+        print("Fitting Spectral Clustering on QCD latent space embeddings...")
         qcd_latent = all_emb_norm[qcd_mask]
-        dpgmm_qcd = BayesianGaussianMixture(n_components=5, weight_concentration_prior=1e-3, random_state=42, n_init=2)
-        qcd_subclasses = dpgmm_qcd.fit_predict(qcd_latent)
+        qcd_subclasses, k_qcd = spectral_clustering_subclass(qcd_latent, max_k=10)
         active_qcd, counts_qcd = np.unique(qcd_subclasses, return_counts=True)
         print(f"QCD Active Subclasses: {active_qcd} with counts {counts_qcd}")
         subclass_labels[qcd_mask] = qcd_subclasses
     else:
-        print(f"Warning: Too few QCD predictions ({qcd_mask.sum()}) to run DPGMM. Skipping QCD subclass discovery.")
+        print(f"Warning: Too few QCD predictions ({qcd_mask.sum()}) to run Spectral Clustering. Skipping QCD subclass discovery.")
         active_qcd = np.array([])
     
     # Calculate Prediction Status
@@ -367,8 +593,8 @@ def main():
                         color=colors[cat], marker=markers[cat], s=sizes[cat],
                         alpha=alphas[cat], label=f"{cat} ({mask_cat.sum()})")
                         
-    plt.scatter(proto_umap[0, 0], proto_umap[0, 1], marker='*', s=450, color='yellow', edgecolors='black', linewidth=1.5, label='W_QCD (Center)', zorder=10)
-    plt.scatter(proto_umap[1, 0], proto_umap[1, 1], marker='*', s=450, color='magenta', edgecolors='black', linewidth=1.5, label='W_Top (Center)', zorder=10)
+    plt.scatter(centers_umap[0, 0], centers_umap[0, 1], marker='*', s=450, color='yellow', edgecolors='black', linewidth=1.5, label='W_QCD (Center)', zorder=10)
+    plt.scatter(centers_umap[1, 0], centers_umap[1, 1], marker='*', s=450, color='magenta', edgecolors='black', linewidth=1.5, label='W_Top (Center)', zorder=10)
     
     try:
         for cat in ['True Negative', 'True Positive']:
@@ -400,8 +626,8 @@ def main():
         if sc_mask.sum() > 0:
             plt.scatter(umap_coords[sc_mask, 0], umap_coords[sc_mask, 1], color=top_colors[i % len(top_colors)], s=15, alpha=0.5, label=f"Top Subclass {i} (N={sc_mask.sum()})")
             
-    plt.scatter(proto_umap[0, 0], proto_umap[0, 1], marker='*', s=450, color='yellow', edgecolors='black', linewidth=1.5, label='W_QCD (Center)', zorder=10)
-    plt.scatter(proto_umap[1, 0], proto_umap[1, 1], marker='*', s=450, color='magenta', edgecolors='black', linewidth=1.5, label='W_Top (Center)', zorder=10)
+    plt.scatter(centers_umap[0, 0], centers_umap[0, 1], marker='*', s=450, color='yellow', edgecolors='black', linewidth=1.5, label='W_QCD (Center)', zorder=10)
+    plt.scatter(centers_umap[1, 0], centers_umap[1, 1], marker='*', s=450, color='magenta', edgecolors='black', linewidth=1.5, label='W_Top (Center)', zorder=10)
     plt.title("Discovered Subclasses in Latent Space (UMAP + DPGMM)", fontsize=14)
     plt.xlabel("UMAP Dimension 1")
     plt.ylabel("UMAP Dimension 2")
@@ -411,9 +637,9 @@ def main():
     plt.close()
     
     # 3. Representative Jets
-    for entry in proto_data:
-        plot_representative_jet(test_ds.events[entry['event_idx']], title=f"Proto {entry['proto_id']} ({entry['proto_class']})", 
-                                 save_path=os.path.join(args.output_dir, f"proto_{entry['proto_id']}_jet.png"))
+    for entry in center_data:
+        plot_representative_jet(matching_events[entry['center_id']], title=f"Center {entry['center_id']} ({entry['center_class']})", 
+                                 save_path=os.path.join(args.output_dir, f"center_{entry['center_id']}_jet.png"))
                                  
     # 4. Physics Analysis
     print("  Running Substructure Correlation & Lund Plane...")
@@ -446,10 +672,12 @@ def main():
     if len(sampled_indices) > 0:
         test_idx = np.unique(sampled_indices)
     else:
-        test_idx = np.random.choice(len(test_ds), min(5000, len(test_ds)), replace=False)
+        test_idx = np.random.choice(test_len, min(5000, test_len), replace=False)
         
     print(f"  Stratified sampling complete: selected {len(test_idx)} representative jets based on latent space distributions.")
-    sub_events = test_ds.events[test_idx]
+    
+    # Load sampled events dynamically
+    sub_events = load_events_by_indices(test_path, test_idx)
     sub_labels = t_labels.numpy()[test_idx]
     
     # Correctly aggregate scores for correlation analysis
@@ -544,7 +772,6 @@ def main():
     row_labels = []
 
     if len(active_top) > 0:
-        top_probs = dpgmm_top.predict_proba(top_latent)
         for i, sc in enumerate(active_top):
             sc_mask = (test_preds == 1) & (subclass_labels == sc)
             n_tot = sc_mask.sum()
@@ -557,7 +784,6 @@ def main():
                 row_labels.append(f"Top Subclass {i} (N={n_tot})")
 
     if len(active_qcd) > 0:
-        qcd_probs = dpgmm_qcd.predict_proba(qcd_latent)
         for i, sc in enumerate(active_qcd):
             sc_mask = (test_preds == 0) & (subclass_labels == sc)
             n_tot = sc_mask.sum()
@@ -586,18 +812,27 @@ def main():
     # Top Subclasses
     if len(active_top) > 0:
         top_indices_in_test = np.where(test_preds == 1)[0]
-        top_probs = dpgmm_top.predict_proba(top_latent)
         for i, sc in enumerate(active_top):
             assigned_jets_in_top = (top_subclasses == sc)
             if assigned_jets_in_top.sum() > 0:
-                probs_for_sc = top_probs[:, sc].copy()
-                probs_for_sc[~assigned_jets_in_top] = -1.0
-                top5_relative_indices = np.argsort(probs_for_sc)[::-1][:5]
+                # Calculate mean embedding for this subclass
+                sc_emb = top_latent[assigned_jets_in_top]
+                mean_emb = sc_emb.mean(axis=0)
+                mean_emb = mean_emb / (np.linalg.norm(mean_emb) + 1e-10)
+                
+                # Compute cosine similarities of all top_latent to this mean embedding
+                sims_to_centroid = np.dot(top_latent, mean_emb)
+                sims_for_sc = sims_to_centroid.copy()
+                sims_for_sc[~assigned_jets_in_top] = -1.0
+                
+                top5_relative_indices = np.argsort(sims_for_sc)[::-1][:5]
                 top5_test_indices = top_indices_in_test[top5_relative_indices]
+                
+                sub5_events = load_events_by_indices(test_path, top5_test_indices)
                 
                 fig, axes = plt.subplots(1, 5, figsize=(20, 4))
                 for idx_fig, t_idx in enumerate(top5_test_indices):
-                    event = test_ds.events[t_idx]
+                    event = sub5_events[idx_fig]
                     px = ak.to_numpy(event.px)
                     py = ak.to_numpy(event.py)
                     pz = ak.to_numpy(event.pz)
@@ -611,7 +846,7 @@ def main():
                     ax.scatter(eta, phi, s=pt*5, alpha=0.7, c=z_e, cmap='plasma', edgecolors='black', linewidth=0.3)
                     ax.set_xlabel(r'$\eta$ (rel)')
                     ax.set_ylabel(r'$\phi$ (rel)')
-                    ax.set_title(f"Jet {idx_fig+1} (Prob: {probs_for_sc[top5_relative_indices[idx_fig]]:.2f})", fontsize=10)
+                    ax.set_title(f"Jet {idx_fig+1} (Sim: {sims_for_sc[top5_relative_indices[idx_fig]]:.2f})", fontsize=10)
                     ax.grid(True, alpha=0.15)
                     
                 plt.suptitle(f"Top Subclass {i} - Top 5 Representative Jets", fontsize=14, y=1.05)
@@ -622,18 +857,27 @@ def main():
     # QCD Subclasses
     if len(active_qcd) > 0:
         qcd_indices_in_test = np.where(test_preds == 0)[0]
-        qcd_probs = dpgmm_qcd.predict_proba(qcd_latent)
         for i, sc in enumerate(active_qcd):
             assigned_jets_in_qcd = (qcd_subclasses == sc)
             if assigned_jets_in_qcd.sum() > 0:
-                probs_for_sc = qcd_probs[:, sc].copy()
-                probs_for_sc[~assigned_jets_in_qcd] = -1.0
-                top5_relative_indices = np.argsort(probs_for_sc)[::-1][:5]
+                # Calculate mean embedding for this subclass
+                sc_emb = qcd_latent[assigned_jets_in_qcd]
+                mean_emb = sc_emb.mean(axis=0)
+                mean_emb = mean_emb / (np.linalg.norm(mean_emb) + 1e-10)
+                
+                # Compute cosine similarities of all qcd_latent to this mean embedding
+                sims_to_centroid = np.dot(qcd_latent, mean_emb)
+                sims_for_sc = sims_to_centroid.copy()
+                sims_for_sc[~assigned_jets_in_qcd] = -1.0
+                
+                top5_relative_indices = np.argsort(sims_for_sc)[::-1][:5]
                 top5_test_indices = qcd_indices_in_test[top5_relative_indices]
+                
+                sub5_events = load_events_by_indices(test_path, top5_test_indices)
                 
                 fig, axes = plt.subplots(1, 5, figsize=(20, 4))
                 for idx_fig, t_idx in enumerate(top5_test_indices):
-                    event = test_ds.events[t_idx]
+                    event = sub5_events[idx_fig]
                     px = ak.to_numpy(event.px)
                     py = ak.to_numpy(event.py)
                     pz = ak.to_numpy(event.pz)
@@ -647,7 +891,7 @@ def main():
                     ax.scatter(eta, phi, s=pt*5, alpha=0.7, c=z_e, cmap='plasma', edgecolors='black', linewidth=0.3)
                     ax.set_xlabel(r'$\eta$ (rel)')
                     ax.set_ylabel(r'$\phi$ (rel)')
-                    ax.set_title(f"Jet {idx_fig+1} (Prob: {probs_for_sc[top5_relative_indices[idx_fig]]:.2f})", fontsize=10)
+                    ax.set_title(f"Jet {idx_fig+1} (Sim: {sims_for_sc[top5_relative_indices[idx_fig]]:.2f})", fontsize=10)
                     ax.grid(True, alpha=0.15)
                     
                 plt.suptitle(f"QCD Subclass {i} - Top 5 Representative Jets", fontsize=14, y=1.05)
@@ -729,11 +973,10 @@ def main():
     os.makedirs(lund_dir, exist_ok=True)
     from jet_tagging.utils.plotting import plot_lund_plane
 
-    # A. Class-level Lund planes
-    plot_lund_plane(sub_events[sub_preds == 1], label="Predicted Top (Class-level)", save_path=os.path.join(lund_dir, 'class_predicted_top.png'))
-    plot_lund_plane(sub_events[sub_preds == 0], label="Predicted QCD (Class-level)", save_path=os.path.join(lund_dir, 'class_predicted_qcd.png'))
+    # A. Class-level Lund planes (1 Non-split + 4 T/F splits)
+    plot_lund_plane(sub_events, label="Overall Test Set (Non-split)", save_path=os.path.join(lund_dir, 'class_overall_non_split.png'))
 
-    # B. Prediction Status Lund planes (Level 1 T/F)
+    # B. Prediction Status Lund planes (4 T/F splits)
     sub_tp = (sub_status == 'True Positive')
     sub_tn = (sub_status == 'True Negative')
     sub_fp = (sub_status == 'False Positive')
@@ -781,12 +1024,23 @@ def main():
                                save_path=os.path.join(args.output_dir, 'correlations.png'))
     plot_feature_distributions(sub_labels, sub_features, feature_names,
                                 save_path=os.path.join(args.output_dir, 'feature_distributions.png'))
-    plot_lund_plane(sub_events[sub_labels==0], label="QCD", save_path=os.path.join(args.output_dir, 'lund_plane_qcd.png'))
-    plot_lund_plane(sub_events[sub_labels==1], label="Top", save_path=os.path.join(args.output_dir, 'lund_plane_top.png'))
+    
+    # Load separate events for class-level Lund plane plotting
+    qcd_indices = np.where(t_labels.numpy() == 0)[0]
+    top_indices = np.where(t_labels.numpy() == 1)[0]
+    
+    qcd_sample_idx = np.random.choice(qcd_indices, min(5000, len(qcd_indices)), replace=False)
+    top_sample_idx = np.random.choice(top_indices, min(5000, len(top_indices)), replace=False)
+    
+    qcd_sample_events = load_events_by_indices(test_path, qcd_sample_idx)
+    top_sample_events = load_events_by_indices(test_path, top_sample_idx)
+    
+    plot_lund_plane(qcd_sample_events, label="QCD", save_path=os.path.join(args.output_dir, 'lund_plane_qcd.png'))
+    plot_lund_plane(top_sample_events, label="Top", save_path=os.path.join(args.output_dir, 'lund_plane_top.png'))
     
     # (Backward compatible latent space plot)
     plot_latent_space(all_emb[:5000], t_labels.numpy()[:5000], 
-                      prototypes=model.prototype_layer.prototypes.detach().cpu().numpy(),
+                      class_centers=model.arcface_head.class_centers.detach().cpu().numpy(),
                       save_path=os.path.join(args.output_dir, 'latent_space.png'))
 
     print(f"\n[COMPLETE] All research products saved to '{args.output_dir}'.")

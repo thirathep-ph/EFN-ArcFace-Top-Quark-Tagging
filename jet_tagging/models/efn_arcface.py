@@ -110,37 +110,31 @@ class EFN(nn.Module):
         return jet_emb
 
 
-class ArcFacePrototypeLayer(nn.Module):
+class ArcFaceHead(nn.Module):
     """
-    Standard ArcFace Head using Class Prototypes (Weights).
+    Standard ArcFace Head using Class Centers (Weights).
     Highly optimized, mathematically clean, and fits the standard ArcFace formulation.
     """
-    def __init__(self, input_dim, n_proto_per_class=1, n_classes=2, s=32.0, m=0.5):
+    def __init__(self, input_dim, n_classes=2, s=16.0, m=0.5):
         super().__init__()
-        self.n_proto_per_class = 1  # Standard ArcFace has exactly 1 prototype per class
         self.n_classes = n_classes
-        self.n_prototypes = n_classes
         self.s = s
         self.m = m
         
-        # Class weights (prototypes) on the hypersphere
-        self.prototypes = nn.Parameter(torch.FloatTensor(n_classes, input_dim))
-        nn.init.xavier_uniform_(self.prototypes)
+        # Class weights (centers) on the hypersphere
+        self.class_centers = nn.Parameter(torch.FloatTensor(n_classes, input_dim))
+        nn.init.xavier_uniform_(self.class_centers)
 
     def set_margin(self, m):
         self.m = m
 
-    def orthogonalize_prototypes(self):
-        # Standard ArcFace has 1 prototype per class, so no orthogonalization is needed.
-        pass
-
     def forward(self, x, labels=None):
-        # Normalize inputs and class prototypes
+        # Normalize inputs and class centers
         x_norm = F.normalize(x, p=2, dim=1)
-        p_norm = F.normalize(self.prototypes, p=2, dim=1)
+        c_norm = F.normalize(self.class_centers, p=2, dim=1)
         
-        # Cosine similarity between embeddings and class prototypes
-        cosine = F.linear(x_norm, p_norm)  # Shape: (B, 2)
+        # Cosine similarity between embeddings and class centers
+        cosine = F.linear(x_norm, c_norm)  # Shape: (B, 2)
         
         if self.training and labels is not None:
             cosine_clamped = cosine.clamp(-1.0 + 1e-7, 1.0 - 1e-7)
@@ -159,18 +153,18 @@ class ArcFacePrototypeLayer(nn.Module):
 
 
 class TopTaggingModel(nn.Module):
-    def __init__(self, n_proto_per_class=1, s=32.0, m=0.5, embedding_dim=128, particle_dim=256):
+    def __init__(self, s=16.0, m=0.5, embedding_dim=64, particle_dim=128):
         super().__init__()
         self.embedding_dim = embedding_dim
         self.efn = EFN(input_dim=2, particle_dim=particle_dim, jet_dim=embedding_dim)
-        self.prototype_layer = ArcFacePrototypeLayer(
-            input_dim=embedding_dim, n_proto_per_class=n_proto_per_class, s=s, m=m
+        self.arcface_head = ArcFaceHead(
+            input_dim=embedding_dim, n_classes=2, s=s, m=m
         )
 
     def forward(self, constituents, labels=None, mask=None):
         coords, z = get_efn_features(constituents, mask)
         jet_emb = self.efn(coords, z, mask)
-        logits, similarities = self.prototype_layer(jet_emb, labels)
+        logits, similarities = self.arcface_head(jet_emb, labels)
         return logits, similarities, jet_emb
 
 def arcface_loss(logits, labels):
@@ -221,8 +215,8 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 if __name__ == '__main__':
-    print("EFN + ArcFace Prototype Model (xAI, 1 Prototype Per Class)")
-    model = TopTaggingModel(n_proto_per_class=1, embedding_dim=64)
+    print("EFN + ArcFace Model (xAI, 1 Class Center Per Class)")
+    model = TopTaggingModel(embedding_dim=64)
     x = torch.randn(4, 200, 4)
     y = torch.randint(0, 2, (4,))
     logits, sims, emb = model(x, y)
