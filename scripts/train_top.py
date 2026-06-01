@@ -342,6 +342,8 @@ def main():
     best_model_path = os.path.join(args.checkpoint_dir, 'best_model_efn.pt')
 
     if not args.analysis_only:
+        total_train_start = time.time()
+        total_epoch_time = 0.0
         epoch_pbar = tqdm(range(args.epochs), desc="Overall Progress")
         for epoch in epoch_pbar:
             current_m = final_margin * min(1.0, (epoch + 1) / warmup_epochs)
@@ -399,6 +401,7 @@ def main():
                 model, val_path, device, batch_size=1024, chunk_size=args.chunk_size, max_events=val_len, return_details=True
             )
             t1 = time.time()
+            total_epoch_time += (t1 - t0)
             
             n = 1
             qcd_mask, top_mask = v_labels.numpy() == 0, v_labels.numpy() == 1
@@ -420,6 +423,24 @@ def main():
             print(f"  Train: Loss={t_loss:.4f}, Acc={t_acc:.4f} | Val: Acc={v_acc:.4f}{tag}")
             print(f"  Sep:   QCD_Sim={sep_qcd:.4f}, Top_Sim={sep_top:.4f}")
             print("-" * 65)
+
+        total_wall_time = time.time() - total_train_start
+        history['total_wall_time_seconds'] = total_wall_time
+        history['total_epoch_time_seconds'] = total_epoch_time
+
+        # Convert to readable format
+        w_h, w_rem = divmod(total_wall_time, 3600)
+        w_m, w_s = divmod(w_rem, 60)
+
+        e_h, e_rem = divmod(total_epoch_time, 3600)
+        e_m, e_s = divmod(e_rem, 60)
+
+        print("\n" + "=" * 65)
+        print("TRAINING TIME SUMMARY")
+        print("=" * 65)
+        print(f"  Total Wall-Clock Time: {int(w_h):d}h {int(w_m):d}m {w_s:.1f}s")
+        print(f"  Total Epoch Compute Time: {int(e_h):d}h {int(e_m):d}m {e_s:.1f}s")
+        print("=" * 65 + "\n")
 
         # Save History JSON
         os.makedirs(args.output_dir, exist_ok=True)
