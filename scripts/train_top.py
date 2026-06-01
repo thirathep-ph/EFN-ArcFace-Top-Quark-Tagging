@@ -344,12 +344,20 @@ def main():
     if not args.analysis_only:
         total_train_start = time.time()
         total_epoch_time = 0.0
+        total_io_time = 0.0
+        total_prep_time = 0.0
+        total_train_time = 0.0
+        total_val_time = 0.0
+        
         epoch_pbar = tqdm(range(args.epochs), desc="Overall Progress")
         for epoch in epoch_pbar:
             current_m = final_margin * min(1.0, (epoch + 1) / warmup_epochs)
             model.arcface_head.set_margin(current_m)
 
             t0 = time.time()
+            epoch_io_time = 0.0
+            epoch_prep_time = 0.0
+            epoch_train_time = 0.0
             
             # Shuffle chunk order per epoch
             chunk_indices = list(range(num_train_chunks))
@@ -368,15 +376,22 @@ def main():
                 n_events = min(args.chunk_size, train_len - start)
                 
                 # Load chunk
+                t_io0 = time.time()
                 tr_ev, tr_lab, tr_w = load_awkward(train_path, max_events=n_events, start_event=start, lazy=True)
+                epoch_io_time += (time.time() - t_io0)
+                
+                t_prep0 = time.time()
                 train_ds = JetTaggingDataset(tr_ev, tr_lab, tr_w)
                 train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, pin_memory=True)
+                epoch_prep_time += (time.time() - t_prep0)
                 
                 # Train chunk
+                t_tr0 = time.time()
                 c_loss, c_acc = train_chunk(
                     model, train_loader, optimizer, device, scheduler=scheduler,
                     accumulation_steps=args.accumulation_steps
                 )
+                epoch_train_time += (time.time() - t_tr0)
                 
                 # Accumulate weighted training metrics
                 t_loss_sum += c_loss * n_events
@@ -397,11 +412,19 @@ def main():
             t_acc = t_acc_sum / events_trained
             
             # Evaluate validation set chunk-by-chunk (returning details to CPU for separation calculations)
+            t_val0 = time.time()
             v_loss, v_acc, v_sims, v_labels, _, v_logits = evaluate_chunked(
                 model, val_path, device, batch_size=1024, chunk_size=args.chunk_size, max_events=val_len, return_details=True
             )
+            epoch_val_time = time.time() - t_val0
+            
             t1 = time.time()
             total_epoch_time += (t1 - t0)
+            
+            total_io_time += epoch_io_time
+            total_prep_time += epoch_prep_time
+            total_train_time += epoch_train_time
+            total_val_time += epoch_val_time
             
             n = 1
             qcd_mask, top_mask = v_labels.numpy() == 0, v_labels.numpy() == 1
@@ -425,21 +448,33 @@ def main():
             print("-" * 65)
 
         total_wall_time = time.time() - total_train_start
+        total_other_time = max(0.0, total_wall_time - (total_io_time + total_prep_time + total_train_time + total_val_time))
+
         history['total_wall_time_seconds'] = total_wall_time
         history['total_epoch_time_seconds'] = total_epoch_time
+        history['profiling'] = {
+            'total_io_time_seconds': total_io_time,
+            'total_prep_time_seconds': total_prep_time,
+            'total_train_time_seconds': total_train_time,
+            'total_val_time_seconds': total_val_time,
+            'total_other_time_seconds': total_other_time,
+            'total_wall_time_seconds': total_wall_time
+        }
 
         # Convert to readable format
         w_h, w_rem = divmod(total_wall_time, 3600)
         w_m, w_s = divmod(w_rem, 60)
 
-        e_h, e_rem = divmod(total_epoch_time, 3600)
-        e_m, e_s = divmod(e_rem, 60)
-
         print("\n" + "=" * 65)
-        print("TRAINING TIME SUMMARY")
+        print("TRAINING PROFILE BREAKDOWN")
         print("=" * 65)
-        print(f"  Total Wall-Clock Time: {int(w_h):d}h {int(w_m):d}m {w_s:.1f}s")
-        print(f"  Total Epoch Compute Time: {int(e_h):d}h {int(e_m):d}m {e_s:.1f}s")
+        print(f"  Data Loading (I/O):       {total_io_time:8.1f}s ({total_io_time/total_wall_time*100:5.1f}%)")
+        print(f"  Dataset & Loader Prep:    {total_prep_time:8.1f}s ({total_prep_time/total_wall_time*100:5.1f}%)")
+        print(f"  GPU Training Compute:     {total_train_time:8.1f}s ({total_train_time/total_wall_time*100:5.1f}%)")
+        print(f"  Validation (Eval):        {total_val_time:8.1f}s ({total_val_time/total_wall_time*100:5.1f}%)")
+        print(f"  Misc Overhead (Python):   {total_other_time:8.1f}s ({total_other_time/total_wall_time*100:5.1f}%)")
+        print("-" * 65)
+        print(f"  Total Wall-Clock Time:    {total_wall_time:8.1f}s (100.0%) -> {int(w_h):d}h {int(w_m):d}m {w_s:.1f}s")
         print("=" * 65 + "\n")
 
         # Save History JSON
