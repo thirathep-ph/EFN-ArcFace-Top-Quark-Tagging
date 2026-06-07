@@ -43,6 +43,13 @@ Thumbs.db
 # Archive (scratch/exploration files)
 archive/
 
+# Binary data arrays (large)
+*.npz
+*.npy
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
 # Results & outputs
 results/
 scratch/check_sc_zg.py
