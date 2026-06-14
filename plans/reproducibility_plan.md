@@ -38,7 +38,7 @@
 This creates a file with exact versions (e.g., `torch==2.12.0+rocm6.2`).
 
 ### 2.3 Configuration File
-Create `config.yaml` or use existing `jet_tagging/config.json` as the single source of truth:
+Create `config.yaml` or use existing `arcjet/config.json` as the single source of truth:
 ```json
 {
   "model": {

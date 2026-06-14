@@ -133,7 +133,7 @@ From [`notebooks/JetTagging_EFN_ArcFace.ipynb`](notebooks/JetTagging_EFN_ArcFace
 
 ### P1-3: Rho MLP architecture mismatch
 
-**Files**: [`research_master_plan.md`](research_master_plan.md:58), [`README.md`](README.md:27), [`jet_tagging/models/efn_arcface.py`](jet_tagging/models/efn_arcface.py:86-91)
+**Files**: [`research_master_plan.md`](research_master_plan.md:58), [`README.md`](README.md:27), [`arcjet/models/efn_arcface.py`](arcjet/models/efn_arcface.py:86-91)
 
 **Problem**: Docs say `Rho MLP: [128 → 128 → 64]` but code has `[128 → 64 → 64]` (2 linear layers, not 3).
 
@@ -143,7 +143,7 @@ From [`notebooks/JetTagging_EFN_ArcFace.ipynb`](notebooks/JetTagging_EFN_ArcFace
 
 ### P1-4: `distance_corr_loss` is dead code
 
-**File**: [`jet_tagging/models/efn_arcface.py`](jet_tagging/models/efn_arcface.py:173-212)
+**File**: [`arcjet/models/efn_arcface.py`](arcjet/models/efn_arcface.py:173-212)
 
 **Problem**: 40 lines of code, imported in `train_top.py`, but **never called** anywhere.
 
@@ -163,7 +163,7 @@ From [`notebooks/JetTagging_EFN_ArcFace.ipynb`](notebooks/JetTagging_EFN_ArcFace
 
 ### P1-6: `physics.py` docstring says 8 features, code returns 10
 
-**File**: [`jet_tagging/utils/physics.py`](jet_tagging/utils/physics.py:7,68-70)
+**File**: [`arcjet/utils/physics.py`](arcjet/utils/physics.py:7,68-70)
 
 **Problem**: Docstring says 8 features but code returns 10 (`zg`, `theta_g`, `n_sd` are undocumented). Also `D2` is computed but **not included** in output.
 
@@ -215,7 +215,7 @@ From [`notebooks/JetTagging_EFN_ArcFace.ipynb`](notebooks/JetTagging_EFN_ArcFace
 
 **File**: [`research_master_plan.md`](research_master_plan.md:18-21)
 
-**Problem**: Plan says columns 0-199 are pT, 200-399 are eta, 400-599 are phi, 600-799 are E. But [`loader.py`](jet_tagging/data/loader.py:116-119) extracts **E, px, py, pz** (interleaved: col 0=E, col 1=px, col 2=py, col 3=pz, col 4=E, ...). The plan describes a different data layout than what the code actually uses.
+**Problem**: Plan says columns 0-199 are pT, 200-399 are eta, 400-599 are phi, 600-799 are E. But [`loader.py`](arcjet/data/loader.py:116-119) extracts **E, px, py, pz** (interleaved: col 0=E, col 1=px, col 2=py, col 3=pz, col 4=E, ...). The plan describes a different data layout than what the code actually uses.
 
 **Fix**: Update plan to describe the actual interleaved (E, px, py, pz) layout.
 
@@ -255,7 +255,7 @@ From [`notebooks/JetTagging_EFN_ArcFace.ipynb`](notebooks/JetTagging_EFN_ArcFace
 
 ### P2-1: Empty `__init__.py` files
 
-**Files**: All `__init__.py` in `jet_tagging/`, `jet_tagging/models/`, `jet_tagging/data/`, `jet_tagging/utils/`
+**Files**: All `__init__.py` in `arcjet/`, `arcjet/models/`, `arcjet/data/`, `arcjet/utils/`
 
 **Problem**: All empty. No exports defined.
 
@@ -275,7 +275,7 @@ From [`notebooks/JetTagging_EFN_ArcFace.ipynb`](notebooks/JetTagging_EFN_ArcFace
 
 ### P2-3: `vector` import unused in `efn_arcface.py`
 
-**File**: [`jet_tagging/models/efn_arcface.py`](jet_tagging/models/efn_arcface.py:17)
+**File**: [`arcjet/models/efn_arcface.py`](arcjet/models/efn_arcface.py:17)
 
 **Problem**: `import vector` never used.
 

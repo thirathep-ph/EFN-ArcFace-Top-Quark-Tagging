@@ -17,7 +17,7 @@
 
 ### การเปลี่ยนแปลงโค้ด
 
-**ไฟล์ที่มีอยู่**: [`jet_tagging/models/efn_linear.py`](jet_tagging/models/efn_linear.py)
+**ไฟล์ที่มีอยู่**: [`arcjet/models/efn_linear.py`](arcjet/models/efn_linear.py)
 
 ```python
 """
@@ -25,7 +25,7 @@ EFN + Standard Softmax (Ablation Baseline)
 เหมือน EFN + ArcFace ทุกประการ แต่ใช้ Linear + CrossEntropy แทน ArcFace
 """
 import torch.nn as nn
-from jet_tagging.models.efn_arcface import EFN
+from arcjet.models.efn_arcface import EFN
 
 class TopTaggingSoftmax(nn.Module):
     def __init__(self, embedding_dim=64, particle_dim=128):
@@ -63,7 +63,7 @@ PFN (Particle Flow Network) เป็นอีก baseline ที่สำคั
 
 ### การเปลี่ยนแปลงโค้ด
 
-**ไฟล์ที่มีอยู่**: [`jet_tagging/models/efn_coslinear.py`](jet_tagging/models/efn_coslinear.py) (ArcFace without margin)
+**ไฟล์ที่มีอยู่**: [`arcjet/models/efn_coslinear.py`](arcjet/models/efn_coslinear.py) (ArcFace without margin)
 
 ```python
 """
@@ -163,8 +163,8 @@ python scripts/evaluate_models.py \
 
 | File | Description |
 |:-----|:------------|
-| `jet_tagging/models/efn_linear.py` | EFN backbone + Linear classifier (Model A) |
-| `jet_tagging/models/efn_coslinear.py` | EFN backbone + Cosine Linear (Model B, ArcFace without margin) |
+| `arcjet/models/efn_linear.py` | EFN backbone + Linear classifier (Model A) |
+| `arcjet/models/efn_coslinear.py` | EFN backbone + Cosine Linear (Model B, ArcFace without margin) |
 | `scripts/train_baselines.py` | Training script สำหรับทั้ง 2 baselines (ใช้ shared logic) |
 
 ### จะได้ checkpoint ใหม่

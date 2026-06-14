@@ -48,7 +48,7 @@ Unlike **post-hoc** interpretability methods (Grad-CAM, LIME, attention weights)
 ## 📦 Project Structure
 
 ```
-jet_tagging/                        # Core library (editable package)
+arcjet/                        # Core library (editable package)
 +-- models/
 |   +-- efn_arcface.py              # EFN + ArcFace model (main)
 |   +-- efn_linear.py               # EFN + Linear baseline
@@ -268,7 +268,7 @@ If you use this work, please cite:
   author = {Thirathep Phongpreecha},
   title = {Jet Tagging: Ante-Hoc Interpretable AI with EFN and ArcFace Prototypes},
   year = {2025},
-  howpublished = {\url{https://github.com/thirathep-ph/Jet-Tagging}}
+  howpublished = {\url{https://github.com/thirathep-ph/ArcJet}}
 }
 ```
 

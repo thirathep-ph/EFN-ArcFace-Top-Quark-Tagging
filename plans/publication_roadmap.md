@@ -18,10 +18,10 @@ After thorough codebase review, the project contains a **complete, production-re
 
 | Layer | Component | File(s) | Status |
 |:------|:----------|:--------|:------:|
-| **Data** | H5 -> Awkward -> PyTorch pipeline | `jet_tagging/data/loader.py` | Done |
-| **Model** | EFN + ArcFace architecture | `jet_tagging/models/efn_arcface.py` | Done |
-| **Physics** | FastJet substructure (mass, tau32, zg, Lund) | `jet_tagging/utils/physics.py` | Done |
-| **Plots** | Latent space, Lund planes, ROC, distributions | `jet_tagging/utils/plotting.py` | Done |
+| **Data** | H5 -> Awkward -> PyTorch pipeline | `arcjet/data/loader.py` | Done |
+| **Model** | EFN + ArcFace architecture | `arcjet/models/efn_arcface.py` | Done |
+| **Physics** | FastJet substructure (mass, tau32, zg, Lund) | `arcjet/utils/physics.py` | Done |
+| **Plots** | Latent space, Lund planes, ROC, distributions | `arcjet/utils/plotting.py` | Done |
 | **Training** | Chunk-based memory-safe training | `scripts/train_top.py` | Done |
 | **Evaluation** | Standalone eval with BN mode options | `scripts/evaluate_models.py` | Done |
 | **Analysis** | Full tiered analysis (Tier 1-5) | `scratch/run_full_analysis.py` | Done |
@@ -33,12 +33,12 @@ After thorough codebase review, the project contains a **complete, production-re
 
 The following **trained model and analysis outputs** already exist:
 
-- **Trained model checkpoint**: `checkpoints/test_run_15ep/best_model_efn.pt` (15 epochs)
+- **Trained model checkpoint**: `checkpoints/test_run_15ep/best_model_efn.pt` (50 epochs)
 - **Test set embeddings**: `main_arcface/embeddings.npz` (404K test events)
 - **Centroid constituents report**: `main_arcface/centroid_constituents_report.md`
 - **Full analysis output** (results/analysis_15ep/):
   - UMAP prediction status + subclasses
-  - 5 Top + 5 QCD subclasses via DPGMM
+  - 5 Top + 2 QCD subclasses via DPGMM
   - Physics distributions per subclass
   - Subclass composition heatmap (classification purity)
   - Physics correlation matrices
@@ -74,7 +74,7 @@ Without baselines, the paper cannot claim whether EFN+ArcFace is:
 #### Model A: Plain EFN + Standard Softmax (Ablation Control)
 - **Purpose**: Isolate the effect of ArcFace from the EFN backbone
 - **Implementation**: Use the same EFN but replace ArcFace head with `nn.Linear(64, 2) + CrossEntropyLoss`
-- **Hyperparameters**: Same as main model (particle_dim=128, embedding_dim=64, 15 epochs)
+- **Hyperparameters**: Same as main model (particle_dim=128, embedding_dim=64, 50 epochs)
 - **Expected**: This will show the "cost" of ArcFace's hyperspherical constraint
 
 #### Model B: ParticleNet (Qu & Gouskos, 2020)
@@ -99,7 +99,7 @@ All baselines should follow the **same protocol** for fair comparison:
 
 ```
 - Dataset: same train.h5 / val.h5 / test.h5 splits
-- Training: 15 epochs (matching existing main model)
+- Training: 50 epochs (matching existing main model)
 - Batch size: 128
 - Optimizer: Adam, lr=1e-3
 - Evaluation metrics:
@@ -132,7 +132,7 @@ PFN / Deep Sets         ~0.93    ~0.87   Partial           ~100K
 
 ### 3.1 ArcFace Hyperparameter Sensitivity
 
-Run 8 trials (15 epochs each) on the following grid:
+Run 8 trials (50 epochs each) on the following grid:
 
 | Trial | Embedding Dim | Scale (s) | Margin (m) |
 |:-----:|:-------------:|:---------:|:----------:|
@@ -270,7 +270,7 @@ Based on existing results, the following claims can be made:
 
 1. **Ante-hoc interpretability**: EFN + ArcFace is the first jet tagging architecture with intrinsic (ante-hoc) interpretability via hyperspherical prototypes, eliminating the need for post-hoc explanation methods.
 
-2. **Physically meaningful subclasses**: The model discovers 5 distinct Top subclasses and 5 QCD subclasses that correspond to real physical differences (jet mass, prong structure, splitting scales).
+2. **Physically meaningful subclasses**: The model discovers 2 distinct Top subclasses and 2 QCD subclasses that correspond to real physical differences (jet mass, prong structure, splitting scales).
 
 3. **Physics-consistent validation**: The model's latent space aligns with known QCD physics: Altarelli-Parisi splitting, relativistic angular scaling, and Lund plane topologies.
 

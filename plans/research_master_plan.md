@@ -115,7 +115,7 @@ Downstream analysis is structured into two sequential rounds of classification p
 We perform a hyperparameter sweep to identify the optimal model, followed by SVD analysis to mathematically verify the network and latent space size.
 
 ### A. Grid Sweep Matrix (8 Trials on Colab Pro) — *Not Yet Executed*
-Using V100/A100 GPUs, we plan to run 8 trials of 15 epochs each (~10 minutes per trial) over the following parameters:
+Using V100/A100 GPUs, we plan to run 8 trials of 50 epochs each (~10 minutes per trial) over the following parameters:
 - **Embedding Dim ($d$):** `[64, 128]`
 - **ArcFace Scale ($s$):** `[16, 32]`
 - **ArcFace Margin ($m$):** `[0.3, 0.5]`

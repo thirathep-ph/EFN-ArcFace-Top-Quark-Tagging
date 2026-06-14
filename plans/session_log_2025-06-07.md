@@ -106,8 +106,8 @@ Mass and tau32 ARE the distinguishing features → model relies on these
 
 | File | Purpose |
 |:-----|:--------|
-| `jet_tagging/models/efn_linear.py` | Model A: EFN + Linear + CE (standard) |
-| `jet_tagging/models/efn_coslinear.py` | Model B: EFN + CosLinear + CE (ArcFace - margin) |
+| `arcjet/models/efn_linear.py` | Model A: EFN + Linear + CE (standard) |
+| `arcjet/models/efn_coslinear.py` | Model B: EFN + CosLinear + CE (ArcFace - margin) |
 | `scripts/train_baselines.py` | Training script for both (multi-seed, --model both) |
 
 ### 3.3 Updated Files

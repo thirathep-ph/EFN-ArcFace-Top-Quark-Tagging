@@ -54,7 +54,7 @@ Make sure the SSD is mounted at a path like `F:/Jet Tagging/` or similar.
 
 ```bash
 cd "F:/Jet Tagging"
-pip install -e .           # Install jet_tagging package
+pip install -e .           # Install arcjet package
 pip install -r requirements.txt  # Install all dependencies
 ```
 
@@ -62,7 +62,7 @@ pip install -r requirements.txt  # Install all dependencies
 
 ```bash
 cd "F:/Jet Tagging"
-python -c "from jet_tagging.models.efn_arcface import TopTaggingModel; print('OK')"
+python -c "from arcjet.models.efn_arcface import TopTaggingModel; print('OK')"
 ```
 
 ### Step 4: Pull latest from GitHub (if you pushed from old machine)
@@ -126,7 +126,7 @@ F:/Jet Tagging/
 ├── setup.py                             # Package setup
 ├── .gitignore                           # Excludes checkpoints/data/results
 │
-├── jet_tagging/                         # Core library
+├── arcjet/                         # Core library
 │   ├── models/
 │   │   ├── efn_arcface.py               # Main model (EFN + ArcFace)
 │   │   ├── efn_linear.py                # Model A: Linear+CE (NEW)
