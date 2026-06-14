@@ -18,8 +18,8 @@ from sklearn.metrics import precision_recall_fscore_support
 # Add project root to python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from jet_tagging.models.efn_arcface import TopTaggingModel
-from jet_tagging.data.loader import load_awkward, JetTaggingDataset
+from arcjet.models.efn_arcface import TopTaggingModel
+from arcjet.data.loader import load_awkward, JetTaggingDataset
 
 
 def evaluate_model(model_path, data_dir, split, max_events, mode):
@@ -28,7 +28,7 @@ def evaluate_model(model_path, data_dir, split, max_events, mode):
     
     # 1. Load Model Checkpoint
     # We use 1 QCD + 1 Top class center
-    model = TopTaggingModel(s=32.0, m=0.0, embedding_dim=64).to(device)
+    model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64).to(device)
     
     if not os.path.exists(model_path):
         print(f"Error: Checkpoint file '{model_path}' not found.")

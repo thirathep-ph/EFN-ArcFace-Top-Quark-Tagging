@@ -17,7 +17,7 @@
 
 ### การเปลี่ยนแปลงโค้ด
 
-**ไฟล์ใหม่**: [`jet_tagging/models/efn_softmax.py`](jet_tagging/models/efn_softmax.py)
+**ไฟล์ที่มีอยู่**: [`jet_tagging/models/efn_linear.py`](jet_tagging/models/efn_linear.py)
 
 ```python
 """
@@ -63,7 +63,7 @@ PFN (Particle Flow Network) เป็นอีก baseline ที่สำคั
 
 ### การเปลี่ยนแปลงโค้ด
 
-**ไฟล์ใหม่**: [`jet_tagging/models/pfn.py`](jet_tagging/models/pfn.py)
+**ไฟล์ที่มีอยู่**: [`jet_tagging/models/efn_coslinear.py`](jet_tagging/models/efn_coslinear.py) (ArcFace without margin)
 
 ```python
 """
@@ -163,8 +163,8 @@ python scripts/evaluate_models.py \
 
 | File | Description |
 |:-----|:------------|
-| `jet_tagging/models/efn_softmax.py` | EFN backbone + Linear classifier |
-| `jet_tagging/models/pfn.py` | Simple PFN with mean pooling |
+| `jet_tagging/models/efn_linear.py` | EFN backbone + Linear classifier (Model A) |
+| `jet_tagging/models/efn_coslinear.py` | EFN backbone + Cosine Linear (Model B, ArcFace without margin) |
 | `scripts/train_baselines.py` | Training script สำหรับทั้ง 2 baselines (ใช้ shared logic) |
 
 ### จะได้ checkpoint ใหม่

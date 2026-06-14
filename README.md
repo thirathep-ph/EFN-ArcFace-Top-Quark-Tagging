@@ -5,9 +5,9 @@
 | Component | Status | Details |
 |:----------|:------:|:--------|
 | **Model Architecture** | ✅ Complete | EFN backbone + ArcFace head (1 prototype per class) |
-| **Training Pipeline** | ✅ Complete | 15-epoch trained on 1.2M events, chunk-based memory-safe loading |
+| **Training Pipeline** | ✅ Complete | 100-epoch trained on 1.2M events, chunk-based memory-safe loading |
 | **Classification** | ✅ Complete | Binary: Top quark jets (signal) vs QCD jets (background) |
-| **Subclass Discovery** | ✅ Complete | 5 Top subclasses + 5 QCD subclasses via Spectral Clustering / DPGMM |
+| **Subclass Discovery** | ✅ Complete | 2 Top subclasses (Core/Edge) + 2 QCD subclasses (Core/Edge) via Spectral Clustering |
 | **Physics Validation** | ✅ Complete | Lund planes, substructure, $z_g$, angular collimation |
 | **SVD Analysis** | ✅ Code ready | Dimension justification via explained variance |
 | **Baseline Benchmarking** | ⏳ TODO | ParticleNet / LorentzNet / Plain EFN comparison |
@@ -24,7 +24,7 @@ Constituents (p_T, eta, phi, E per particle)
     +---> EFN (Energy Flow Network) - IRC-Safe
     |     +-- Phi MLP:  [2 -> 128 -> 128 -> 128]  (sees ONLY angular geometry)
     |     +-- Sum Pooling weighted by energy fraction z_i = E_i / Sum E
-    |     +-- Rho MLP:   [128 -> 128 -> 64]       (jet-level embedding)
+    |     +-- Rho MLP:   [128 -> 128 -> 64]       (jet-level embedding: transform then compress)
     |
     +---> Jet Latent Embedding  R^64  (L2-normalized to hypersphere S^63)
     |
@@ -48,64 +48,72 @@ Unlike **post-hoc** interpretability methods (Grad-CAM, LIME, attention weights)
 ## 📦 Project Structure
 
 ```
-jet_tagging/
-+-- jet_tagging/                    # Core library (editable package)
-|   +-- models/
-|   |   +-- efn_arcface.py          # EFN + ArcFace model definition
-|   +-- data/
-|   |   +-- loader.py               # H5 -> Awkward -> PyTorch data pipeline
-|   +-- utils/
-|       +-- physics.py              # FastJet substructure: mass, tau32, zg, Lund coordinates
-|       +-- plotting.py             # Visualization: latent space, Lund planes, ROC, distributions
-|
-+-- scripts/
-|   +-- train_top.py                # Full training + subclass discovery + Lund plane analysis
-|   +-- evaluate_models.py          # Standalone model evaluation (eval/train BN modes)
-|
-+-- notebooks/
-|   +-- JetTagging_EFN_ArcFace.ipynb  # Google Colab-ready training notebook
-|
-+-- main_arcface/                   # Primary analysis outputs
-|   +-- centroid_constituents_report.md  # Detailed physics of centroid jets
-|   +-- embeddings.npz              # Jet embeddings (404K test events)
-|   +-- lund_planes/                # Class + subclass + T/F Lund plane visualizations
-|       +-- class_overall_non_split.png
-|       +-- status_tp.png / status_tn.png / status_fp.png / status_fn.png
-|       +-- top_subclass_0..1 / qcd_subclass_0..1  (with T/F splits)
-|
-+-- results/
-|   +-- analysis_15ep/              # Comprehensive 15-epoch model analysis
-|       +-- umap_prediction_status.png       # UMAP: T/F prediction distribution
-|       +-- umap_subclasses.png             # UMAP: 5 Top + 5 QCD subclasses
-|       +-- subclass_physics_distributions.png  # Physics per subclass
-|       +-- subclass_composition_heatmap.png    # Purity matrix
-|       +-- subclass_physics_correlations.png   # Physics feature correlations
-|       +-- subclass_similarity_distributions.png  # Cosine similarity per subclass
-|       +-- zg_ap_splitting.png             # Altarelli-Parisi splitting validation
-|       +-- angular_collimation.png         # Relativistic angular scaling
-|       +-- top_subclass_[0-4]_representative_jets.png
-|       +-- qcd_subclass_[0-4]_representative_jets.png
-|       +-- lund_planes/                    # Full hierarchical Lund planes
-|
-+-- checkpoints/
-|   +-- test_run_15ep/best_model_efn.pt     # Trained checkpoint (15 epochs)
-|   +-- best_model_efn.pt                   # Latest best model
-|   +-- baseline/                           # Placeholder for baseline models
-|   +-- ...                                 # Previous experiment checkpoints
-|
-+-- scratch/                          # Standalone analysis scripts
-|   +-- run_full_analysis.py          # Tiered full-scale analysis (Tier 1-5)
-|   +-- compute_svd_variance.py       # SVD-based latent dimension justification
-|   +-- compute_clustering_metrics.py # Silhouette score + ARI
-|   +-- compute_bootstrap_stability.py
-|   +-- ...
-|
-+-- data/top_tagging/                 # H5 datasets (train.h5, val.h5, test.h5)
-|
-+-- docs/                             # Documentation (in progress)
-+-- Dockerfile / docker-compose.yml   # GPU-ready containerization
-+-- requirements.txt                  # Python dependencies
-+-- setup.py                          # Editable package
+jet_tagging/                        # Core library (editable package)
++-- models/
+|   +-- efn_arcface.py              # EFN + ArcFace model (main)
+|   +-- efn_linear.py               # EFN + Linear baseline
+|   +-- efn_coslinear.py            # EFN + Cosine Linear baseline
++-- data/
+|   +-- loader.py                   # H5 -> Awkward -> PyTorch data pipeline
++-- utils/
+    +-- physics.py                  # FastJet substructure: mass, tau32, zg, Lund
+    +-- plotting.py                 # Visualization: latent space, Lund planes, ROC
+
+scripts/                            # Training & evaluation
++-- train_top.py                    # Full training + subclass discovery + analysis
++-- train_baselines.py              # Baseline model training (Linear + CosLinear)
++-- evaluate_models.py              # Standalone model evaluation
+
+notebooks/
++-- JetTagging_EFN_ArcFace.ipynb    # Google Colab-ready training notebook
+
+main_arcface/                       # PRIMARY RESULTS (100-epoch model)
++-- best_model_efn.pt               # Trained checkpoint
++-- advanced_metrics.json           # Acc 91.74%, F1 91.89%
++-- embeddings.npz                  # 404K test embeddings
++-- centroid_constituents_report.md # Physics of centroid jets
++-- svd_scree_plot.png              # SVD dimension analysis
++-- lund_planes/                    # Lund plane visualizations
+
+results/
++-- analysis_15ep/                  # 15-epoch model analysis (subclass discovery)
++-- test_run_50k/                   # 50K-event experiment with metrics
+
+checkpoints/
++-- best_model_efn.pt               # Root-level checkpoint (with optimizer state)
++-- test_run_15ep/                  # 15-epoch checkpoint
++-- test_run_50k/                   # 50K-event checkpoint
++-- test_chunk/                     # Chunked training test
++-- baseline/                       # Baseline model checkpoints (future)
+
+scratch/                            # Standalone analysis scripts
++-- clustering/                     # Clustering comparisons (SC, K-means, GMM, etc.)
++-- physics/                        # Physics analysis (KS tests, JSD, constituents)
++-- analysis/                       # Dimensionality, SVD, bootstrap, UMAP, etc.
++-- archive/                        # One-time-use scripts
+
+plans/                              # Planning & strategy documents
++-- research_master_plan.md         # Master blueprint
++-- parameter_catalog.md            # Complete parameter catalog with reviewer defenses
++-- strategy_rethink.md             # Current strategy & robustness plan
++-- audit_fixes.md                  # Workspace audit & fixes
++-- reviewer_simulation.md          # 7 simulated reviewer questions
++-- reviewer_responses.md           # Response strategies
++-- multi_perspective_review.md     # 6 reviewer perspectives
++-- paper_results_table.md          # Paper-ready results tables
++-- publication_roadmap.md          # Target venue & timeline
++-- fitness_assessment.md           # Go/No-Go decision
++-- improvement_ideas.md            # 13 improvement ideas
++-- baseline_implementation_plan.md # Baseline training plan
++-- session_log_*.md                # Session logs
++-- MIGRATION_GUIDE.md              # Machine migration guide
++-- README.md                       # This index
+
+data/top_tagging/                   # H5 datasets (train.h5, val.h5, test.h5)
+
+Dockerfile / docker-compose.yml     # GPU-ready containerization
+requirements.txt                    # Python dependencies
+setup.py                            # Editable package
 ```
 
 ---
@@ -128,8 +136,14 @@ docker-compose up --build
 # Quick test (5K events, 10 epochs)
 python scripts/train_top.py --quick --epochs 10
 
-# Full training (1.2M events, 30 epochs)
+# Full training (1.2M events, 30 epochs, chunked loading)
 python scripts/train_top.py --epochs 30
+
+# Fast training with no chunking (loads all data into RAM, ~2.4GB)
+python scripts/train_top.py --epochs 30 --no-chunk
+
+# Fast training with mixed precision (GPU only, ~2x speedup)
+python scripts/train_top.py --epochs 30 --no-chunk --amp
 ```
 
 ### Evaluate trained model
@@ -165,9 +179,9 @@ The model achieves strong separation between Top and QCD jets via cosine similar
 |:-------|:-----:|
 | Architecture | EFN (128-dim Phi, 64-dim embedding) |
 | ArcFace params | s = 16.0, m = 0.5, warmup 10 epochs |
-| Training | 15 epochs, ~1.2M events |
-| Subclasses (Top) | **5** discovered via Spectral Clustering / DPGMM |
-| Subclasses (QCD) | **5** discovered via Spectral Clustering / DPGMM |
+| Training | 100 epochs, ~1.2M events |
+| Subclasses (Top) | **2** (Core/Edge) discovered via Spectral Clustering |
+| Subclasses (QCD) | **2** (Core/Edge) discovered via Spectral Clustering |
 
 ### Subclass Discovery
 

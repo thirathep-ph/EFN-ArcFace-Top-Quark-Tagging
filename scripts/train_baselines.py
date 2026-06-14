@@ -5,6 +5,8 @@ Trains and evaluates two ablation baselines:
     A: EFN + Linear + CE  (standard classifier)
     B: EFN + CosLinear + CE  (ArcFace without margin)
 
+Uses chunked loading matching train_top.py for fair comparison.
+
 Usage:
     # Train Linear baseline (30 epochs)
     python scripts/train_baselines.py --model linear --epochs 30
@@ -23,6 +25,7 @@ import argparse
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from sklearn.metrics import precision_recall_fscore_support, roc_auc_score
@@ -30,9 +33,9 @@ from tqdm.auto import tqdm
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from jet_tagging.data.loader import load_awkward, JetTaggingDataset, get_h5_len
-from jet_tagging.models.efn_linear import TopTaggingLinear, count_parameters
-from jet_tagging.models.efn_coslinear import TopTaggingCosLinear
+from arcjet.data.loader import load_awkward, JetTaggingDataset, get_h5_len
+from arcjet.models.efn_linear import TopTaggingLinear, count_parameters
+from arcjet.models.efn_coslinear import TopTaggingCosLinear
 import gc
 
 
@@ -60,28 +63,41 @@ def train_epoch(model, loader, optimizer, device, accumulation_steps=8):
     return total_loss / n_batches, total_acc / n_batches
 
 
-def evaluate(model, file_path, device, batch_size=1024):
+def evaluate(model, file_path, device, batch_size=1024, chunk_size=100000):
+    """Evaluate on full dataset using chunked loading."""
     model.eval()
     total_len = get_h5_len(file_path)
-    events, labels, weights = load_awkward(file_path, max_events=min(total_len, 100000))
-    ds = JetTaggingDataset(events, labels, weights)
-    loader = DataLoader(ds, batch_size=batch_size, shuffle=False)
+    num_chunks = int(np.ceil(total_len / chunk_size))
 
     all_preds, all_labels, all_logits = [], [], []
     total_loss = 0.0
     n_batches = 0
 
     with torch.no_grad():
-        for x, y, w, m, _ in loader:
-            x, y, m = x.to(device), y.to(device), m.to(device)
-            logits, _ = model(x, mask=m)
-            loss = F.cross_entropy(logits, y)
-            total_loss += loss.item()
-            n_batches += 1
-            preds = logits.argmax(dim=1)
-            all_preds.extend(preds.cpu().numpy())
-            all_labels.extend(y.cpu().numpy())
-            all_logits.append(logits.cpu())
+        for chunk_idx in range(num_chunks):
+            start = chunk_idx * chunk_size
+            n_events = min(chunk_size, total_len - start)
+
+            events, labels, weights = load_awkward(
+                file_path, max_events=n_events, start_event=start, lazy=True
+            )
+            ds = JetTaggingDataset(events, labels, weights)
+            loader = DataLoader(ds, batch_size=batch_size, shuffle=False)
+
+            for x, y, w, m, _ in loader:
+                x, y, m = x.to(device), y.to(device), m.to(device)
+                logits, _ = model(x, mask=m)
+                loss = F.cross_entropy(logits, y)
+                total_loss += loss.item()
+                n_batches += 1
+                preds = logits.argmax(dim=1)
+                all_preds.extend(preds.cpu().numpy())
+                all_labels.extend(y.cpu().numpy())
+                all_logits.append(logits.cpu())
+
+            del loader, ds, events, labels, weights
+            gc.collect()
+            torch.cuda.empty_cache()
 
     all_preds = np.array(all_preds)
     all_labels = np.array(all_labels)
@@ -116,6 +132,9 @@ def main():
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoints/baselines')
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--accumulation_steps', type=int, default=8)
+    parser.add_argument('--no-chunk', action='store_true', help='Disable chunked loading. Load entire dataset into RAM once (faster)')
+    parser.add_argument('--chunk_size', type=int, default=100000,
+                        help='Chunk size for reading datasets (only used when --no-chunk is not set)')
     parser.add_argument('--embedding_dim', type=int, default=64)
     parser.add_argument('--particle_dim', type=int, default=128)
     parser.add_argument('--scale', type=float, default=16.0,
@@ -124,6 +143,14 @@ def main():
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Device: {device}")
+
+    train_path = os.path.join(args.data_dir, 'train.h5')
+    val_path = os.path.join(args.data_dir, 'val.h5')
+    test_path = os.path.join(args.data_dir, 'test.h5')
+
+    train_len = get_h5_len(train_path)
+    use_chunking = not args.no_chunk
+    num_train_chunks = int(np.ceil(train_len / args.chunk_size)) if use_chunking else 1
 
     models_to_train = ['linear', 'coslinear'] if args.model == 'both' else [args.model]
 
@@ -153,30 +180,52 @@ def main():
             scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
             print(f"Params: {count_parameters(model):,}")
 
-            # Training
-            train_path = os.path.join(args.data_dir, 'train.h5')
-            val_path = os.path.join(args.data_dir, 'val.h5')
-
             best_val_acc = 0.0
             history = {'train_loss': [], 'train_acc': [], 'val_acc': []}
 
             for epoch in range(args.epochs):
-                # Load training data (lazy)
-                tr_ev, tr_lab, tr_w = load_awkward(
-                    train_path, max_events=50000, lazy=True
-                )
-                tr_ds = JetTaggingDataset(tr_ev, tr_lab, tr_w)
-                tr_loader = DataLoader(
-                    tr_ds, batch_size=args.batch_size, shuffle=True, pin_memory=True
-                )
+                if use_chunking:
+                    chunk_indices = list(range(num_train_chunks))
+                    np.random.shuffle(chunk_indices)
+                else:
+                    chunk_indices = [0]
 
-                t_loss, t_acc = train_epoch(
-                    model, tr_loader, optimizer, device,
-                    accumulation_steps=args.accumulation_steps
-                )
+                epoch_loss_sum = 0.0
+                epoch_acc_sum = 0.0
+                epoch_events = 0
+
+                for c_idx, chunk_idx in enumerate(chunk_indices):
+                    start = chunk_idx * args.chunk_size
+                    n_events = min(args.chunk_size, train_len - start)
+
+                    if use_chunking:
+                        tr_ev, tr_lab, tr_w = load_awkward(
+                            train_path, max_events=n_events, start_event=start, lazy=True
+                        )
+                    tr_ds = JetTaggingDataset(tr_ev, tr_lab, tr_w)
+                    tr_loader = DataLoader(
+                        tr_ds, batch_size=args.batch_size, shuffle=True,
+                        pin_memory=True, num_workers=2
+                    )
+
+                    c_loss, c_acc = train_epoch(
+                        model, tr_loader, optimizer, device,
+                        accumulation_steps=args.accumulation_steps
+                    )
+
+                    epoch_loss_sum += c_loss * n_events
+                    epoch_acc_sum += c_acc * n_events
+                    epoch_events += n_events
+
+                    del tr_loader, tr_ds, tr_ev, tr_lab, tr_w
+                    gc.collect()
+                    torch.cuda.empty_cache()
+
+                t_loss = epoch_loss_sum / epoch_events
+                t_acc = epoch_acc_sum / epoch_events
 
                 # Evaluate on validation set
-                val_metrics = evaluate(model, val_path, device)
+                val_metrics = evaluate(model, val_path, device, chunk_size=args.chunk_size)
 
                 scheduler.step()
 
@@ -197,14 +246,8 @@ def main():
                       f"Val Acc={val_metrics['accuracy']:.4f}"
                       f"{' [NEW BEST]' if is_best else ''}")
 
-                # Cleanup
-                del tr_loader, tr_ds, tr_ev, tr_lab, tr_w
-                gc.collect()
-                torch.cuda.empty_cache()
-
-            # Final evaluation on test set
-            test_path = os.path.join(args.data_dir, 'test.h5')
-            test_metrics = evaluate(model, test_path, device)
+            # Final evaluation on full test set
+            test_metrics = evaluate(model, test_path, device, chunk_size=args.chunk_size)
             test_metrics['params'] = count_parameters(model)
 
             # Save results
@@ -229,5 +272,4 @@ def main():
 
 
 if __name__ == '__main__':
-    import torch.nn.functional as F
     main()

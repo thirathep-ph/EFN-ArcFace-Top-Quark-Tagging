@@ -1,9 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="jet_tagging",
+    name="arcjet",
     version="0.1.0",
     packages=find_packages(),
+    package_data={'arcjet': ['config.json']},
     install_requires=[
         "torch",
         "numpy",
@@ -15,7 +16,15 @@ setup(
         "scikit-learn",
         "matplotlib",
         "seaborn",
+        "umap-learn",
     ],
-    author="Your Name",
-    description="Interpretable Jet Tagging with EFN and ArcFace Prototypes",
+    entry_points={
+        'console_scripts': [
+            'arcjet-train=scripts.train_top:main',
+            'arcjet-evaluate=scripts.evaluate_models:main',
+            'arcjet-baselines=scripts.train_baselines:main',
+        ],
+    },
+    author="Thirathep Naowabut Phiankham",
+    description="ArcJet: Ante-hoc Interpretable Jet Tagging with EFN and ArcFace Hyperspherical Prototypes",
 )

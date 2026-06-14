@@ -10,9 +10,9 @@ __pycache__/
 *.so
 
 # Virtual environment
-.venv/
-venv/
-env/
+.venv*/
+venv*/
+env*/
 
 # IDE
 .vscode/
@@ -24,7 +24,10 @@ env/
 *.pt
 *.pth
 *.ckpt
+
+# JSON results (but keep package config)
 *.json
+!arcjet/config.json
 *.log
 
 # Temp output files
@@ -52,4 +55,11 @@ archive/
 
 # Results & outputs
 results/
-scratch/check_sc_zg.py
+main_arcface/
+checkpoints/
+
+# Archive
+scratch/archive/
+data/top_tagging/
+amdgpu-install_*.deb
+*.egg-info/

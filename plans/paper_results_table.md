@@ -99,3 +99,24 @@
 3. **Figures**: 16+ figures ready — only need to arrange + caption
 4. **Best model**: 100-epoch run in `main_arcface/` (91.74% acc)
 5. **SC k=2 determined by eigengap** — key narrative: "core vs edge subclasses"
+
+---
+
+## Table 7: Per-Subclass Classification Purity (from full test set, 404K events)
+
+| Subclass | N | Correct | Incorrect | Purity | Label |
+|:---------|:-:|:-------:|:---------:|:------:|:------|
+| **Top SC 0** | 97,844 | 96,370 TP | 1,474 FN | **98.5%** | **Core** |
+| **Top SC 1** | 111,157 | 92,499 TP | 18,658 FN | **83.2%** | **Edge** |
+| **QCD SC 0** | 118,293 | 118,159 TN | 134 FP | **99.9%** | **Core** |
+| **QCD SC 1** | 76,706 | 63,623 TN | 13,083 FP | **82.9%** | **Edge** |
+
+*Source: `scratch/compile_paper_stats.py` — SC subclass assignments on full main_arcface test set*
+
+## Table 8: Bootstrap Confidence Intervals
+
+| Metric | Value | 95% CI | N_bootstrap |
+|:-------|:-----:|:-------|:-----------:|
+| **Test Accuracy** | **91.75%** | [91.66%, 91.83%] | 1000 samples |
+| **Top Centroid Mass** | 168.8 GeV | — | single run (best model) |
+| **QCD Centroid Mass** | 63.5 GeV | — | single run (best model) |

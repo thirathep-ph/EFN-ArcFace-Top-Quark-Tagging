@@ -19,10 +19,10 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
 
-from jet_tagging.models.efn_arcface import TopTaggingModel, arcface_loss, count_parameters, distance_corr_loss
-from jet_tagging.utils.physics import compute_features
-from jet_tagging.data.loader import load_awkward, JetTaggingDataset, get_h5_len, load_events_by_indices
-from jet_tagging.utils.plotting import (plot_latent_space, plot_performance, 
+from arcjet.models.efn_arcface import TopTaggingModel, arcface_loss, count_parameters, distance_corr_loss
+from arcjet.utils.physics import compute_features
+from arcjet.data.loader import load_awkward, JetTaggingDataset, get_h5_len, load_events_by_indices
+from arcjet.utils.plotting import (plot_latent_space, plot_performance, 
                                       plot_representative_jet, plot_physics_correlations, 
                                       plot_lund_plane, plot_training_results)
 import gc
@@ -33,7 +33,7 @@ import math
 # Training & Evaluation Loops
 # ============================================================================
 
-def train_chunk(model, loader, optimizer, device, scheduler=None, accumulation_steps=8):
+def train_chunk(model, loader, optimizer, device, scheduler=None, accumulation_steps=8, scaler=None):
     model.train()
     total_loss, total_acc = 0, 0
     criterion_cls = arcface_loss
@@ -44,17 +44,24 @@ def train_chunk(model, loader, optimizer, device, scheduler=None, accumulation_s
     for batch_idx, (x, y, w, m, _) in enumerate(loader):
         x, y, w, m = x.to(device), y.to(device), w.to(device), m.to(device)
         
-        logits, sims, _ = model(x, labels=y, mask=m)
-        loss = criterion_cls(logits, y)
-            
-        loss = loss / accumulation_steps
-        loss.backward()
+        with torch.cuda.amp.autocast(enabled=scaler is not None):
+            logits, sims, _ = model(x, labels=y, mask=m)
+            loss = criterion_cls(logits, y)
+            loss = loss / accumulation_steps
         
-        if (batch_idx + 1) % accumulation_steps == 0 or (batch_idx + 1) == n_batches:
-            optimizer.step()
-            optimizer.zero_grad()
-            
-            if scheduler: scheduler.step()
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            if (batch_idx + 1) % accumulation_steps == 0 or (batch_idx + 1) == n_batches:
+                scaler.step(optimizer)
+                scaler.update()
+                optimizer.zero_grad()
+                if scheduler: scheduler.step()
+        else:
+            loss.backward()
+            if (batch_idx + 1) % accumulation_steps == 0 or (batch_idx + 1) == n_batches:
+                optimizer.step()
+                optimizer.zero_grad()
+                if scheduler: scheduler.step()
             
         total_loss += loss.item() * accumulation_steps
         total_acc += (logits.argmax(dim=1) == y).float().mean().item()
@@ -264,22 +271,34 @@ def spectral_clustering_subclass(X, max_k=10):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', type=int, default=42, help='Random seed')
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--max_events', type=int, default=None)
     parser.add_argument('--quick', action='store_true')
     parser.add_argument('--data_dir', type=str, default='data/top_tagging')
     parser.add_argument('--scale', type=float, default=16.0, help='ArcFace scale parameter s')
+    parser.add_argument('--margin', type=float, default=None, help='ArcFace margin parameter m (default: 0.5 with warmup from 0.0)')
     parser.add_argument('--embedding_dim', type=int, default=64, help='EFN embedding/latent dimension')
     parser.add_argument('--particle_dim', type=int, default=128, help='EFN particle/phi hidden dimension')
     parser.add_argument('--output_dir', type=str, default='results')
     parser.add_argument('--checkpoint_dir', type=str, default='checkpoints')
     parser.add_argument('--batch_size', type=int, default=128, help='Batch size for training')
     parser.add_argument('--accumulation_steps', type=int, default=8, help='Gradient accumulation steps')
-    parser.add_argument('--chunk_size', type=int, default=100000, help='Chunk size for reading datasets')
+    parser.add_argument('--no-chunk', action='store_true', help='Disable chunked loading. Load entire dataset into RAM once (faster, requires ~2.4GB RAM)')
+    parser.add_argument('--chunk_size', type=int, default=100000, help='Chunk size for reading datasets (only used when --no-chunk is not set)')
     parser.add_argument('--analysis_only', action='store_true', help='Skip training and run only final evaluation & KASP analysis using existing checkpoint')
+    parser.add_argument('--amp', action='store_true', help='Use Automatic Mixed Precision (FP16) for faster training on compatible GPUs')
     args = parser.parse_args()
 
+    # Set random seed
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    use_amp = args.amp and device.type == 'cuda'
+    if use_amp:
+        print("Using Automatic Mixed Precision (AMP) for faster training")
+    scaler = torch.cuda.amp.GradScaler() if use_amp else None
     
     if args.max_events:
         max_events = args.max_events
@@ -301,20 +320,27 @@ def main():
         val_len = min(val_len, max_events)
         test_len = min(test_len, max_events)
 
-    num_train_chunks = int(np.ceil(train_len / args.chunk_size))
-    
-    # Pre-calculate training steps per epoch for OneCycleLR
-    total_train_batches = 0
-    for chunk_idx in range(num_train_chunks):
-        start = chunk_idx * args.chunk_size
-        n_events = min(args.chunk_size, train_len - start)
-        total_train_batches += int(np.ceil(n_events / args.batch_size))
+    use_chunking = not args.no_chunk
+    if use_chunking:
+        num_train_chunks = int(np.ceil(train_len / args.chunk_size))
+        total_train_batches = 0
+        for chunk_idx in range(num_train_chunks):
+            start = chunk_idx * args.chunk_size
+            n_events = min(args.chunk_size, train_len - start)
+            total_train_batches += int(np.ceil(n_events / args.batch_size))
+    else:
+        num_train_chunks = 1
+        total_train_batches = int(np.ceil(train_len / args.batch_size))
         
     steps_per_epoch = int(np.ceil(total_train_batches / args.accumulation_steps))
     total_scheduler_steps = steps_per_epoch * args.epochs
     
     print("Dataset configuration:")
-    print(f"  Train events: {train_len:,} ({num_train_chunks} chunks of size {args.chunk_size:,})")
+    print(f"  Train events: {train_len:,}")
+    if use_chunking:
+        print(f"  Chunked loading: {num_train_chunks} chunks of size {args.chunk_size:,}")
+    else:
+        print(f"  Single-load mode (no chunking)")
     print(f"  Val events:   {val_len:,}")
     print(f"  Test events:  {test_len:,}")
     print(f"  Total batches per epoch: {total_train_batches:,}")
@@ -333,7 +359,8 @@ def main():
         total_steps=total_scheduler_steps if total_scheduler_steps > 0 else 1
     )
     
-    warmup_epochs, final_margin = 10, 0.5
+    warmup_epochs = 10
+    final_margin = args.margin if args.margin is not None else 0.5
     print(f"\nTraining EFN + ArcFace (xAI Prototype Model, Params: {count_parameters(model):,})")
     
     history = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': [], 
@@ -349,6 +376,15 @@ def main():
         total_train_time = 0.0
         total_val_time = 0.0
         
+        # Pre-load all training data if not chunking (saves I/O across epochs)
+        cached_train_data = None
+        if not use_chunking:
+            print("Pre-loading all training data into memory (single-load mode)...")
+            t_load0 = time.time()
+            tr_ev, tr_lab, tr_w = load_awkward(train_path, max_events=train_len, lazy=True)
+            cached_train_data = (tr_ev, tr_lab, tr_w)
+            print(f"  Loaded {train_len:,} events in {time.time()-t_load0:.1f}s")
+
         epoch_pbar = tqdm(range(args.epochs), desc="Overall Progress")
         for epoch in epoch_pbar:
             current_m = final_margin * min(1.0, (epoch + 1) / warmup_epochs)
@@ -358,54 +394,63 @@ def main():
             epoch_io_time = 0.0
             epoch_prep_time = 0.0
             epoch_train_time = 0.0
-            
-            # Shuffle chunk order per epoch
-            chunk_indices = list(range(num_train_chunks))
-            np.random.shuffle(chunk_indices)
-            
+
+            if use_chunking:
+                # Chunked mode: shuffle chunk order per epoch
+                chunk_indices = list(range(num_train_chunks))
+                np.random.shuffle(chunk_indices)
+            else:
+                # Single-load mode: just one "chunk"
+                chunk_indices = [0]
+
             t_loss_sum, t_acc_sum = 0.0, 0.0
             events_trained = 0
-            
-            # Display progress for chunks and batches within the active epoch
-            epoch_pbar_inner = tqdm(total=total_train_batches, desc=f"Epoch {epoch+1}/{args.epochs} [Chunk 0/{num_train_chunks}]", leave=False)
-            
+
+            desc = f"Epoch {epoch+1}/{args.epochs}"
+            if use_chunking:
+                desc += f" [Chunk 0/{num_train_chunks}]"
+            epoch_pbar_inner = tqdm(total=total_train_batches, desc=desc, leave=False)
+
             for c_idx, chunk_idx in enumerate(chunk_indices):
-                epoch_pbar_inner.set_description(f"Epoch {epoch+1}/{args.epochs} [Chunk {c_idx+1}/{num_train_chunks}]")
-                
-                start = chunk_idx * args.chunk_size
-                n_events = min(args.chunk_size, train_len - start)
-                
-                # Load chunk
-                t_io0 = time.time()
-                tr_ev, tr_lab, tr_w = load_awkward(train_path, max_events=n_events, start_event=start, lazy=True)
-                epoch_io_time += (time.time() - t_io0)
-                
+                if use_chunking:
+                    epoch_pbar_inner.set_description(f"Epoch {epoch+1}/{args.epochs} [Chunk {c_idx+1}/{num_train_chunks}]")
+                    start = chunk_idx * args.chunk_size
+                    n_events = min(args.chunk_size, train_len - start)
+
+                    t_io0 = time.time()
+                    tr_ev, tr_lab, tr_w = load_awkward(train_path, max_events=n_events, start_event=start, lazy=True)
+                    epoch_io_time += (time.time() - t_io0)
+                else:
+                    n_events = train_len
+                    tr_ev, tr_lab, tr_w = cached_train_data
+
                 t_prep0 = time.time()
                 train_ds = JetTaggingDataset(tr_ev, tr_lab, tr_w)
-                train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, pin_memory=True)
+                train_loader = DataLoader(
+                    train_ds, batch_size=args.batch_size, shuffle=True,
+                    pin_memory=True, num_workers=0
+                )
                 epoch_prep_time += (time.time() - t_prep0)
-                
-                # Train chunk
+
                 t_tr0 = time.time()
                 c_loss, c_acc = train_chunk(
                     model, train_loader, optimizer, device, scheduler=scheduler,
-                    accumulation_steps=args.accumulation_steps
+                    accumulation_steps=args.accumulation_steps, scaler=scaler
                 )
                 epoch_train_time += (time.time() - t_tr0)
-                
-                # Accumulate weighted training metrics
+
                 t_loss_sum += c_loss * n_events
                 t_acc_sum += c_acc * n_events
                 events_trained += n_events
-                
+
                 epoch_pbar_inner.update(len(train_loader))
                 epoch_pbar_inner.set_postfix(Loss=f"{c_loss:.4f}", Acc=f"{c_acc:.4f}")
-                
-                # Memory Cleanup
-                del train_loader, train_ds, tr_ev, tr_lab, tr_w
-                gc.collect()
-                torch.cuda.empty_cache()
-                
+
+                if use_chunking:
+                    del train_loader, train_ds, tr_ev, tr_lab, tr_w
+                    gc.collect()
+                    torch.cuda.empty_cache()
+
             epoch_pbar_inner.close()
             
             t_loss = t_loss_sum / events_trained
@@ -505,7 +550,7 @@ def main():
     
     # 0. Global Metrics & Training Results
     from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
-    from jet_tagging.utils.plotting import plot_decision_boundary
+    from arcjet.utils.plotting import plot_decision_boundary
     
     # Correctly aggregate similarities into class scores (1 center per class)
     n = 1
@@ -1027,7 +1072,7 @@ def main():
     print("Generating Plot 8 & 9: lund_planes/...")
     lund_dir = os.path.join(args.output_dir, 'lund_planes')
     os.makedirs(lund_dir, exist_ok=True)
-    from jet_tagging.utils.plotting import plot_lund_plane
+    from arcjet.utils.plotting import plot_lund_plane
 
     # A. Class-level Lund planes (1 Non-split + 4 T/F splits)
     plot_lund_plane(sub_events, label="Overall Test Set (Non-split)", save_path=os.path.join(lund_dir, 'class_overall_non_split.png'))
@@ -1075,7 +1120,7 @@ def main():
     print(f"Saved Lund planes to {lund_dir}")
     
     # Correlation & Distribution Analysis
-    from jet_tagging.utils.plotting import plot_feature_distributions
+    from arcjet.utils.plotting import plot_feature_distributions
     plot_physics_correlations(sub_labels, sub_scores, sub_features, feature_names,
                                save_path=os.path.join(args.output_dir, 'correlations.png'))
     plot_feature_distributions(sub_labels, sub_features, feature_names,

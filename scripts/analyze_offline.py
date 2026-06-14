@@ -13,10 +13,10 @@ from tqdm.auto import tqdm
 # Add root directory to python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from jet_tagging.models.efn_arcface import count_parameters
-from jet_tagging.utils.physics import compute_features
-from jet_tagging.data.loader import get_h5_len, load_events_by_indices, JetTaggingDataset
-from jet_tagging.utils.plotting import (
+from arcjet.models.efn_arcface import count_parameters
+from arcjet.utils.physics import compute_features
+from arcjet.data.loader import get_h5_len, load_events_by_indices, JetTaggingDataset
+from arcjet.utils.plotting import (
     plot_latent_space,
     plot_performance,
     plot_representative_jet,
