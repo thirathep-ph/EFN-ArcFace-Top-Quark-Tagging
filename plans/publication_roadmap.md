@@ -38,7 +38,7 @@ The following **trained model and analysis outputs** already exist:
 - **Centroid constituents report**: `main_arcface/centroid_constituents_report.md`
 - **Full analysis output** (results/analysis_15ep/):
   - UMAP prediction status + subclasses
-  - 5 Top + 2 QCD subclasses via DPGMM
+  - 5 Top + 2 QCD subclasses via Spectral Clustering
   - Physics distributions per subclass
   - Subclass composition heatmap (classification purity)
   - Physics correlation matrices

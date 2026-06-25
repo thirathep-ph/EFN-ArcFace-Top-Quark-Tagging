@@ -9,6 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from arcjet.models.efn_arcface import TopTaggingModel
 from arcjet.data.loader import load_awkward, JetTaggingDataset
+from arcjet.utils.device import get_device
 
 def inspect_similarities(model_path, data_dir="data/top_tagging", max_events=1000):
     print(f"\n=== Inspecting Similarities for {model_path} ===")
@@ -16,10 +17,10 @@ def inspect_similarities(model_path, data_dir="data/top_tagging", max_events=100
         print("Checkpoint file does not exist")
         return
         
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device, _ = get_device()
     
     # Load model
-    model = TopTaggingModel(n_proto_per_class=1, embedding_dim=64).to(device)
+    model = TopTaggingModel(embedding_dim=64).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
     
     # Load dataset
@@ -28,7 +29,7 @@ def inspect_similarities(model_path, data_dir="data/top_tagging", max_events=100
     loader = DataLoader(dataset, batch_size=1024, shuffle=False)
     
     # Check prototypes
-    protos = model.prototype_layer.prototypes.data
+    protos = model.arcface_head.class_centers.data
     norm_qcd = torch.norm(protos[0]).item()
     norm_top = torch.norm(protos[1]).item()
     dot_product = torch.dot(protos[0], protos[1]).item()

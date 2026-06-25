@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def main():
-    embeddings_path = 'main_arcface/embeddings.npz'
-    output_plot_path = 'main_arcface/svd_scree_plot.png'
+    embeddings_path = 'experiments/arcface_100ep/embeddings.npz'
+    output_plot_path = 'experiments/svd_analysis/svd_scree_plot.png'
     
     print("1. Loading embeddings...")
     data = np.load(embeddings_path)

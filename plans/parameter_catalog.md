@@ -71,7 +71,7 @@
 | **K-means elbow** | Finds k where inertia plateaus | k=2 | "Different method, same answer" |
 | **Agglomerative (cosine)** | Hierarchical clustering with cosine linkage | k=2 | "Third method confirms" |
 | **DBSCAN** | Density-based, no k needed | k=1 | "Too dense on sphere — expected" |
-| **DPGMM** | Dirichlet process, automatic k | k=10 | "Dirichlet prior didn't collapse — known issue" |
+| **DPGMM** | Dirichlet process, automatic k | k=10 | "Deprecated — replaced by Spectral Clustering + Eigengap" |
 | **GMM (BIC)** | Gaussian mixture with BIC | k=3 | "Gaussian assumption violated on sphere" |
 | **Ward** | Euclidean hierarchical | k=17626 | "Broken on sphere — confirms geometry matters" |
 
@@ -163,7 +163,7 @@ Beyond eigengap, here are all methods available in our codebase:
 | **K-means elbow** | `scratch/comprehensive_clustering_comparison.py` | Inertia vs k plot | Simple, fast | Subjective elbow selection |
 | **Silhouette score** | `scratch/compute_clustering_metrics.py` | Max average silhouette | Objective | Computationally expensive for large k |
 | **GMM BIC** | `scratch/test_gmm_bic.py` | Bayesian Information Criterion | Statistical foundation | Assumes Gaussian — invalid on sphere |
-| **DPGMM** | `scratch/comprehensive_clustering_comparison.py` | Dirichlet Process | Automatic k selection | Prior may not collapse |
+| **DPGMM** | `scratch/comprehensive_clustering_comparison.py` | Dirichlet Process | Automatic k selection | Deprecated — replaced by Spectral Clustering |
 | **DBSCAN** | `scratch/comprehensive_clustering_comparison.py` | Density-based | No k needed | Assumes uniform density — fails on sphere |
 | **HDBSCAN** | `scratch/comprehensive_clustering_comparison.py` | Hierarchical DBSCAN | More robust | May not be installed |
 

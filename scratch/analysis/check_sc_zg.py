@@ -12,13 +12,13 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from arcjet.models.efn_arcface import TopTaggingModel
 from arcjet.data.loader import load_awkward, JetTaggingDataset
 from arcjet.utils.physics import compute_features
+from arcjet.utils.device import get_device
 
 def main():
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print("Using device:", device)
+    device, _ = get_device()
     
     # Load model
-    model = TopTaggingModel(n_proto_per_class=1, embedding_dim=64, particle_dim=128).to(device)
+    model = TopTaggingModel(embedding_dim=64, particle_dim=128).to(device)
     model.load_state_dict(torch.load("checkpoints/test_run_15ep/best_model_efn.pt", map_location=device))
     model.eval()
     

@@ -122,21 +122,21 @@ if os.path.exists(EMB_CACHE) and os.path.exists(PROTO_CACHE):
     prototypes_raw = np.load(PROTO_CACHE)
     print(f"    Embeddings shape: {all_emb.shape} (loaded from cache)")
 else:
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    from arcjet.utils.device import get_device, empty_cache
+    device, backend_type = get_device()
     print(f"\n[2] Extracting embeddings on {device}")
     print(f"    Checkpoint: {CHECKPOINT}")
 
     model = TopTaggingModel(
-        n_proto_per_class=1, s=16.0, m=0.0,
+        s=16.0, m=0.0,
         embedding_dim=EMBEDDING_DIM, particle_dim=PARTICLE_DIM
     ).to(device)
     state_dict = torch.load(CHECKPOINT, map_location=device)
-    state_dict.pop('prototype_layer.prototype_class', None)
     model.load_state_dict(state_dict, strict=True)
     model.eval()
 
     # Save prototypes NOW before freeing the model
-    prototypes_raw = model.prototype_layer.prototypes.detach().cpu().numpy()
+    prototypes_raw = model.arcface_head.class_centers.detach().cpu().numpy()
     np.save(PROTO_CACHE, prototypes_raw)
     print(f"    Saved prototypes to {PROTO_CACHE}")
 
@@ -162,8 +162,7 @@ else:
 
     # ---- FREE ALL GPU MEMORY ----
     del model, ds, loader
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+    empty_cache(backend_type)
     gc.collect()
     print("    GPU memory freed.")
 
@@ -291,7 +290,7 @@ proto_umap  = reducer.transform(prototypes_norm)
 print("    UMAP done.")
 
 # ============================================================
-# STEP 6: DPGMM subclass discovery on Tier 2
+# STEP 6: Spectral Clustering subclass discovery on Tier 2
 # ============================================================
 print("\n[6] DPGMM subclass discovery (Tier 2)")
 subclass_labels = np.full(N, -1, dtype=int)
@@ -504,7 +503,7 @@ plt.scatter(*proto_umap[0], marker='*', s=500, color='yellow',
             edgecolors='black', lw=1.5, label='$W_{QCD}$', zorder=10)
 plt.scatter(*proto_umap[1], marker='*', s=500, color='magenta',
             edgecolors='black', lw=1.5, label='$W_{Top}$', zorder=10)
-plt.title("Discovered Subclasses in Latent Space (DPGMM + UMAP)", fontsize=13)
+plt.title("Discovered Subclasses in Latent Space (Spectral Clustering + UMAP)", fontsize=13)
 plt.xlabel("UMAP 1"); plt.ylabel("UMAP 2")
 plt.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize=9)
 plt.grid(True, alpha=0.15)
@@ -1056,12 +1055,12 @@ metrics = {
     # Edge analysis (Tier 2)
     'edge_count':       int(edge_mask.sum()),
     'edge_threshold':   float(edge_threshold),
-    # DPGMM (Tier 2)
+    # Spectral Clustering (Tier 2)
     'qcd_subclasses':   int(len(active_qcd_sc)),
     'top_subclasses':   int(len(active_top_sc)),
     'qcd_sc_counts':    [int(c) for c in counts_qcd],
     'top_sc_counts':    [int(c) for c in counts_top],
-    'dpgmm_robustness': {k: {'nmi_mean': v['nmi_mean'], 'nmi_std': v['nmi_std']}
+    'sc_robustness': {k: {'nmi_mean': v['nmi_mean'], 'nmi_std': v['nmi_std']}
                          for k, v in robustness.items()}
 }
 with open(os.path.join(RESULTS_DIR, 'analysis_metrics.json'), 'w') as f:

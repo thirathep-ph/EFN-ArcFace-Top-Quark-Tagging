@@ -10,19 +10,20 @@ from sklearn.mixture import BayesianGaussianMixture
 from arcjet.models.efn_arcface import TopTaggingModel
 from arcjet.utils.physics import compute_features
 from arcjet.data.loader import load_awkward, JetTaggingDataset
+from arcjet.utils.device import get_device
 
 # 1. Load trained model & weights
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device, _ = get_device()
 embedding_dim = 128
 particle_dim = 256
 
 print("Loading trained model from checkpoints/best_model_efn.pt...")
-model = TopTaggingModel(n_proto_per_class=1, s=16.0, m=0.0, embedding_dim=embedding_dim, particle_dim=particle_dim).to(device)
+model = TopTaggingModel(s=16.0, m=0.0, embedding_dim=embedding_dim, particle_dim=particle_dim).to(device)
 model.load_state_dict(torch.load('checkpoints/best_model_efn.pt', map_location=device))
 model.eval()
 
 # Load class prototypes (centers) from model
-prototypes = model.prototype_layer.prototypes.detach().cpu().numpy()  # (2, 128)
+prototypes = model.arcface_head.class_centers.detach().cpu().numpy()  # (2, 128)
 prototypes_norm = prototypes / (np.linalg.norm(prototypes, axis=1, keepdims=True) + 1e-10)
 
 # 2. Load embeddings & labels

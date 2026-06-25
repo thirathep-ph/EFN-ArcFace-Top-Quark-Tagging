@@ -31,9 +31,13 @@ def analyze_matrix_rank(W, threshold=0.99):
     return S, ranks
 
 def main():
-    checkpoint_path = 'main_arcface/best_model_efn.pt'
+    checkpoint_path = 'experiments/arcface_100ep/best_model_efn.pt'
+    if not os.path.exists(checkpoint_path):
+        checkpoint_path = 'checkpoints/best_model_efn.pt'
+        if not os.path.exists(checkpoint_path):
+            raise FileNotFoundError(f"Checkpoint not found at {checkpoint_path}")
     print(f"Loading checkpoint '{checkpoint_path}'...")
-    state_dict = torch.load(checkpoint_path, map_location='cpu')
+    state_dict = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
     
     # Filter only weights from efn (excluding bias, batchnorm running parameters, and class centers)
     weight_keys = [k for k in state_dict.keys() if 'weight' in k and ('phi' in k or 'rho' in k) and 'weight_ch' not in k]

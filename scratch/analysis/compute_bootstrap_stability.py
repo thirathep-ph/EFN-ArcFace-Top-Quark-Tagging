@@ -5,7 +5,7 @@ import torch
 from sklearn.metrics import adjusted_rand_score
 
 # Add root directory to python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from scripts.analyze_offline import spectral_clustering_subclass
 
@@ -37,15 +37,17 @@ def run_stability_bootstrap(latent_data, n_iterations=20, sub_fraction=0.9):
     return np.mean(aris), np.std(aris), k
 
 def main():
-    embeddings_path = 'main_arcface/embeddings.npz'
-    checkpoint_path = 'main_arcface/best_model_efn.pt'
+    embeddings_path = 'experiments/arcface_100ep/embeddings.npz'
+    checkpoint_path = 'experiments/arcface_100ep/best_model_efn.pt'
+    if not os.path.exists(checkpoint_path):
+        checkpoint_path = 'checkpoints/best_model_efn.pt'
     
     print("1. Loading embeddings & checkpoints...")
     data = np.load(embeddings_path)
     embeddings = data['embeddings']
     labels = data['labels']
     
-    state_dict = torch.load(checkpoint_path, map_location='cpu')
+    state_dict = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
     if 'arcface_head.class_centers' in state_dict:
         class_centers = state_dict['arcface_head.class_centers'].cpu().numpy()
     elif 'prototype_layer.prototypes' in state_dict:

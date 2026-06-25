@@ -40,72 +40,10 @@ def parse_args():
                         help='Directory to save output plots and metrics')
     parser.add_argument('--sample_size', type=int, default=50000,
                         help='Sample size for local UMAP, Spectral Clustering & Lund Planes')
-    return parser.parse_args()
 
-def estimate_clusters_eigengap(X_norm, max_k=10):
-    from scipy.sparse.linalg import eigsh, LinearOperator
-    n_samples = X_norm.shape[0]
-    if n_samples < 3:
-        return 2, None
-    sum_X = np.sum(X_norm, axis=0)
-    d = (n_samples + X_norm @ sum_X) / 2.0
-    d = np.clip(d, 1e-10, None)
-    d_inv_sqrt = 1.0 / np.sqrt(d)
-    
-    def matvec(v):
-        y = d_inv_sqrt * v
-        Ay = (np.sum(y) + X_norm @ (X_norm.T @ y)) / 2.0
-        return d_inv_sqrt * Ay
-        
-    M_op = LinearOperator((n_samples, n_samples), matvec=matvec)
-    try:
-        k_eigen = min(max_k + 2, n_samples - 2)
-        vals, _ = eigsh(M_op, k=k_eigen, which='LM')
-        eigenvalues = np.sort(1.0 - vals)
-        max_k_checked = min(max_k, len(eigenvalues) - 2)
-        if max_k_checked < 2:
-            return 2, eigenvalues
-        gaps = np.diff(eigenvalues[1:max_k_checked + 2])
-        optimal_k = np.argmax(gaps) + 2
-        return optimal_k, eigenvalues
-    except Exception as e:
-        print(f"Warning in eigengap calculation: {e}. Falling back to default k=5.")
-        return 5, None
+from arcjet.utils.clustering import estimate_clusters_eigengap, spectral_clustering_subclass
 
-def spectral_clustering_subclass(X, max_k=10):
-    from scipy.sparse.linalg import eigsh, LinearOperator
-    from sklearn.cluster import KMeans
-    n_samples = X.shape[0]
-    if n_samples < 2:
-        return np.zeros(n_samples, dtype=int), 1
-    X_norm = X / (np.linalg.norm(X, axis=1, keepdims=True) + 1e-10)
-    optimal_k, _ = estimate_clusters_eigengap(X_norm, max_k=max_k)
-    print(f"  Eigengap heuristic suggests optimal subclasses k = {optimal_k}")
-    sum_X = np.sum(X_norm, axis=0)
-    d = (n_samples + X_norm @ sum_X) / 2.0
-    d = np.clip(d, 1e-10, None)
-    d_inv_sqrt = 1.0 / np.sqrt(d)
-    
-    def matvec(v):
-        y = d_inv_sqrt * v
-        Ay = (np.sum(y) + X_norm @ (X_norm.T @ y)) / 2.0
-        return d_inv_sqrt * Ay
-        
-    M_op = LinearOperator((n_samples, n_samples), matvec=matvec)
-    try:
-        vals, vecs = eigsh(M_op, k=optimal_k, which='LM')
-        idx = np.argsort(vals)[::-1]
-        vecs = vecs[:, idx]
-        row_norms = np.linalg.norm(vecs, axis=1, keepdims=True)
-        U = vecs / (row_norms + 1e-10)
-        kmeans = KMeans(n_clusters=optimal_k, random_state=42, n_init=10)
-        labels = kmeans.fit_predict(U)
-        return labels, optimal_k
-    except Exception as e:
-        print(f"Warning in spectral clustering: {e}. Falling back to standard K-means.")
-        kmeans = KMeans(n_clusters=optimal_k, random_state=42, n_init=10)
-        labels = kmeans.fit_predict(X_norm)
-        return labels, optimal_k
+
 
 def main():
     args = parse_args()

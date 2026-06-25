@@ -36,15 +36,14 @@ PARTICLE_DIM  = 128
 os.makedirs(RESULTS_DIR, exist_ok=True)
 os.makedirs(LUND_DIR, exist_ok=True)
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(f"Using device: {device}")
+from arcjet.utils.device import get_device
+device, _ = get_device()
 
 # ============================================================================
 # 1. Load model with architecture matching test_run_15ep
 # ============================================================================
 print(f"\nLoading checkpoint: {CHECKPOINT}")
 model = TopTaggingModel(
-    n_proto_per_class=1,
     s=16.0, m=0.0,
     embedding_dim=EMBEDDING_DIM,
     particle_dim=PARTICLE_DIM
@@ -58,7 +57,7 @@ model.eval()
 print("Model loaded successfully.")
 
 # Load class prototypes
-prototypes = model.prototype_layer.prototypes.detach().cpu().numpy()  # (2, EMBEDDING_DIM)
+prototypes = model.arcface_head.class_centers.detach().cpu().numpy()  # (2, EMBEDDING_DIM)
 prototypes_norm = prototypes / (np.linalg.norm(prototypes, axis=1, keepdims=True) + 1e-10)
 
 # ============================================================================

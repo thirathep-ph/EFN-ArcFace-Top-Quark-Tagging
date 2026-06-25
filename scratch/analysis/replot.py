@@ -10,6 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from arcjet.models.efn_arcface import TopTaggingModel
 from arcjet.data.loader import load_awkward, JetTaggingDataset
 from arcjet.utils.plotting import plot_latent_space
+from arcjet.utils.device import get_device
 
 def replot(model_path, data_dir="data/top_tagging", max_events=5000, output_path="results/test_run_15ep/latent_space_fixed.png"):
     print(f"\n=== Replottng Latent Space for {model_path} ===")
@@ -17,10 +18,10 @@ def replot(model_path, data_dir="data/top_tagging", max_events=5000, output_path
         print("Checkpoint file does not exist")
         return
         
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device, _ = get_device()
     
     # Load model
-    model = TopTaggingModel(n_proto_per_class=1, embedding_dim=64).to(device)
+    model = TopTaggingModel(embedding_dim=64).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
     
@@ -42,7 +43,7 @@ def replot(model_path, data_dir="data/top_tagging", max_events=5000, output_path
     all_emb = torch.cat(all_emb).numpy()
     all_labels = torch.cat(all_labels).numpy()
     
-    prototypes = model.prototype_layer.prototypes.detach().cpu().numpy()
+    prototypes = model.arcface_head.class_centers.detach().cpu().numpy()
     
     # Run plot_latent_space
     plot_latent_space(all_emb, all_labels, prototypes=prototypes, save_path=output_path)

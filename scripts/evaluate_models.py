@@ -20,11 +20,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from arcjet.models.efn_arcface import TopTaggingModel
 from arcjet.data.loader import load_awkward, JetTaggingDataset
+from arcjet.utils.device import get_device
 
 
 def evaluate_model(model_path, data_dir, split, max_events, mode):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f"Using device: {device}")
+    device, _ = get_device()
     
     # 1. Load Model Checkpoint
     # We use 1 QCD + 1 Top class center
