@@ -141,8 +141,13 @@ class ArcFaceHead(nn.Module):
             theta_m = torch.clamp(theta + self.m, max=np.pi)
             cosine_m = torch.cos(theta_m)
             
-            one_hot = F.one_hot(labels, num_classes=self.n_classes).bool()
-            logits = torch.where(one_hot, cosine_m, cosine)
+            # Build logits: for each sample, use cosine_m at the true class index
+            # and cosine at all other indices.
+            # DirectML does not support F.one_hot + scatter well, so we use
+            # an explicit index-based construction instead.
+            logits = cosine.clone()
+            batch_indices = torch.arange(len(labels), device=labels.device)
+            logits[batch_indices, labels] = cosine_m[batch_indices, labels]
         else:
             logits = cosine
             

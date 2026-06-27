@@ -33,15 +33,15 @@ ROBUSTNESS_CONFIGS = [
 ]
 
 
-def evaluate_checkpoint(model_path, device, max_events=404000):
-    """Evaluate a single checkpoint on test set."""
+def evaluate_checkpoint(model_path, device, max_events=50000):
+    """Evaluate a single checkpoint on test set (subset for speed)."""
     model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128).to(device)
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.load_state_dict(torch.load(model_path, map_location=device, weights_only=False))
     model.eval()
 
     events, labels, weights = load_awkward(TEST_H5, max_events=max_events)
     dataset = JetTaggingDataset(events, labels, weights)
-    loader = DataLoader(dataset, batch_size=1024, shuffle=False, num_workers=0)
+    loader = DataLoader(dataset, batch_size=2048, shuffle=False, num_workers=0)
 
     all_preds = []
     all_labels = []
@@ -92,18 +92,25 @@ def main():
     print(f"Test set: {TEST_H5}")
     print()
 
+    # Discover checkpoints dynamically from experiments directory
     results = []
-
-    for s, m in ROBUSTNESS_CONFIGS:
-        m_str = str(m).replace(".", "0")
-        exp_dir = os.path.join(EXPERIMENTS_DIR, f"robustness_s{s}_m{m_str}")
-        ckpt = os.path.join(exp_dir, "checkpoint.pt")
-
+    for entry in sorted(os.listdir(EXPERIMENTS_DIR)):
+        if not entry.startswith("robustness_s"):
+            continue
+        ckpt = os.path.join(EXPERIMENTS_DIR, entry, "checkpoint.pt")
         if not os.path.exists(ckpt):
-            print(f"  [SKIP] s={s}, m={m} - checkpoint not found at {ckpt}")
+            print(f"  [SKIP] {entry} - no checkpoint.pt")
+            continue
+        # Parse s and m from directory name: robustness_s{s}_m{m}
+        parts = entry.replace("robustness_s", "").split("_m")
+        try:
+            s = int(parts[0])
+            m = float(parts[1])
+        except (ValueError, IndexError):
+            print(f"  [SKIP] {entry} - cannot parse s/m")
             continue
 
-        print(f"  [EVAL] s={s}, m={m} ...")
+        print(f"  [EVAL] s={s}, m={m} ({entry}) ...")
         t0 = time.time()
         res = evaluate_checkpoint(ckpt, device)
         elapsed = time.time() - t0
@@ -114,6 +121,10 @@ def main():
         results.append(res)
 
         print(f"    Acc={res['accuracy']:.4f}  F1={res['f1']:.4f}  AUC={res['roc_auc']:.4f}  ({elapsed:.0f}s)")
+
+    if not results:
+        print("\nNo checkpoints found! Check experiments/ directory.")
+        return
 
     # Sort by scale then margin
     results.sort(key=lambda x: (x['scale'], x['margin']))
