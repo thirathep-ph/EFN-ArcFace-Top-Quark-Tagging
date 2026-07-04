@@ -6,6 +6,8 @@ services:
     container_name: jet_tagging_container
     volumes:
       - .:/app
+      # Mount data separately (large H5 files)
+      - ./data:/app/data
     deploy:
       resources:
         reservations:
@@ -13,4 +15,4 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-    command: python scripts/train_top.py --quick --epochs 10
+    command: python scripts/train_arcface.py --quick --epochs 10

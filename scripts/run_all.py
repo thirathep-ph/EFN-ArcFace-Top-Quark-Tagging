@@ -39,7 +39,7 @@ def run(cmd, desc):
     print(f"{'='*70}\n")
     sys.stdout.flush()
     t0 = time.time()
-    result = subprocess.run(cmd, shell=True, cwd=PROJECT_ROOT, capture_output=False)
+    result = subprocess.run(cmd,  cwd=PROJECT_ROOT, capture_output=False)
     elapsed = time.time() - t0
     status = "OK" if result.returncode == 0 else f"FAILED (code {result.returncode})"
     print(f"\n  [{desc}] {status} in {elapsed:.1f}s ({elapsed/60:.1f} min)\n")

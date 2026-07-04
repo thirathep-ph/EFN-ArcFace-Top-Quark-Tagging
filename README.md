@@ -2,6 +2,8 @@
 
 **EFN (Energy Flow Network) + ArcFace Hyperspherical Prototypes** for **ante-hoc interpretable** jet classification in high-energy physics.
 
+Reference paper: *Ante-Hoc Interpretable Top Quark Tagging with Energy Flow Networks and Hyperspherical Prototypes* (Thirathep Phongpreecha).
+
 | Component | Status | Details |
 |:----------|:------:|:--------|
 | **Model Architecture** | ✅ Complete | EFN backbone + ArcFace head (1 prototype per class) |
@@ -12,7 +14,6 @@
 | **Subclass Discovery** | ✅ Complete | 2 Top subclasses (Core/Edge) + 2 QCD subclasses (Core/Edge) via Spectral Clustering |
 | **Physics Validation** | ✅ Complete | Lund planes, substructure, zg, angular collimation |
 | **Dimensionality Analysis** | ✅ Complete | SVD, TwoNN, Participation Ratio — effective dim ≈ 2 |
-| **Paper Writing** | ⏳ In Progress | Target: SciPost Physics |
 
 ---
 
@@ -50,53 +51,64 @@ Unlike **post-hoc** interpretability methods (Grad-CAM, LIME, attention weights)
 ## 📦 Project Structure
 
 ```
-arcjet/                        # Core library (editable package)
+arcjet/                            # Core library (editable package)
 +-- models/
-|   +-- efn_arcface.py              # EFN + ArcFace model (main)
-|   +-- efn_linear.py               # EFN + Linear baseline
-|   +-- efn_coslinear.py            # EFN + Cosine Linear baseline
+|   +-- efn_arcface.py                  # EFN + ArcFace model (main)
+|   +-- efn_linear.py                   # EFN + Linear baseline
+|   +-- efn_coslinear.py                # EFN + Cosine Linear baseline
 +-- data/
-|   +-- loader.py                   # H5 -> Awkward -> PyTorch data pipeline
+|   +-- loader.py                       # H5 -> Awkward -> PyTorch data pipeline
 +-- utils/
-    +-- clustering.py               # Spectral clustering + eigengap
-    +-- physics.py                  # FastJet substructure: mass, tau32, zg, Lund
-    +-- plotting.py                 # Visualization: latent space, Lund planes, ROC
-    +-- device.py                   # Device utilities
+|   +-- clustering.py                   # Spectral clustering + eigengap
+|   +-- physics.py                      # FastJet substructure: mass, tau32, zg, Lund
+|   +-- plotting.py                     # Visualization: latent space, Lund planes, ROC
+|   +-- device.py                       # Device utilities
+|   +-- paths.py                        # Cross-platform path resolution
++-- tests/
+    +-- test_model.py                   # Model forward-pass smoke tests
+    +-- test_loader.py                  # Data loading tests
+    +-- test_clustering.py              # Spectral clustering tests
+    +-- test_physics.py                 # FastJet physics feature tests
+    +-- test_utils.py                   # Device + path utility tests
 
-scripts/                            # Training & evaluation pipeline
-+-- train_top.py                    # Full training + subclass discovery + analysis
-+-- train_baselines.py              # Baseline model training (Linear + CosLinear)
-+-- evaluate_models.py              # Standalone model evaluation
-+-- eval_robustness.py              # Robustness sweep (s × m grid)
-+-- analyze_offline.py              # Offline analysis of saved results
-+-- run_all.py                      # Run full pipeline
+scripts/                            # Training & evaluation
++-- train_arcface.py                # EFN + ArcFace training (CLI)
++-- train_baselines.py              # Linear + CosLinear baseline training
++-- evaluate_model.py               # Standalone model evaluation
++-- evaluate_robustness.py          # Robustness sweep (s × m grid)
++-- run_pipeline.py                 # Orchestrator — run full pipeline
 
-scratch/                            # Standalone analysis scripts (reproducible)
-+-- analysis/
-|   +-- run_full_analysis.py            # Full analysis pipeline
-|   +-- compute_svd_variance.py         # SVD dimensionality analysis
-+-- clustering/
-|   +-- compute_clustering_metrics.py   # Clustering quality metrics
+scripts/analysis/                   # Paper figure generation (all figures)
++-- compute_mass_vs_score.py        # Fig: mass vs classification score
++-- compute_dglap_fit.py            # Fig: Altarelli-Parisi / DGLAP fits
++-- compute_bootstrap_ci.py         # Fig: ROC, rejection rates, bootstrap CI
++-- compute_interpretation.py       # Fig: MI heatmap, effect sizes, PCA
++-- compute_saliency.py             # Fig: constituent saliency analysis
++-- compute_eigengap.py             # Fig: eigengap spectrum
++-- compute_dimensionality.py       # Tab: TwoNN, Participation Ratio, angular distance
++-- compute_robustness_tests.py     # Tab: pT rescaling, rotation, dropout
++-- generate_paper_figures.py       # Fig: UMAP, Lund planes, subclass physics
+
+scripts/explore/                    # Additional analyses (not paper figures)
++-- bayesian_v3.py                  # Bayesian uncertainty quantification
++-- conformal_final.py              # Conformal prediction coverage
++-- pgd_attack.py                   # Adversarial PGD robustness
++-- onnx_export.py                  # ONNX model export
++-- ...
+
+scratch/                            # Early-stage analysis scripts
++-- analysis/run_full_analysis.py
++-- clustering/compute_clustering_metrics.py
 +-- physics/
-    +-- compute_ks_tests.py             # Kolmogorov-Smirnov tests
-    +-- compute_jsd.py                  # Jensen-Shannon divergence
-
-notebooks/
-+-- JetTagging_EFN_ArcFace.ipynb    # Google Colab-ready training notebook
-
-plans/
-+-- scipost_complete_plan.md        # Publication plan & results tables
 
 data/                               # Datasets (not tracked in git)
 +-- top_tagging/                    # Top Tagging Reference Dataset (H5)
-+-- jetnet/                         # JetNet datasets (H5)
 
-experiments/                        # Trained model results (not tracked in git)
-+-- arcface_100ep/                  # Primary model (100 epochs)
-+-- baselines_linear_seed_*/        # Linear baselines (3 seeds)
-+-- baselines_coslinear_seed_*/     # CosLinear baselines (3 seeds)
-+-- robustness_s*_m*/               # Robustness sweep (9 configs)
-+-- svd_analysis/                   # SVD analysis outputs
+experiments/                        # Results (not tracked in git)
++-- robustness_s16_m05/             # Main model checkpoint + figures
++-- baselines_linear_seed_*/        # Linear baselines
++-- baselines_coslinear_seed_*/     # CosLinear baselines
++-- robustness_s*_m*/               # Robustness sweep
 
 Dockerfile / docker-compose.yml     # GPU-ready containerization
 requirements.txt                    # Python dependencies
@@ -117,41 +129,39 @@ pip install -e .
 docker-compose up --build
 ```
 
-### Train from scratch
+### Reproduce paper results
+
+```bash
+# Train models
+python scripts/train_arcface.py                       # EFN + ArcFace (full)
+python scripts/train_baselines.py --n_seeds 3          # Linear + CosLinear baselines
+
+# Generate all paper figures & tables
+python scripts/run_pipeline.py --figures
+
+# Or run individual analysis scripts
+python scripts/analysis/compute_bootstrap_ci.py        # Table 1, ROC curves
+python scripts/analysis/compute_eigengap.py            # Fig: eigengap spectrum
+python scripts/analysis/compute_dglap_fit.py           # Fig: AP/DGLAP fits
+python scripts/analysis/compute_mass_vs_score.py       # Fig: mass vs score
+python scripts/analysis/compute_interpretation.py      # Fig: MI heatmap
+python scripts/analysis/compute_saliency.py            # Fig: saliency
+python scripts/analysis/compute_dimensionality.py      # Table: TwoNN, PR
+python scripts/analysis/compute_robustness_tests.py    # Table: robustness
+python scripts/analysis/generate_paper_figures.py      # UMAP, Lund, subclass
+```
+
+### Quick test
 
 ```bash
 # Quick test (5K events, 10 epochs)
-python scripts/train_top.py --quick --epochs 10
-
-# Full training (1.2M events, 30 epochs, chunked loading)
-python scripts/train_top.py --epochs 30
-
-# Fast training with no chunking (loads all data into RAM, ~2.4GB)
-python scripts/train_top.py --epochs 30 --no-chunk
-
-# Fast training with mixed precision (GPU only, ~2x speedup)
-python scripts/train_top.py --epochs 30 --no-chunk --amp
+python scripts/train_arcface.py --quick --epochs 10
 ```
 
 ### Evaluate trained model
 
 ```bash
-python scripts/evaluate_models.py \
-    --model_path experiments/arcface_100ep/best_model_efn.pt \
-    --split test \
-    --max_events 50000
-```
-
-### Run robustness sweep
-
-```bash
-python scripts/eval_robustness.py
-```
-
-### Run full analysis pipeline
-
-```bash
-python scripts/analyze_offline.py
+python scripts/evaluate_model.py --split test --max_events 50000
 ```
 
 ---

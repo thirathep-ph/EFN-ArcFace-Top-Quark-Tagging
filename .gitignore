@@ -1,7 +1,10 @@
 # ============================================================
 # .gitignore — Jet Tagging Project
-# Philosophy: Track CODE & PLANS, ignore DATA & RESULTS
+# Philosophy: Track CODE, ignore DATA, RESULTS & BUILD ARTIFACTS
 # ============================================================
+
+# ===== OPENCODE (personal assistant config) =====
+.opencode/
 
 # ===== DATA (never commit — download separately) =====
 data/top_tagging/*.h5
@@ -60,6 +63,24 @@ Desktop.ini
 *_output.txt
 *_out.txt
 $null
+
+# ===== PLANNING DOCS (paper prep, AI conversation, not for reproduction) =====
+plans/
+
+# ===== PAPER (separate repo / not tracked here) =====
+paper/
+submission.zip
+
+# ===== LATEX BUILD ARTIFACTS =====
+*.aux
+*.bbl
+*.blg
+*.out
+*.nav
+*.snm
+*.toc
+*.vrb
+*.synctex.gz
 
 # ===== SCRATCH ARCHIVE (one-time exploration) =====
 scratch/archive/
