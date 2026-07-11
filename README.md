@@ -1,5 +1,9 @@
 # 🌌 Jet Tagging: Ante-Hoc Interpretable AI for Top Quark Tagging
 
+[![CI](https://github.com/thirathep-ph/ArcJet/actions/workflows/ci.yml/badge.svg)](https://github.com/thirathep-ph/ArcJet/actions/workflows/ci.yml)
+[![Python 3.10–3.12](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **EFN (Energy Flow Network) + ArcFace Hyperspherical Prototypes** for **ante-hoc interpretable** jet classification in high-energy physics.
 
 Reference paper: *Ante-Hoc Interpretable Top Quark Tagging with Energy Flow Networks and Hyperspherical Prototypes* (Thirathep N. Phiankham).
