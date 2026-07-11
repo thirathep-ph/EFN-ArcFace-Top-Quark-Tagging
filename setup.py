@@ -20,8 +20,8 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'arcjet-train=scripts.train_top:main',
-            'arcjet-evaluate=scripts.evaluate_models:main',
+            'arcjet-train=scripts.train_arcface:main',
+            'arcjet-evaluate=scripts.evaluate_model:main',
             'arcjet-baselines=scripts.train_baselines:main',
         ],
     },

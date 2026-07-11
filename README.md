@@ -2,7 +2,7 @@
 
 **EFN (Energy Flow Network) + ArcFace Hyperspherical Prototypes** for **ante-hoc interpretable** jet classification in high-energy physics.
 
-Reference paper: *Ante-Hoc Interpretable Top Quark Tagging with Energy Flow Networks and Hyperspherical Prototypes* (Thirathep Phongpreecha).
+Reference paper: *Ante-Hoc Interpretable Top Quark Tagging with Energy Flow Networks and Hyperspherical Prototypes* (Thirathep N. Phiankham).
 
 | Component | Status | Details |
 |:----------|:------:|:--------|
@@ -35,6 +35,38 @@ Constituents (p_T, eta, phi, E per particle)
           +-- W_QCD (class center on hypersphere)
           +-- W_Top (class center on hypersphere)
           +-- Cosine similarity -> geodesic margin m = 0.5, scale s = 16.0
+```
+
+### Pipeline Flowchart
+
+```
+Data Flow (training):
+  H5 Dataset ──> load_awkward() ──> JetTaggingDataset ──> DataLoader
+       (Top Tagging Ref Dataset)        (chunked, 200 cons.)    (batch)
+                                                                    │
+                                                                    ▼
+Training Pipeline:
+  DataLoader ──> EFN (Phi MLP + Sum Pool + Rho MLP) ──> Jet Embeddings
+                                                              │
+                                                              ▼
+                              L2 Normalize ──> Hypersphere S^63 ──> ArcFace Loss
+                                                                       │
+                                                                       ▼
+                                                            Backpropagation
+
+Evaluation + Analysis:
+  Checkpoint ──> EFN + ArcFace ──> Logits               Jet Embeddings
+                                       │                       │
+                                       ▼                       ├──> UMAP (Fig 5-6)
+                                 Confusion Matrix              ├──> Eigengap (Fig 2)
+                                       │                       ├──> Spectral Clustering
+                                       ▼                       ├──> DGLAP Fit (Fig 8)
+                                 ROC Curve (Fig 4)             ├──> Shenanigans (Fig 10)
+                                       │                       └──> MI Analysis (Fig 13)
+                                       ▼
+                                 Rejection (Fig 12)
+
+Paper Figures (%) ──> LaTeX (paper/main.tex) ──> PDF
 ```
 
 ### Key Innovation: Ante-Hoc Interpretability
@@ -122,7 +154,10 @@ setup.py                            # Editable package install
 ### Installation
 
 ```bash
-# Editable install
+# 1. Download the Top Tagging Reference Dataset (3.4 GB)
+python scripts/download_data.py
+
+# 2. Editable install
 pip install -e .
 
 # Docker (GPU)
@@ -132,11 +167,19 @@ docker-compose up --build
 ### Reproduce paper results
 
 ```bash
-# Train models
+# 0. Data and dependencies (once)
+python scripts/download_data.py
+pip install -e .
+
+# 1. Train models
 python scripts/train_arcface.py                       # EFN + ArcFace (full)
 python scripts/train_baselines.py --n_seeds 3          # Linear + CosLinear baselines
 
-# Generate all paper figures & tables
+# 2. Evaluate
+python scripts/evaluate_model.py --split test           # evaluation metrics
+python scripts/evaluate_robustness.py                  # robustness sweep
+
+# 3. Generate all paper figures & tables
 python scripts/run_pipeline.py --figures
 
 # Or run individual analysis scripts
@@ -226,7 +269,7 @@ If you use this work, please cite:
 
 ```bibtex
 @misc{jet-tagging-efn-arcface,
-  author = {Thirathep Phongpreecha},
+  author = {Thirathep N. Phiankham},
   title = {Jet Tagging: Ante-Hoc Interpretable AI with EFN and ArcFace Prototypes},
   year = {2025},
   howpublished = {\url{https://github.com/thirathep-ph/ArcJet}}

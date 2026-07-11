@@ -15,7 +15,7 @@ from scipy.sparse.linalg import eigsh, LinearOperator
 from sklearn.cluster import KMeans
 
 
-def estimate_clusters_eigengap(X_norm, max_k=10):
+def estimate_clusters_eigengap(X_norm: np.ndarray, max_k: int = 10) -> tuple[int, np.ndarray | None]:
     """
     Estimates the optimal number of clusters using the eigengap heuristic.
     Uses parameter-free global Cosine Similarity and sparse ARPACK solver.
@@ -71,7 +71,7 @@ def estimate_clusters_eigengap(X_norm, max_k=10):
         return 5, None
 
 
-def spectral_clustering_subclass(X, max_k=10):
+def spectral_clustering_subclass(X: np.ndarray, max_k: int = 10) -> tuple[np.ndarray, int]:
     """
     Standard Spectral Clustering using parameter-free global Cosine Similarity.
     Uses eigengap heuristic to determine optimal k, then K-means on eigenvectors.

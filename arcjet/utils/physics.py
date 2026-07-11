@@ -10,10 +10,26 @@ import numpy as np
 import awkward as ak
 import fastjet
 
-def compute_features(events):
-    """
-    Compute 8 optimized features using vectorized FastJet API.
-    Corrected to use native field name 'msoftdrop'.
+def compute_features(events: ak.Array) -> np.ndarray:
+    """Extract 10 substructure features via FastJet batch clustering.
+
+    Clusters each jet using the Cambridge/Aachen algorithm (R=2.0),
+    applies SoftDrop grooming (beta=0.0, z_cut=0.1), and computes:
+    mass, mSD, multiplicity, nSD, sqrt(d12), sqrt(d23), tau21,
+    tau32, zg, theta_g.
+
+    Parameters
+    ----------
+    events : ak.Array
+        Jagged array of Momentum4D Lorentz vectors (compatible with
+        FastJet batch API). Must have .px, .py, .pz, .E fields.
+
+    Returns
+    -------
+    np.ndarray
+        Float32 array of shape (N, 10) with columns ordered as:
+        [Mass, mSD, Mult, nSD, sqrt(d12), sqrt(d23), tau21, tau32,
+         zg, theta_g].
     """
     # 1. Prepare constituents
     px = ak.values_astype(events.px, np.float64)
@@ -71,10 +87,20 @@ def compute_features(events):
 
     return features.astype(np.float32)
 
-def get_lund_coordinates(events):
-    """
-    Compute actual Lund Plane coordinates (ln(1/Delta), ln(kt)) for a batch of events.
-    Iteratively de-clusters the primary branch using C/A history.
+def get_lund_coordinates(events: ak.Array) -> tuple[np.ndarray, np.ndarray]:
+    """Compute Lund plane coordinates via C/A declustering.
+
+    Parameters
+    ----------
+    events : ak.Array
+        Jagged array of Momentum4D Lorentz vectors.
+
+    Returns
+    -------
+    ln_inv_delta : np.ndarray
+        ln(1/Delta) coordinates of primary Lund declusterings.
+    ln_kt : np.ndarray
+        ln(kt) coordinates of primary Lund declusterings.
     """
     jet_def = fastjet.JetDefinition(fastjet.cambridge_algorithm, 2.0)
     # 1. Zip constituents (Force float64 for FastJet C++ interface)

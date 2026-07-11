@@ -19,7 +19,14 @@ N_CONS = 200  # max constituents per event
 
 
 class LazyAwkwardEvents:
-    def __init__(self, es, pxs, pys, pzs, trim_padding=True):
+    """Lazy wrapper around raw NumPy 4-momentum arrays.
+
+    Stores zero-padded (N, 200) arrays to delay Awkward conversion
+    until __getitem__ is called. FastJet-incompatible; use lazy=False
+    when calling load_awkward() if FastJet clustering is needed.
+    """
+
+    def __init__(self, es: np.ndarray, pxs: np.ndarray, pys: np.ndarray, pzs: np.ndarray, trim_padding: bool = True):
         self.E = es
         self.px = pxs
         self.py = pys
@@ -74,19 +81,39 @@ class LazyAwkwardEvents:
         return events_sliced
 
 
-def load_awkward(path, max_events=None, start_event=0, trim_padding=True, lazy=True):
-    """
-    Load H5 file into awkward arrays of particle 4-vectors.
-    If lazy=True, returns a LazyAwkwardEvents wrapper.
+def load_awkward(
+    path: str,
+    max_events: int | None = None,
+    start_event: int = 0,
+    trim_padding: bool = True,
+    lazy: bool = True,
+) -> tuple:
+    """Load H5 file into awkward arrays of particle 4-vectors.
+
+    Parameters
+    ----------
+    path : str
+        Path to H5 dataset file (Top Tagging Reference Dataset format).
+    max_events : int or None, optional
+        Maximum number of events to load. If None, loads all.
+    start_event : int, optional
+        Starting event index (default 0).
+    trim_padding : bool, optional
+        Remove zero-padded constituents (default True).
+    lazy : bool, optional
+        If True, return LazyAwkwardEvents wrapper (saves memory but
+        incompatible with FastJet batch processing; default True).
 
     Returns
     -------
     events : ak.Array or LazyAwkwardEvents
-        Jagged array of Momentum4D (LorentzVectors)
+        Jagged array of Momentum4D (LorentzVectors). If lazy=True,
+        returns LazyAwkwardEvents; if lazy=False, returns genuine
+        ak.Array compatible with FastJet batch clustering.
     labels : np.ndarray
-        Binary labels (0=QCD, 1=Top)
+        Binary labels (0 = QCD, 1 = Top).
     weights : np.ndarray
-        Event weights
+        Event weights (all ones if not provided in dataset).
     """
     f = h5py.File(path, 'r')
     
@@ -166,7 +193,19 @@ def load_awkward(path, max_events=None, start_event=0, trim_padding=True, lazy=T
     return events, labels, weights
 
 
-def get_h5_len(path):
+def get_h5_len(path: str) -> int:
+    """Get number of events in an H5 dataset file.
+
+    Parameters
+    ----------
+    path : str
+        Path to H5 file.
+
+    Returns
+    -------
+    int
+        Number of events.
+    """
     with h5py.File(path, 'r') as f:
         if 'table' in f:
             tbl = f['table']['table']

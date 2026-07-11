@@ -16,7 +16,7 @@ Usage:
 import torch
 
 
-def get_device():
+def get_device() -> tuple[torch.device, str]:
     """
     Detect and return the best available compute device.
 
@@ -48,7 +48,7 @@ def get_device():
     return torch.device('cpu'), 'cpu'
 
 
-def empty_cache(backend_type):
+def empty_cache(backend_type: str) -> None:
     """
     Clear GPU memory cache for the active backend.
 
@@ -66,7 +66,7 @@ def empty_cache(backend_type):
     # CPU: no cache to clear.
 
 
-def amp_available(backend_type):
+def amp_available(backend_type: str) -> bool:
     """
     Check whether automatic mixed precision (AMP) is available.
 
@@ -85,7 +85,7 @@ def amp_available(backend_type):
     return backend_type == 'cuda'
 
 
-def get_amp_scaler(backend_type, enabled=True):
+def get_amp_scaler(backend_type: str, enabled: bool = True) -> torch.cuda.amp.GradScaler | None:
     """
     Return a ``torch.cuda.amp.GradScaler`` when AMP is both available
     and requested; return ``None`` otherwise.
