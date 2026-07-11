@@ -67,6 +67,17 @@ class EFN(nn.Module):
     Energy Flow Network: IRC-safe set processing.
     """
     def __init__(self, input_dim=2, particle_dim=256, jet_dim=256):
+        """Initialize EFN with Phi (per-particle) and Rho (jet-level) MLPs.
+
+        Parameters
+        ----------
+        input_dim : int
+            Number of input features per particle (default 2 for d_eta, d_phi).
+        particle_dim : int
+            Hidden dimension for Phi MLP (default 256).
+        jet_dim : int
+            Output embedding dimension (default 256, final layer of Rho compresses to 64).
+        """
         super().__init__()
         # Phi: Per-particle MLP (sees only geometry)
         self.phi = nn.Sequential(
@@ -113,6 +124,19 @@ class ArcFaceHead(nn.Module):
     Highly optimized, mathematically clean, and fits the standard ArcFace formulation.
     """
     def __init__(self, input_dim, n_classes=2, s=16.0, m=0.5):
+        """Initialize ArcFace head with learnable class centers on the hypersphere.
+
+        Parameters
+        ----------
+        input_dim : int
+            Dimension of input embeddings (typically 64).
+        n_classes : int
+            Number of classes (default 2 for binary Top vs QCD).
+        s : float
+            Scale factor for softmax temperature (default 16.0).
+        m : float
+            Additive angular margin in radians (default 0.5).
+        """
         super().__init__()
         self.n_classes = n_classes
         self.s = s
@@ -123,9 +147,33 @@ class ArcFaceHead(nn.Module):
         nn.init.xavier_uniform_(self.class_centers)
 
     def set_margin(self, m):
+        """Update the angular margin (used during margin warmup).
+
+        Parameters
+        ----------
+        m : float
+            New margin value in radians.
+        """
         self.m = m
 
     def forward(self, x, labels=None):
+        """Compute ArcFace logits with optional angular margin during training.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input embeddings of shape (B, input_dim), pre-L2-normalization.
+        labels : torch.Tensor or None
+            Ground-truth class indices of shape (B,). Required during training
+            to apply the angular margin at the correct class index.
+
+        Returns
+        -------
+        logits : torch.Tensor
+            Scaled logits of shape (B, n_classes), with margin applied during training.
+        cosine : torch.Tensor
+            Raw cosine similarities of shape (B, n_classes), without scale or margin.
+        """
         # Normalize inputs and class centers
         x_norm = F.normalize(x, p=2, dim=1)
         c_norm = F.normalize(self.class_centers, p=2, dim=1)
@@ -155,7 +203,26 @@ class ArcFaceHead(nn.Module):
 
 
 class TopTaggingModel(nn.Module):
+    """EFN + ArcFace: ante-hoc interpretable jet tagging model.
+
+    Combines an IRC-safe Energy Flow Network backbone with hyperspherical
+    ArcFace prototypes for intrinsic interpretability.
+    """
+
     def __init__(self, s=16.0, m=0.5, embedding_dim=64, particle_dim=128):
+        """Initialize EFN backbone with ArcFace classification head.
+
+        Parameters
+        ----------
+        s : float
+            Scale factor for ArcFace logits (default 16.0).
+        m : float
+            Angular margin in radians (default 0.5).
+        embedding_dim : int
+            Dimension of the jet embedding (default 64).
+        particle_dim : int
+            Hidden dimension for the per-particle MLP (default 128).
+        """
         super().__init__()
         self.embedding_dim = embedding_dim
         self.efn = EFN(input_dim=2, particle_dim=particle_dim, jet_dim=embedding_dim)
@@ -164,12 +231,47 @@ class TopTaggingModel(nn.Module):
         )
 
     def forward(self, constituents, labels=None, mask=None):
+        """Forward pass: constituents → EFN embedding → ArcFace logits.
+
+        Parameters
+        ----------
+        constituents : torch.Tensor
+            Batched constituents of shape (B, N, 4) with features
+            (E, px, py, pz).
+        labels : torch.Tensor or None
+            Ground-truth class indices for ArcFace margin (training only).
+        mask : torch.Tensor or None
+            Padding mask of shape (B, N) where 1 = real constituent, 0 = padding.
+
+        Returns
+        -------
+        logits : torch.Tensor
+            ArcFace logits of shape (B, 2) with scale s applied.
+        similarities : torch.Tensor
+            Raw cosine similarities to class prototypes of shape (B, 2).
+        jet_emb : torch.Tensor
+            L2-normalized jet embedding of shape (B, embedding_dim).
+        """
         coords, z = get_efn_features(constituents, mask)
         jet_emb = self.efn(coords, z, mask)
         logits, similarities = self.arcface_head(jet_emb, labels)
         return logits, similarities, jet_emb
 
 def arcface_loss(logits, labels):
+    """Compute ArcFace cross-entropy loss.
+
+    Parameters
+    ----------
+    logits : torch.Tensor
+        Scaled ArcFace logits of shape (B, n_classes) with margin applied.
+    labels : torch.Tensor
+        Ground-truth class indices of shape (B,).
+
+    Returns
+    -------
+    torch.Tensor
+        Scalar cross-entropy loss.
+    """
     return F.cross_entropy(logits, labels)
 
 def distance_corr_loss(x, y, mask=None):
@@ -217,6 +319,18 @@ def distance_corr_loss(x, y, mask=None):
     return dcor
 
 def count_parameters(model):
+    """Count trainable parameters in a model.
+
+    Parameters
+    ----------
+    model : nn.Module
+        PyTorch model.
+
+    Returns
+    -------
+    int
+        Number of trainable parameters.
+    """
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 if __name__ == '__main__':

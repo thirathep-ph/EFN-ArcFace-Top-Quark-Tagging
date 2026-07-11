@@ -30,6 +30,17 @@ class TopTaggingCosLinear(nn.Module):
     Embedding and class centers are L2-normalized (hypersphere).
     """
     def __init__(self, embedding_dim=64, particle_dim=128, s=16.0):
+        """Initialize EFN backbone with cosine-similarity classifier (ArcFace without margin).
+
+        Parameters
+        ----------
+        embedding_dim : int
+            Dimension of the jet embedding (default 64).
+        particle_dim : int
+            Hidden dimension for the per-particle MLP (default 128).
+        s : float
+            Scale factor for the cosine logits (default 16.0).
+        """
         super().__init__()
         self.embedding_dim = embedding_dim
         self.s = s
@@ -41,6 +52,24 @@ class TopTaggingCosLinear(nn.Module):
         nn.init.xavier_uniform_(self.class_centers)
 
     def forward(self, constituents, labels=None, mask=None):
+        """Forward pass: constituents → EFN → cosine similarity logits.
+
+        Parameters
+        ----------
+        constituents : torch.Tensor
+            Batched constituents of shape (B, N, 4).
+        labels : torch.Tensor or None
+            Ignored (for compatibility with ArcFace interface).
+        mask : torch.Tensor or None
+            Padding mask of shape (B, N).
+
+        Returns
+        -------
+        logits : torch.Tensor
+            Scaled cosine similarity logits of shape (B, 2).
+        jet_emb : torch.Tensor
+            Raw (unnormalized) jet embedding of shape (B, embedding_dim).
+        """
         coords, z = get_efn_features(constituents, mask)
         jet_emb = self.efn(coords, z, mask)            # (B, embedding_dim)
 
@@ -56,6 +85,18 @@ class TopTaggingCosLinear(nn.Module):
 
 
 def count_parameters(model):
+    """Count trainable parameters in a model.
+
+    Parameters
+    ----------
+    model : nn.Module
+        PyTorch model.
+
+    Returns
+    -------
+    int
+        Number of trainable parameters.
+    """
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 

@@ -27,6 +27,21 @@ class LazyAwkwardEvents:
     """
 
     def __init__(self, es: np.ndarray, pxs: np.ndarray, pys: np.ndarray, pzs: np.ndarray, trim_padding: bool = True):
+        """Store raw NumPy arrays, deferring Awkward conversion until access.
+
+        Parameters
+        ----------
+        es : np.ndarray
+            Energies of shape (N, 200).
+        pxs : np.ndarray
+            x-momenta of shape (N, 200).
+        pys : np.ndarray
+            y-momenta of shape (N, 200).
+        pzs : np.ndarray
+            z-momenta of shape (N, 200).
+        trim_padding : bool
+            Whether to remove zero-padded constituents on access (default True).
+        """
         self.E = es
         self.px = pxs
         self.py = pys
@@ -34,9 +49,22 @@ class LazyAwkwardEvents:
         self.trim_padding = trim_padding
 
     def __len__(self):
+        """Return number of events."""
         return len(self.E)
 
     def __getitem__(self, idx):
+        """Return jagged Momentum4D array for given index or slice.
+
+        Parameters
+        ----------
+        idx : int, np.integer, or slice
+            Index or slice of events to retrieve.
+
+        Returns
+        -------
+        ak.Array
+            Jagged array of Momentum4D (LorentzVector) events.
+        """
         E_sub = self.E[idx]
         px_sub = self.px[idx]
         py_sub = self.py[idx]
@@ -282,7 +310,27 @@ import torch
 from torch.utils.data import Dataset
 
 class JetTaggingDataset(Dataset):
+    """PyTorch Dataset for the Top Tagging Reference Dataset.
+
+    Wraps awkward events and provides padded tensors with padding masks
+    for the EFN family of models.
+    """
+
     def __init__(self, events, labels, weights):
+        """Initialize dataset with events, labels, and weights.
+
+        Pre-converts raw arrays to padded torch tensors (N, 200) for
+        efficient indexing during training.
+
+        Parameters
+        ----------
+        events : LazyAwkwardEvents or ak.Array
+            Event 4-momentum data (either lazy NumPy-backed or awkward jagged).
+        labels : np.ndarray
+            Binary class labels of shape (N,).
+        weights : np.ndarray
+            Event weights of shape (N,).
+        """
         self.labels = torch.tensor(labels, dtype=torch.long)
         self.weights = torch.tensor(weights, dtype=torch.float32)
         
@@ -301,14 +349,44 @@ class JetTaggingDataset(Dataset):
             self.E = torch.tensor(ak.to_numpy(ak.fill_none(ak.pad_none(events.E, 200, clip=True), 0)), dtype=torch.float32)
         
     def __len__(self):
+        """Return number of events in the dataset."""
         return len(self.labels)
 
     def __getitem__(self, idx):
+        """Return a single event as padded tensor with mask and metadata.
+
+        Parameters
+        ----------
+        idx : int
+            Event index.
+
+        Returns
+        -------
+        x : torch.Tensor
+            Constituent 4-momenta of shape (200, 4).
+        label : torch.Tensor
+            Class label (0 for QCD, 1 for Top).
+        weight : torch.Tensor
+            Event weight.
+        mask : torch.Tensor
+            Padding mask of shape (200,) where 1 = real constituent.
+        idx : int
+            Original event index (for stratified sampling, re-weighting).
+        """
         x = torch.stack([self.E[idx], self.px[idx], self.py[idx], self.pz[idx]], dim=-1)
         mask = (x[:, 0] > 0).float()
         return x, self.labels[idx], self.weights[idx], mask, idx
 
 def print_summary(events, labels):
+    """Print a quick summary of event counts, constituents, and label balance.
+
+    Parameters
+    ----------
+    events : LazyAwkwardEvents or ak.Array
+        Event data.
+    labels : np.ndarray
+        Binary class labels.
+    """
     n_events = len(events)
     if isinstance(events, LazyAwkwardEvents):
         n_per = (events.E > 0).sum(axis=1)

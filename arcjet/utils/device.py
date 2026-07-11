@@ -29,6 +29,7 @@ def get_device() -> tuple[torch.device, str]:
         backend-specific operations (AMP, cache clearing, etc.).
     """
     # Priority 1: DirectML (AMD GPU on Windows)
+    # Requires: pip install torch-directml
     try:
         import torch_directml  # noqa: F401
         dml_device = torch_directml.device()
