@@ -104,7 +104,7 @@ def fit_zg(zg_values, z_cut=0.1, n_bins=30):
         return None
     try:
         popt, _ = curve_fit(ap_power_law, centers, hist, p0=[1.0, -0.5, 0.5],
-                            bounds=([0, -5, -5], [100, 5, 5]), maxfev=10000)
+                            bounds=([0, -5, -5], [100, 10, 10]), maxfev=10000)
         pred = ap_power_law(centers, *popt)
         ss_res = np.sum((hist - pred) ** 2)
         ss_tot = np.sum((hist - hist.mean()) ** 2)

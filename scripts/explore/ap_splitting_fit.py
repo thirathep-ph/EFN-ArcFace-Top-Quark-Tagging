@@ -57,7 +57,7 @@ def fit_ap_splitting(zg_values, z_cut=0.1, n_bins=30):
         popt, pcov = curve_fit(
             ap_splitting_func, bin_centers, hist,
             p0=[1.0, -0.5, 0.5],
-            bounds=([0, -5, -5], [100, 5, 5]),
+            bounds=([0, -5, -5], [100, 10, 10]),
             maxfev=10000
         )
         A, alpha, beta = popt
