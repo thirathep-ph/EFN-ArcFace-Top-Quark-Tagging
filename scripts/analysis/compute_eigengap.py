@@ -21,11 +21,11 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-from arcjet.utils.paths import DATA_DIR, EXPERIMENTS, MODEL_DIR, CHECKPOINT
-from arcjet.utils.device import get_device
-from arcjet.data.loader import load_awkward, JetTaggingDataset
-from arcjet.models.efn_arcface import TopTaggingModel
-from arcjet.utils.clustering import estimate_clusters_eigengap
+from arcefn.utils.paths import DATA_DIR, EXPERIMENTS, MODEL_DIR, CHECKPOINT
+from arcefn.utils.device import get_device
+from arcefn.data.loader import load_awkward, JetTaggingDataset
+from arcefn.models.efn_arcface import TopTaggingModel
+from arcefn.utils.clustering import estimate_clusters_eigengap
 
 MAX_EVENTS = 80000
 BATCH_SIZE = 2048

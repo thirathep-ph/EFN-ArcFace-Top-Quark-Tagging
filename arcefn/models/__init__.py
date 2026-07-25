@@ -1,5 +1,5 @@
 """
-ArcJet model definitions.
+arcefn model definitions.
 """
 from .efn_arcface import TopTaggingModel, EFN, ArcFaceHead, arcface_loss, count_parameters
 from .efn_linear import TopTaggingLinear

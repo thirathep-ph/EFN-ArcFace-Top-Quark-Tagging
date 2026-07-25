@@ -23,10 +23,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from arcjet.utils.paths import DATA_DIR, EXPERIMENTS
-from arcjet.utils.device import get_device, empty_cache, amp_available, get_amp_scaler
-from arcjet.models.efn_arcface import TopTaggingModel, arcface_loss, count_parameters
-from arcjet.data.loader import load_awkward, JetTaggingDataset, get_h5_len
+from arcefn.utils.paths import DATA_DIR, EXPERIMENTS
+from arcefn.utils.device import get_device, empty_cache, amp_available, get_amp_scaler
+from arcefn.models.efn_arcface import TopTaggingModel, arcface_loss, count_parameters
+from arcefn.data.loader import load_awkward, JetTaggingDataset, get_h5_len
 
 
 # ============================================================================

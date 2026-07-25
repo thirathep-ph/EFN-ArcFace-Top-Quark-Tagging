@@ -15,10 +15,10 @@ import matplotlib.pyplot as plt
 import torch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from arcjet.utils.paths import EXPERIMENTS, DATA_DIR, MODEL_DIR
-from arcjet.utils.device import get_device
-from arcjet.data.loader import load_awkward
-from arcjet.models.efn_arcface import TopTaggingModel
+from arcefn.utils.paths import EXPERIMENTS, DATA_DIR, MODEL_DIR
+from arcefn.utils.device import get_device
+from arcefn.data.loader import load_awkward
+from arcefn.models.efn_arcface import TopTaggingModel
 
 dev, backend = get_device()
 device = dev
@@ -37,7 +37,7 @@ print(f"Loaded {len(labels)} events ({labels.sum():.0f} Top, {((1-labels)).sum()
 
 print("Computing embeddings...")
 from torch.utils.data import DataLoader
-from arcjet.data.loader import JetTaggingDataset
+from arcefn.data.loader import JetTaggingDataset
 ds = JetTaggingDataset(events, labels, weights)
 loader = DataLoader(ds, batch_size=512, shuffle=False, num_workers=0)
 

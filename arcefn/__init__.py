@@ -1,5 +1,5 @@
 """
-ArcJet: Ante-hoc Interpretable Jet Tagging with EFN and ArcFace
+arcefn: Ante-hoc Interpretable Jet Tagging with EFN and ArcFace
 ================================================================
 EFN (Energy Flow Network) backbone + ArcFace hyperspherical prototypes
 for intrinsically interpretable top quark tagging.

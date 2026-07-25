@@ -4,8 +4,8 @@ import pytest
 
 
 def test_compute_features_small_batch():
-    from arcjet.data.loader import load_events_by_indices
-    from arcjet.utils.physics import compute_features
+    from arcefn.data.loader import load_events_by_indices
+    from arcefn.utils.physics import compute_features
 
     test_path = os.path.join('data', 'top_tagging', 'test.h5')
     if not os.path.exists(test_path):
@@ -20,8 +20,8 @@ def test_compute_features_small_batch():
 
 
 def test_physics_feature_count():
-    from arcjet.data.loader import load_events_by_indices
-    from arcjet.utils.physics import compute_features
+    from arcefn.data.loader import load_events_by_indices
+    from arcefn.utils.physics import compute_features
 
     test_path = os.path.join('data', 'top_tagging', 'test.h5')
     if not os.path.exists(test_path):
@@ -34,8 +34,8 @@ def test_physics_feature_count():
 
 
 def test_get_lund_coordinates():
-    from arcjet.data.loader import load_events_by_indices
-    from arcjet.utils.physics import get_lund_coordinates
+    from arcefn.data.loader import load_events_by_indices
+    from arcefn.utils.physics import get_lund_coordinates
 
     test_path = os.path.join('data', 'top_tagging', 'test.h5')
     if not os.path.exists(test_path):

@@ -33,10 +33,10 @@ from tqdm.auto import tqdm
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from arcjet.data.loader import load_awkward, JetTaggingDataset, get_h5_len
-from arcjet.models.efn_linear import TopTaggingLinear, count_parameters
-from arcjet.models.efn_coslinear import TopTaggingCosLinear
-from arcjet.utils.device import get_device, empty_cache, amp_available, get_amp_scaler
+from arcefn.data.loader import load_awkward, JetTaggingDataset, get_h5_len
+from arcefn.models.efn_linear import TopTaggingLinear, count_parameters
+from arcefn.models.efn_coslinear import TopTaggingCosLinear
+from arcefn.utils.device import get_device, empty_cache, amp_available, get_amp_scaler
 import gc
 
 

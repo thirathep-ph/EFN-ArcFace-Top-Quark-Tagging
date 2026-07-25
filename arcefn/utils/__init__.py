@@ -1,5 +1,5 @@
 """
-ArcJet physics and plotting utilities.
+arcefn physics and plotting utilities.
 """
 from .physics import compute_features, get_lund_coordinates, print_feature_stats
 from .plotting import (

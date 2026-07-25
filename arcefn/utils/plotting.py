@@ -139,7 +139,7 @@ def plot_lund_plane(events, label="Jets", save_path='results/lund_plane.png'):
     Accurate Lund Plane using Iterative C/A de-clustering.
     x = ln(1/Delta), y = ln(kt)
     """
-    from arcjet.utils.physics import get_lund_coordinates
+    from arcefn.utils.physics import get_lund_coordinates
     
     print(f"Computing Lund Plane for {label}...")
     ln_inv_delta, ln_kt = get_lund_coordinates(events)

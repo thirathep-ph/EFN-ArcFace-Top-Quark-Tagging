@@ -3,7 +3,7 @@ import numpy as np
 
 
 def test_get_h5_len():
-    from arcjet.data.loader import get_h5_len
+    from arcefn.data.loader import get_h5_len
 
     test_path = os.path.join('data', 'top_tagging', 'test.h5')
     if not os.path.exists(test_path):
@@ -14,7 +14,7 @@ def test_get_h5_len():
 
 
 def test_load_awkward_lazy():
-    from arcjet.data.loader import load_awkward
+    from arcefn.data.loader import load_awkward
 
     test_path = os.path.join('data', 'top_tagging', 'test.h5')
     if not os.path.exists(test_path):
@@ -27,7 +27,7 @@ def test_load_awkward_lazy():
 
 
 def test_load_awkward_nonlazy():
-    from arcjet.data.loader import load_awkward
+    from arcefn.data.loader import load_awkward
 
     test_path = os.path.join('data', 'top_tagging', 'test.h5')
     if not os.path.exists(test_path):
@@ -40,7 +40,7 @@ def test_load_awkward_nonlazy():
 
 
 def test_load_events_by_indices():
-    from arcjet.data.loader import load_events_by_indices
+    from arcefn.data.loader import load_events_by_indices
 
     test_path = os.path.join('data', 'top_tagging', 'test.h5')
     if not os.path.exists(test_path):
@@ -52,7 +52,7 @@ def test_load_events_by_indices():
 
 
 def test_jet_tagging_dataset():
-    from arcjet.data.loader import JetTaggingDataset, load_awkward
+    from arcefn.data.loader import JetTaggingDataset, load_awkward
     from torch.utils.data import DataLoader
 
     test_path = os.path.join('data', 'top_tagging', 'test.h5')

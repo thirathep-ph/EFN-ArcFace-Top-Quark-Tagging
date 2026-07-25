@@ -1,5 +1,5 @@
 torch>=2.1.0
-# Windows (AMD GPU): pip install torch-directml (see arcjet/utils/device.py)
+# Windows (AMD GPU): pip install torch-directml (see arcefn/utils/device.py)
 numpy>=1.24.0
 awkward>=2.0.0
 vector>=1.0.0

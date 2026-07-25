@@ -26,10 +26,10 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from arcjet.utils.paths import DATA_DIR, EXPERIMENTS, CHECKPOINT
-from arcjet.utils.device import get_device, empty_cache
-from arcjet.data.loader import load_awkward, JetTaggingDataset
-from arcjet.models.efn_arcface import TopTaggingModel
+from arcefn.utils.paths import DATA_DIR, EXPERIMENTS, CHECKPOINT
+from arcefn.utils.device import get_device, empty_cache
+from arcefn.data.loader import load_awkward, JetTaggingDataset
+from arcefn.models.efn_arcface import TopTaggingModel
 
 N_EVENTS = 20000
 BATCH_SIZE = 2048

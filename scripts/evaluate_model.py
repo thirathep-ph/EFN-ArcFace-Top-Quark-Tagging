@@ -19,10 +19,10 @@ import numpy as np
 from torch.utils.data import DataLoader
 from sklearn.metrics import precision_recall_fscore_support
 
-from arcjet.utils.paths import DATA_DIR
-from arcjet.utils.device import get_device
-from arcjet.models.efn_arcface import TopTaggingModel
-from arcjet.data.loader import load_awkward, JetTaggingDataset
+from arcefn.utils.paths import DATA_DIR
+from arcefn.utils.device import get_device
+from arcefn.models.efn_arcface import TopTaggingModel
+from arcefn.data.loader import load_awkward, JetTaggingDataset
 
 
 def evaluate_model(model_path, data_dir, split, max_events, mode):

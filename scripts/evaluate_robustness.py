@@ -27,10 +27,10 @@ import numpy as np
 from torch.utils.data import DataLoader
 from sklearn.metrics import precision_recall_fscore_support, roc_auc_score
 
-from arcjet.utils.paths import DATA_DIR, EXPERIMENTS
-from arcjet.utils.device import get_device
-from arcjet.models.efn_arcface import TopTaggingModel
-from arcjet.data.loader import load_awkward, JetTaggingDataset
+from arcefn.utils.paths import DATA_DIR, EXPERIMENTS
+from arcefn.utils.device import get_device
+from arcefn.models.efn_arcface import TopTaggingModel
+from arcefn.data.loader import load_awkward, JetTaggingDataset
 
 TEST_H5 = DATA_DIR / 'test.h5'
 MAX_EVENTS = 50000

@@ -29,9 +29,9 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from arcjet.utils.paths import EXPERIMENTS, CHECKPOINT, DATA_DIR, get_project_root
-from arcjet.utils.device import get_device
-from arcjet.models.efn_arcface import TopTaggingModel
+from arcefn.utils.paths import EXPERIMENTS, CHECKPOINT, DATA_DIR, get_project_root
+from arcefn.utils.device import get_device
+from arcefn.models.efn_arcface import TopTaggingModel
 
 dev, backend = get_device()
 device = dev

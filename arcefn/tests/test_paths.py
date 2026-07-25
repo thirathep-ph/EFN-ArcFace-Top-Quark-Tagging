@@ -2,7 +2,7 @@
 Tests for the shared path-resolution module.
 """
 from pathlib import Path
-from arcjet.utils.paths import (
+from arcefn.utils.paths import (
     get_project_root,
     ensure_dir,
     _PROJECT_ROOT,
@@ -25,9 +25,9 @@ def test_project_root_contains_setup():
     assert (root / "setup.py").exists()
 
 
-def test_project_root_contains_arcjet():
+def test_project_root_contains_arcefn():
     root = get_project_root()
-    assert (root / "arcjet").is_dir()
+    assert (root / "arcefn").is_dir()
 
 
 def test_data_dir_is_subdir_of_project():

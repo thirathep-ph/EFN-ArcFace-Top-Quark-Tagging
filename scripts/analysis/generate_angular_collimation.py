@@ -8,12 +8,12 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 
-from arcjet.utils.paths import DATA_DIR, MODEL_DIR
-from arcjet.models.efn_arcface import TopTaggingModel
-from arcjet.data.loader import load_awkward, JetTaggingDataset
-from arcjet.utils.device import get_device
-from arcjet.utils.physics import compute_features
-from arcjet.utils.clustering import spectral_clustering_subclass
+from arcefn.utils.paths import DATA_DIR, MODEL_DIR
+from arcefn.models.efn_arcface import TopTaggingModel
+from arcefn.data.loader import load_awkward, JetTaggingDataset
+from arcefn.utils.device import get_device
+from arcefn.utils.physics import compute_features
+from arcefn.utils.clustering import spectral_clustering_subclass
 
 TEST_H5 = str(DATA_DIR / 'test.h5')
 N_EVENTS = 404000  # full test set

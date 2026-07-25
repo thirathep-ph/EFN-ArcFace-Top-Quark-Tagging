@@ -14,7 +14,7 @@ Each step can also be run individually via its dedicated script.
 """
 import os, sys, subprocess, argparse
 
-from arcjet.utils.paths import SCRIPTS_DIR
+from arcefn.utils.paths import SCRIPTS_DIR
 
 
 def _run(script, label, *args):

@@ -21,7 +21,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from arcjet.models.efn_arcface import EFN, get_efn_features
+from arcefn.models.efn_arcface import EFN, get_efn_features
 
 
 class TopTaggingCosLinear(nn.Module):

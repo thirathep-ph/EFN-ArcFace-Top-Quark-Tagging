@@ -27,12 +27,12 @@ import torch
 from torch.utils.data import DataLoader
 from collections import Counter
 
-from arcjet.utils.paths import DATA_DIR, EXPERIMENTS, MODEL_DIR, CHECKPOINT
-from arcjet.utils.device import get_device
-from arcjet.data.loader import load_awkward, JetTaggingDataset
-from arcjet.models.efn_arcface import TopTaggingModel
-from arcjet.utils.physics import compute_features
-from arcjet.utils.clustering import spectral_clustering_subclass
+from arcefn.utils.paths import DATA_DIR, EXPERIMENTS, MODEL_DIR, CHECKPOINT
+from arcefn.utils.device import get_device
+from arcefn.data.loader import load_awkward, JetTaggingDataset
+from arcefn.models.efn_arcface import TopTaggingModel
+from arcefn.utils.physics import compute_features
+from arcefn.utils.clustering import spectral_clustering_subclass
 
 MAX_EVENTS = 404000
 BATCH_SIZE = 2048

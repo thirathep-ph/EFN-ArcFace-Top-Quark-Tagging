@@ -20,13 +20,13 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from arcjet.utils.paths import EXPERIMENTS, DATA_DIR
-from arcjet.models.efn_arcface import TopTaggingModel
-from arcjet.models.efn_linear import TopTaggingLinear
-from arcjet.data.loader import load_awkward, JetTaggingDataset
-from arcjet.utils.device import get_device
-from arcjet.utils.clustering import spectral_clustering_subclass
-from arcjet.utils.physics import compute_features
+from arcefn.utils.paths import EXPERIMENTS, DATA_DIR
+from arcefn.models.efn_arcface import TopTaggingModel
+from arcefn.models.efn_linear import TopTaggingLinear
+from arcefn.data.loader import load_awkward, JetTaggingDataset
+from arcefn.utils.device import get_device
+from arcefn.utils.clustering import spectral_clustering_subclass
+from arcefn.utils.physics import compute_features
 
 TEST_H5 = str(DATA_DIR / 'test.h5')
 N_EVENTS = 50000

@@ -9,7 +9,7 @@ from *any* depth in the repository ― no more brittle
 
 Usage
 -----
-    from arcjet.utils.paths import get_project_root, ensure_dir
+    from arcefn.utils.paths import get_project_root, ensure_dir
 
     PROJECT_ROOT = get_project_root()
     DATA_DIR = PROJECT_ROOT / 'data' / 'top_tagging'

@@ -25,10 +25,10 @@ import torch
 from torch.utils.data import DataLoader
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from arcjet.utils.paths import EXPERIMENTS, DATA_DIR, CHECKPOINT
-from arcjet.utils.device import get_device
-from arcjet.models.efn_arcface import TopTaggingModel
-from arcjet.data.loader import load_awkward, JetTaggingDataset
+from arcefn.utils.paths import EXPERIMENTS, DATA_DIR, CHECKPOINT
+from arcefn.utils.device import get_device
+from arcefn.models.efn_arcface import TopTaggingModel
+from arcefn.data.loader import load_awkward, JetTaggingDataset
 
 dev, _ = get_device()
 device = dev
@@ -88,8 +88,8 @@ idx_qcd = rng.choice(qcd_like, min(n_sample, len(qcd_like)), replace=False)
 sample_idx = np.concatenate([idx_top, idx_qcd])
 
 # Compute mass for sampled events
-from arcjet.utils.physics import compute_features
-from arcjet.data.loader import load_events_by_indices
+from arcefn.utils.physics import compute_features
+from arcefn.data.loader import load_events_by_indices
 
 sample_events = load_events_by_indices(str(DATA_DIR / 'test.h5'), sample_idx.tolist())
 physics_feats = compute_features(sample_events)

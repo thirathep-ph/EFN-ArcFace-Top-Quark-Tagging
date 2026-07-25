@@ -22,7 +22,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from arcjet.models.efn_arcface import EFN, get_efn_features
+from arcefn.models.efn_arcface import EFN, get_efn_features
 
 
 class TopTaggingLinear(nn.Module):

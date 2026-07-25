@@ -1,6 +1,6 @@
 # 🌌 Jet Tagging: Ante-Hoc Interpretable AI for Top Quark Tagging
 
-[![CI](https://github.com/thirathep-ph/ArcJet/actions/workflows/ci.yml/badge.svg)](https://github.com/thirathep-ph/ArcJet/actions/workflows/ci.yml)
+[![CI](https://github.com/thirathep-ph/ArcEFN/actions/workflows/ci.yml/badge.svg)](https://github.com/thirathep-ph/ArcEFN/actions/workflows/ci.yml)
 [![Python 3.10–3.12](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -87,7 +87,7 @@ Unlike **post-hoc** interpretability methods (Grad-CAM, LIME, attention weights)
 ## 📦 Project Structure
 
 ```
-arcjet/                            # Core library (editable package)
+arcefn/                            # Core library (editable package)
 +-- models/
 |   +-- efn_arcface.py                  # EFN + ArcFace model (main)
 |   +-- efn_linear.py                   # EFN + Linear baseline
@@ -290,7 +290,7 @@ If you use this work, please cite:
   author = {Thirathep N. Phiankham},
   title = {Jet Tagging: Ante-Hoc Interpretable AI with EFN and ArcFace Prototypes},
   year = {2025},
-  howpublished = {\url{https://github.com/thirathep-ph/ArcJet}}
+  howpublished = {\url{https://github.com/thirathep-ph/ArcEFN}}
 }
 ```
 

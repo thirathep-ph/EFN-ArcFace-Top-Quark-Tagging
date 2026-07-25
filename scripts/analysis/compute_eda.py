@@ -16,10 +16,10 @@ import numpy as np
 from scipy.stats import gaussian_kde
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))  # noqa: E402
-from arcjet.data.loader import load_awkward, get_h5_len
-from arcjet.utils.physics import compute_features, print_feature_stats
-from arcjet.utils.device import get_device
-from arcjet.utils.paths import DATA_DIR, EXPERIMENTS
+from arcefn.data.loader import load_awkward, get_h5_len
+from arcefn.utils.physics import compute_features, print_feature_stats
+from arcefn.utils.device import get_device
+from arcefn.utils.paths import DATA_DIR, EXPERIMENTS
 OUT = EXPERIMENTS / 'eda'
 OUT.mkdir(parents=True, exist_ok=True)
 

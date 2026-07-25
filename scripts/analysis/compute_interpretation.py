@@ -35,11 +35,11 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from arcjet.utils.paths import EXPERIMENTS, DATA_DIR, MODEL_DIR, CHECKPOINT
-from arcjet.models.efn_arcface import TopTaggingModel
-from arcjet.data.loader import load_awkward, JetTaggingDataset
-from arcjet.utils.device import get_device
-from arcjet.utils.physics import compute_features
+from arcefn.utils.paths import EXPERIMENTS, DATA_DIR, MODEL_DIR, CHECKPOINT
+from arcefn.models.efn_arcface import TopTaggingModel
+from arcefn.data.loader import load_awkward, JetTaggingDataset
+from arcefn.utils.device import get_device
+from arcefn.utils.physics import compute_features
 
 TEST_H5 = str(DATA_DIR / 'test.h5')
 RESULTS_PATH = str(EXPERIMENTS / 'interpretation_full_results.json')
@@ -68,10 +68,10 @@ def load_model(path, device):
     if 'arcface_head.class_centers' in sd:
         model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128).to(device)
     elif 'classifier.weight' in sd:
-        from arcjet.models.efn_linear import TopTaggingLinear
+        from arcefn.models.efn_linear import TopTaggingLinear
         model = TopTaggingLinear(embedding_dim=64, particle_dim=128).to(device)
     else:
-        from arcjet.models.efn_coslinear import TopTaggingCosLinear
+        from arcefn.models.efn_coslinear import TopTaggingCosLinear
         model = TopTaggingCosLinear(embedding_dim=64, particle_dim=128, s=16.0).to(device)
     model.load_state_dict(sd, strict=True)
     model.eval()

@@ -24,11 +24,11 @@ import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import DataLoader
 
-from arcjet.utils.paths import EXPERIMENTS, DATA_DIR, CHECKPOINT
-from arcjet.data.loader import load_awkward, JetTaggingDataset
-from arcjet.models.efn_arcface import TopTaggingModel
-from arcjet.utils.physics import compute_features
-from arcjet.utils.device import get_device
+from arcefn.utils.paths import EXPERIMENTS, DATA_DIR, CHECKPOINT
+from arcefn.data.loader import load_awkward, JetTaggingDataset
+from arcefn.models.efn_arcface import TopTaggingModel
+from arcefn.utils.physics import compute_features
+from arcefn.utils.device import get_device
 
 MAX_EVENTS = 50000
 BATCH_SIZE = 2048

@@ -25,10 +25,10 @@ from torch.utils.data import DataLoader
 from sklearn.neighbors import NearestNeighbors
 from sklearn.decomposition import PCA
 
-from arcjet.utils.paths import DATA_DIR, EXPERIMENTS, CHECKPOINT
-from arcjet.utils.device import get_device
-from arcjet.data.loader import load_awkward, JetTaggingDataset
-from arcjet.models.efn_arcface import TopTaggingModel
+from arcefn.utils.paths import DATA_DIR, EXPERIMENTS, CHECKPOINT
+from arcefn.utils.device import get_device
+from arcefn.data.loader import load_awkward, JetTaggingDataset
+from arcefn.models.efn_arcface import TopTaggingModel
 
 N_EVENTS = 50000
 BATCH_SIZE = 2048

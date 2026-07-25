@@ -34,13 +34,13 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from arcjet.utils.paths import DATA_DIR, MODEL_DIR
-from arcjet.models.efn_arcface import TopTaggingModel
-from arcjet.data.loader import load_awkward, JetTaggingDataset
-from arcjet.utils.device import get_device
-from arcjet.utils.physics import compute_features
-from arcjet.utils.clustering import spectral_clustering_subclass
-from arcjet.utils.plotting import plot_lund_plane
+from arcefn.utils.paths import DATA_DIR, MODEL_DIR
+from arcefn.models.efn_arcface import TopTaggingModel
+from arcefn.data.loader import load_awkward, JetTaggingDataset
+from arcefn.utils.device import get_device
+from arcefn.utils.physics import compute_features
+from arcefn.utils.clustering import spectral_clustering_subclass
+from arcefn.utils.plotting import plot_lund_plane
 
 TEST_H5 = str(DATA_DIR / 'test.h5')
 MAX_EVENTS = 100000
@@ -392,7 +392,7 @@ def main():
     global_phys_idx = sub_idx[phys_idx]
 
     # Load the corresponding events from H5
-    from arcjet.data.loader import load_events_by_indices
+    from arcefn.data.loader import load_events_by_indices
     phys_events = load_events_by_indices(TEST_H5, global_phys_idx)
 
     phys_labels = sub_labels[phys_idx]

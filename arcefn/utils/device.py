@@ -10,7 +10,7 @@ All training/evaluation scripts import from here so there is a single
 point of change for device management across the entire project.
 
 Usage:
-    from arcjet.utils.device import get_device, empty_cache, amp_available, get_amp_scaler
+    from arcefn.utils.device import get_device, empty_cache, amp_available, get_amp_scaler
     device, backend = get_device()
 """
 import torch

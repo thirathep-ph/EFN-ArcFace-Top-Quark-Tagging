@@ -34,4 +34,4 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest arcjet/tests/ -v --tb=short
+          python -m pytest arcefn/tests/ -v --tb=short
