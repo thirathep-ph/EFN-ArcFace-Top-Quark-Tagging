@@ -40,7 +40,7 @@ BATCH_SIZE = 2048
 SUBCLASS_NAMES = {0: "QCD_Core", 1: "QCD_Edge", 2: "Top_Core", 3: "Top_Edge"}
 DGLAP_ALPHA = {0: -1.0, 1: -0.8, 2: 0.0, 3: -0.3}
 DGLAP_DESC = {
-    0: r"g->gg P(z) propto 1/z (soft divergence)",
+    0: r"g->gg P(z) $\propto$ 1/z (soft divergence)",
     1: r"Mixed QCD",
     2: r"W->qq (no soft divergence)",
     3: r"QCD-like contamination",

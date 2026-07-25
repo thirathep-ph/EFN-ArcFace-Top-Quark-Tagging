@@ -160,7 +160,7 @@ def plot_fig2_kinematics(full: dict, outdir: Path):
             ax.set_xlim(xlim)
 
     plot_kde(axes[0, 0], full['pt'][top_mask], full['pt'][qcd_mask],
-             r"$p_T$ (GeV)", r"Jet $p_T$ Distribution", xlim=(200, 1000))
+             r"$p_T$ (GeV)", r"Jet $p_T$ Distribution", xlim=(500, 700))
     plot_kde(axes[0, 1], full['eta'][top_mask], full['eta'][qcd_mask],
              r"$\eta$", r"Pseudorapidity Distribution")
     plot_kde(axes[1, 0], full['mass'][top_mask], full['mass'][qcd_mask],
@@ -176,22 +176,22 @@ def plot_fig2_kinematics(full: dict, outdir: Path):
 
 
 def plot_fig3_substructure(sub: dict, outdir: Path):
-    """Fig A3: All 10 substructure features (3x4 + legend)."""
+    """Fig A3: All 10 substructure features (2x5 grid)."""
     feats, labels = sub['features'], sub['labels']
     names_tex = sub['tex_names']
     top_mask = labels == 1
     qcd_mask = labels == 0
 
     n_feats = feats.shape[1]
-    n_cols = 4
+    n_cols = 5
     n_rows = int(np.ceil(n_feats / n_cols))
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 3 * n_rows))
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(18, 7))
     axes = axes.flatten()
 
     for i in range(n_feats):
         ax = axes[i]
         d = feats[:, i]
-        valid = ~np.isnan(d) & ~np.isinf(d)
+        valid = ~np.isnan(d) & ~np.isinf(d) & (d > 0)
         d_qcd = d[valid & qcd_mask]
         d_top = d[valid & top_mask]
 
@@ -205,16 +205,18 @@ def plot_fig3_substructure(sub: dict, outdir: Path):
                 label='QCD' if i == 0 else '', histtype='stepfilled')
         ax.hist(d_top, bins=bins, density=True, alpha=0.5, color='#C44E52',
                 label='Top' if i == 0 else '', histtype='stepfilled')
-        ax.set_xlabel(names_tex[i])
-        ax.set_ylabel("Density")
+        ax.set_xlabel(names_tex[i], fontsize=11)
+        ax.set_ylabel("Density", fontsize=10)
         ax.ticklabel_format(style='sci', scilimits=(-3, 3), axis='y')
+        ax.tick_params(labelsize=9)
 
     for j in range(n_feats, len(axes)):
         axes[j].set_visible(False)
 
-    fig.legend(['QCD', 'Top'], loc='upper right', fontsize=11)
-    fig.suptitle("Substructure Feature Distributions (100K training events)", fontsize=13)
-    plt.tight_layout()
+    fig.legend(['QCD', 'Top'], loc='upper right', fontsize=12,
+               bbox_to_anchor=(0.98, 0.98))
+    fig.suptitle("Substructure Feature Distributions (100K training events)", fontsize=14)
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
     fpath = outdir / 'eda_figA3_substructure.png'
     fig.savefig(fpath, bbox_inches='tight', dpi=150)
     print(f"  Saved {fpath}")

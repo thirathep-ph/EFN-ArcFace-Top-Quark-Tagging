@@ -30,7 +30,7 @@ from arcjet.models.efn_arcface import TopTaggingModel
 from arcjet.utils.physics import compute_features
 from arcjet.utils.device import get_device
 
-MAX_EVENTS = 404000
+MAX_EVENTS = 50000
 BATCH_SIZE = 2048
 
 
@@ -100,15 +100,15 @@ def main():
     ax.legend(markerscale=5)
     ax.grid(True, alpha=0.15)
 
-    # Right: 2D density all events
+    # Right: 2D density all events (same x-range as left for consistency)
     ax = axes[1]
     h = ax.hist2d(jet_mass, top_scores, bins=(80, 80), cmap='viridis',
-                  range=[[0, 250], [0, 1]], cmin=1)
+                  range=[[0, 350], [0, 1]])
     plt.colorbar(h[3], ax=ax, label='Count')
     ax.axhline(0.5, color='white', linestyle='--', lw=1.5, label='Decision boundary')
     ax.set_xlabel('Jet Mass (GeV)')
     ax.set_ylabel('P(Top | jet)')
-    ax.set_title('Mass vs Model Score — Density (404K events)')
+    ax.set_title(f'Mass vs Model Score — Density ({len(jet_mass):,} events)')
     ax.legend()
     ax.grid(True, alpha=0.1)
 

@@ -11,7 +11,7 @@ Reference paper: *Ante-Hoc Interpretable Top Quark Tagging with Energy Flow Netw
 | Component | Status | Details |
 |:----------|:------:|:--------|
 | **Model Architecture** | ✅ Complete | EFN backbone + ArcFace head (1 prototype per class) |
-| **Training Pipeline** | ✅ Complete | 100-epoch trained on 1.2M events, chunk-based memory-safe loading |
+| **Training Pipeline** | ✅ Complete | 50-epoch trained on 1.2M events, chunk-based memory-safe loading |
 | **Classification** | ✅ Complete | Binary: Top quark jets (signal) vs QCD jets (background) |
 | **Baseline Comparison** | ✅ Complete | EFN+Linear & EFN+CosLinear × 3 seeds with error bars |
 | **Robustness Analysis** | ✅ Complete | s×m grid (9 configs), all 91–92% accuracy |
@@ -114,28 +114,26 @@ scripts/                            # Training & evaluation
 +-- evaluate_robustness.py          # Robustness sweep (s × m grid)
 +-- run_pipeline.py                 # Orchestrator — run full pipeline
 
-scripts/analysis/                   # Paper figure generation (all figures)
-+-- compute_mass_vs_score.py        # Fig: mass vs classification score
-+-- compute_dglap_fit.py            # Fig: Altarelli-Parisi / DGLAP fits
-+-- compute_bootstrap_ci.py         # Fig: ROC, rejection rates, bootstrap CI
-+-- compute_interpretation.py       # Fig: MI heatmap, effect sizes, PCA
-+-- compute_saliency.py             # Fig: constituent saliency analysis
-+-- compute_eigengap.py             # Fig: eigengap spectrum
-+-- compute_dimensionality.py       # Tab: TwoNN, Participation Ratio, angular distance
-+-- compute_robustness_tests.py     # Tab: pT rescaling, rotation, dropout
-+-- generate_paper_figures.py       # Fig: UMAP, Lund planes, subclass physics
-
-scripts/explore/                    # Additional analyses (not paper figures)
-+-- bayesian_v3.py                  # Bayesian uncertainty quantification
-+-- conformal_final.py              # Conformal prediction coverage
-+-- pgd_attack.py                   # Adversarial PGD robustness
-+-- onnx_export.py                  # ONNX model export
-+-- ...
-
-scratch/                            # Early-stage analysis scripts
-+-- analysis/run_full_analysis.py
-+-- clustering/compute_clustering_metrics.py
-+-- physics/
+scripts/analysis/                   # Paper figure & analysis scripts (all results)
++-- compute_mass_vs_score.py            # Fig: mass vs classification score
++-- compute_dglap_fit.py                # Fig: Altarelli-Parisi / DGLAP fits
++-- compute_bootstrap_ci.py             # Fig: ROC, rejection rates, bootstrap CI
++-- compute_interpretation.py           # Fig: MI heatmap, effect sizes, PCA
++-- compute_saliency.py                 # Fig: constituent saliency analysis
++-- compute_eigengap.py                 # Fig: eigengap spectrum
++-- compute_dimensionality.py           # Tab: TwoNN, Participation Ratio, angular distance
++-- compute_robustness_tests.py         # Tab: pT rescaling, rotation, dropout
++-- generate_paper_figures.py           # Fig: UMAP, Lund planes, subclass physics
++-- compute_eda.py                      # Appendix: EDA figures (kinematics, substructure)
++-- compute_svd_variance.py             # SVD dimensionality analysis
++-- compare_head_geometry.py            # ArcFace vs Linear head comparison
++-- compute_alignment_uniformity.py     # Alignment & uniformity analysis
++-- generate_angular_collimation.py     # Angular collimation ΔR ≈ 2M/pT
++-- poc_ood_generalization.py           # OOD generalization (JetNet dataset)
++-- poc_mass_decoupled_accuracy.py      # Mass-decoupled accuracy test
++-- poc_injection_scan.py               # Injection scan (signal fraction sweep)
++-- poc_embedding_physics_manifold.py   # Embedding-physics manifold analysis
++-- make_combined_figure.py             # Combiner for multi-panel figures
 
 data/                               # Datasets (not tracked in git)
 +-- top_tagging/                    # Top Tagging Reference Dataset (H5)
@@ -196,6 +194,10 @@ python scripts/analysis/compute_saliency.py            # Fig: saliency
 python scripts/analysis/compute_dimensionality.py      # Table: TwoNN, PR
 python scripts/analysis/compute_robustness_tests.py    # Table: robustness
 python scripts/analysis/generate_paper_figures.py      # UMAP, Lund, subclass
+python scripts/analysis/compute_eda.py                 # Appendix: EDA figures
+python scripts/analysis/compare_head_geometry.py       # ArcFace vs Linear comparison
+python scripts/analysis/compute_alignment_uniformity.py# Embedding quality metrics
+python scripts/analysis/poc_ood_generalization.py      # OOD generalization
 ```
 
 ### Quick test
@@ -217,11 +219,11 @@ python scripts/evaluate_model.py --split test --max_events 50000
 
 ### Classification Performance
 
-| Model | Accuracy | F1 |
-|:------|:--------:|:--:|
-| EFN + ArcFace (s=16, m=0.5) | 91.75% | 91.89% |
-| EFN + Linear (3-seed mean) | 91.94% | — |
-| EFN + CosLinear (3-seed mean) | 92.01% | — |
+| Model | Accuracy | ROC AUC | Rejection@50%TPR |
+|:------|:--------:|:-------:|:----------------:|
+| EFN + ArcFace (s=16, m=0.5) | 91.84% [91.76, 91.92] | 0.973 | 120× |
+| EFN + Linear (3-seed mean) | 91.94% | 0.974 | 117× |
+| EFN + CosLinear (3-seed mean) | 92.00% | 0.974 | 138× |
 
 ### Subclass Discovery
 
@@ -237,6 +239,18 @@ The model discovers **physically meaningful subclasses** without supervision:
 - **Altarelli-Parisi Splitting (zg)**: Top subclasses show flatter zg distribution (W-boson decay), QCD shows 1/zg divergence — **physically correct**
 - **Angular Collimation**: ΔR12 ~ 2M/pT — **relativistic scaling confirmed**
 - **Lund Planes**: Clear topological differences between TP/TN/FP/FN categories
+
+### Head Comparison: ArcFace vs Linear
+
+The hyperspherical constraint is essential for clean subclass discovery:
+
+| Metric | ArcFace (hypersphere) | Linear (Euclidean) |
+|:-------|:---------------------:|:------------------:|
+| Subclass balance | Balanced ~20-31% per subclass | Edge subclasses only 5-7% |
+| DGLAP fit quality | R² = 0.97-0.99 for all 4 subclasses | Poor fits on small Edge subclasses |
+| Embedding norms | Fixed at $\|\mathbf{e}\|_2 = 1.0$ (hypersphere) | Varies 0.5-6.0 (Euclidean) |
+
+The balanced subclasses and clean DGLAP fits under ArcFace confirm that the hypersphere geometry is necessary — the Euclidean head does not produce physically meaningful subclasses.
 
 ### Robustness
 

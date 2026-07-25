@@ -96,11 +96,19 @@ for i in range(len(mass_bins) - 1):
 
 fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
+# Mask bins with fewer than 50 events
+min_count = 50
+mask = np.array(counts) >= min_count
+bin_arr = np.array(bin_centers)
+acc_arr = np.array(accuracies)
+auc_arr = np.array(roc_aucs)
+cnt_arr = np.array(counts)
+
 ax = axes[0]
-ax.plot(bin_centers, accuracies, 'bo-', markersize=6, label='Per-bin accuracy')
+ax.plot(bin_arr[mask], acc_arr[mask], 'bo-', markersize=6, label='Per-bin accuracy')
 ax.axhline(0.9184, color='gray', linestyle='--', alpha=0.5, label='Overall accuracy (91.84%)')
 ax.axhline(0.5, color='red', linestyle=':', alpha=0.5, label='Chance (50%)')
-ax.fill_between(bin_centers, 0.5, accuracies, alpha=0.1, color='blue', label='Beyond-mass signal')
+ax.fill_between(bin_arr[mask], 0.5, acc_arr[mask], alpha=0.1, color='blue', label='Beyond-mass signal')
 ax.set_xlabel('Jet Mass [GeV]', fontsize=13)
 ax.set_ylabel('Accuracy', fontsize=13)
 ax.set_title('Accuracy per Mass Bin', fontsize=14)
@@ -108,12 +116,12 @@ ax.legend(fontsize=10)
 ax.grid(True, alpha=0.3)
 
 ax2 = ax.twinx()
-ax2.bar(bin_centers, counts, width=18, alpha=0.15, color='gray')
+ax2.bar(bin_arr[mask], cnt_arr[mask], width=18, alpha=0.15, color='gray')
 ax2.set_ylabel('N events', fontsize=13, color='gray')
 ax2.tick_params(colors='gray')
 
 ax = axes[1]
-ax.plot(bin_centers, roc_aucs, 'rs-', markersize=6, label='Per-bin AUC')
+ax.plot(bin_arr[mask], auc_arr[mask], 'rs-', markersize=6, label='Per-bin AUC')
 ax.axhline(0.973, color='gray', linestyle='--', alpha=0.5, label='Overall AUC (0.973)')
 ax.axhline(0.5, color='red', linestyle=':', alpha=0.5, label='Chance (0.5)')
 ax.set_xlabel('Jet Mass [GeV]', fontsize=13)

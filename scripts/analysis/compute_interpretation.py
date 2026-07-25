@@ -194,7 +194,7 @@ def compute_mutual_information_full(embeddings, physics_features, labels, n_bins
     mi_matrix : ndarray, shape (D, P)
         MI values.
     """
-    n_sample = min(50000, len(embeddings))
+    n_sample = len(embeddings)
     np.random.seed(42)
     idx = np.random.choice(len(embeddings), n_sample, replace=False)
 

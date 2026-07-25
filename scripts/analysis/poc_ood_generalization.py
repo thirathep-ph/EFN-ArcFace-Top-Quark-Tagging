@@ -44,7 +44,7 @@ model.eval()
 print(f"Model loaded from {CHECKPOINT}")
 
 N_PAD = 200
-JETS_PER_CLASS = 2000
+JETS_PER_CLASS = 50000
 
 JETNET_DIR = get_project_root() / 'data' / 'jetnet'
 class_config = [
@@ -155,14 +155,15 @@ for cname in all_cos_sim:
     ax.scatter(cs[:, 0], cs[:, 1], c=colors[cname], marker=markers[cname],
                s=5, alpha=0.4, label=cname, edgecolors='none')
 
-ax.plot(1.0, 0.0, 'k*', markersize=20, label='w_QCD', zorder=5)
-ax.plot(0.0, 1.0, 'k*', markersize=20, label='w_Top', zorder=5)
-ax.set_xlabel('cos similarity to w_QCD', fontsize=14)
-ax.set_ylabel('cos similarity to w_Top', fontsize=14)
+ax.plot(1.0, 0.0, 'k*', markersize=12, label='$W_{\\mathrm{QCD}}$', zorder=5)
+ax.plot(0.0, 1.0, 'k*', markersize=12, label='$W_{\\mathrm{Top}}$', zorder=5)
+ax.set_xlabel('Cosine similarity to $W_{\\mathrm{QCD}}$', fontsize=14)
+ax.set_ylabel('Cosine similarity to $W_{\\mathrm{Top}}$', fontsize=14)
 ax.set_title('OOD Generalization: ArcFace Cosine Similarity Space', fontsize=15)
-ax.legend(fontsize=11, markerscale=3, loc='upper left')
+ax.legend(fontsize=11, markerscale=1.5, loc='center right',
+          framealpha=0.9, edgecolor='gray')
 ax.set_xlim(-0.05, 1.05)
-ax.set_ylim(-0.05, 1.05)
+ax.set_ylim(-0.15, 1.05)
 ax.grid(True, alpha=0.3)
 ax.set_aspect('equal')
 fig.tight_layout()

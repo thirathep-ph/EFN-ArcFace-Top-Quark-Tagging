@@ -270,8 +270,6 @@ def main():
 
     model_configs = {
         "arcface_s16_m05": EXPERIMENTS / "robustness_s16_m05" / "checkpoint.pt",
-        "arcface_s8_m00": EXPERIMENTS / "robustness_s8_m00" / "checkpoint.pt",
-        "arcface_s32_m00": EXPERIMENTS / "robustness_s32_m00" / "checkpoint.pt",
         "linear_seed42": EXPERIMENTS / "baselines_linear_seed_42" / "checkpoint.pt",
         "coslinear_seed42": EXPERIMENTS / "baselines_coslinear_seed_42" / "checkpoint.pt",
     }
@@ -332,48 +330,78 @@ def main():
     print("Part 3: Generating plots")
     print("=" * 60)
 
-    # Plot 1: ROC curves
+    # Plot 1: ROC curves with bootstrap CI shading
     fig, ax = plt.subplots(figsize=(8, 6))
+    display_names = {
+        "arcface_s16_m05": "EFN + ArcFace (ours)",
+        "linear_seed42": "EFN + Linear",
+        "coslinear_seed42": "EFN + CosLinear",
+    }
+    colors = {
+        "arcface_s16_m05": "#1f77b4",
+        "linear_seed42": "#2ca02c",
+        "coslinear_seed42": "#d62728",
+    }
+
     for name in model_names:
         scores = all_probs[name][:, 1]
         fpr, tpr, _ = roc_curve(all_labels_map[name], scores)
         roc_auc_val = auc(fpr, tpr)
-        ax.plot(fpr, tpr, label=f"{name[:15]} (AUC={roc_auc_val:.3f})")
+        ax.plot(fpr, tpr, color=colors.get(name, None),
+                label=f"{display_names.get(name, name[:15])} (AUC={roc_auc_val:.3f})")
+
+        # Bootstrap CI band for this model's ROC curve
+        n = len(all_labels_map[name])
+        rng = np.random.RandomState(42)
+        tprs = []
+        fpr_grid = np.linspace(0, 1, 200)
+        for _ in range(200):
+            idx = rng.choice(n, n, replace=True)
+            sc = all_probs[name][idx, 1]
+            lb = all_labels_map[name][idx]
+            f_b, t_b, _ = roc_curve(lb, sc)
+            tprs.append(np.interp(fpr_grid, f_b, t_b))
+        tprs = np.array(tprs)
+        mean_tpr = tprs.mean(axis=0)
+        std_tpr = tprs.std(axis=0)
+        ax.fill_between(fpr_grid, np.clip(mean_tpr - 1.96 * std_tpr, 0, 1),
+                        np.clip(mean_tpr + 1.96 * std_tpr, 0, 1),
+                        color=colors.get(name, None), alpha=0.15)
+
     ax.plot([0, 1], [0, 1], 'k--', alpha=0.5)
     ax.set_xlabel('False Positive Rate')
     ax.set_ylabel('True Positive Rate')
-    ax.set_title('ROC Curves (Full Test Set)')
-    ax.legend(fontsize=7)
+    ax.set_title('ROC Curves (Full 404k Test Set)')
+    ax.legend(fontsize=9)
     ax.grid(True, alpha=0.15)
     plt.tight_layout()
-    plt.savefig(str(EXPERIMENTS / "final_roc_curves.png"), dpi=150, bbox_inches='tight')
+    plt.savefig(str(EXPERIMENTS / "final_roc_curves.png"), dpi=200, bbox_inches='tight')
     plt.close()
     print("  Saved: final_roc_curves.png")
 
-    # Plot 2: Rejection rates bar chart
-    fig, ax = plt.subplots(figsize=(10, 6))
+    # Plot 2: Rejection rates line curve
+    fig, ax = plt.subplots(figsize=(8, 6))
     tpr_labels = ["tpr_30", "tpr_50", "tpr_70", "tpr_80", "tpr_90", "tpr_95"]
-    tpr_display = ["30%", "50%", "70%", "80%", "90%", "95%"]
+    tpr_values = [0.30, 0.50, 0.70, 0.80, 0.90, 0.95]
 
-    x = np.arange(len(tpr_labels))
-    width = 0.15
-
-    for i, name in enumerate(model_names):
+    for name in model_names:
         rejections = []
         for tpr_key in tpr_labels:
             r = rejection_results[name]["rejection_rates"].get(tpr_key, {})
             rejections.append(r.get("rejection", 0) or 0)
-        ax.bar(x + i * width, rejections, width, label=name[:15])
+        ax.plot(tpr_values, rejections, 'o-', color=colors.get(name, None),
+                label=display_names.get(name, name[:15]), linewidth=2, markersize=6)
 
-    ax.set_xlabel('Signal Efficiency')
+    ax.set_xlabel('Signal Efficiency (TPR)')
     ax.set_ylabel('Background Rejection (1/FPR)')
     ax.set_title('Background Rejection at Fixed Signal Efficiency')
-    ax.set_xticks(x + width * 2)
-    ax.set_xticklabels(tpr_display)
-    ax.legend(fontsize=7)
-    ax.grid(True, alpha=0.15, axis='y')
+    ax.set_xticks(tpr_values)
+    ax.set_xticklabels([f'{int(v*100)}%' for v in tpr_values])
+    ax.legend(fontsize=9)
+    ax.grid(True, alpha=0.3)
+    ax.set_yscale('log')
     plt.tight_layout()
-    plt.savefig(str(EXPERIMENTS / "final_rejection_rates.png"), dpi=150, bbox_inches='tight')
+    plt.savefig(str(EXPERIMENTS / "final_rejection_rates.png"), dpi=200, bbox_inches='tight')
     plt.close()
     print("  Saved: final_rejection_rates.png")
 

@@ -28,6 +28,7 @@ checkpoints/
 *.png
 *.pdf
 *.svg
+!paper/figures/*.png
 
 # ===== PYTHON =====
 __pycache__/
@@ -64,12 +65,11 @@ Desktop.ini
 *_out.txt
 $null
 
-# ===== PLANNING DOCS (paper prep, AI conversation, not for reproduction) =====
-plans/
-
-# ===== PAPER (separate repo / not tracked here) =====
-paper/
-submission.zip
+# ===== PAPER BUILD ARTIFACTS (source .tex is tracked) =====
+paper/main.pdf
+paper/submission.zip
+paper/submission/
+paper/tables/
 
 # ===== LATEX BUILD ARTIFACTS =====
 *.aux
@@ -82,6 +82,4 @@ submission.zip
 *.vrb
 *.synctex.gz
 
-# ===== SCRATCH ARCHIVE (one-time exploration) =====
-scratch/archive/
-archive/
+

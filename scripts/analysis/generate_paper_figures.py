@@ -3,8 +3,8 @@ Paper-Quality Figures for EFN + ArcFace
 =========================================
 Generates the main paper figures from the trained model:
 
-* 3D UMAP coloured by prediction status (TP / TN / FP / FN)
-* 3D UMAP coloured by spectral-clustering subclasses
+* 2D UMAP coloured by prediction status (TP / TN / FP / FN)
+* 2D UMAP coloured by spectral-clustering subclasses
 * Subclass physics-distribution KDE plots (mass, tau32, sqrt(d12))
 * Subclass composition heatmap (purity per cluster)
 * Lund-plane plots for TP, TN, FP, FN
@@ -43,7 +43,7 @@ from arcjet.utils.clustering import spectral_clustering_subclass
 from arcjet.utils.plotting import plot_lund_plane
 
 TEST_H5 = str(DATA_DIR / 'test.h5')
-MAX_EVENTS = 404000
+MAX_EVENTS = 100000
 UMAP_SAMPLE = 50000
 PHYS_SAMPLE = 15000
 BATCH_SIZE = 1024
@@ -222,12 +222,13 @@ def main():
     print(f"  TP={tp.sum()}  TN={tn.sum()}  FP={fp.sum()}  FN={fn.sum()}")
 
     # ------------------------------------------------------------------
-    # 5. UMAP (3-D, cosine metric)
+    # 5. UMAP (2-D, cosine metric)
     # ------------------------------------------------------------------
-    print("\nFitting UMAP (3-D, cosine)...")
+    print("\nFitting UMAP (2-D, cosine)...")
     import umap
     t0 = time.time()
-    reducer = umap.UMAP(n_components=3, metric='cosine', random_state=None, n_jobs=-1)
+    reducer = umap.UMAP(n_components=2, metric='cosine', random_state=42,
+                        n_neighbors=15, min_dist=0.1, n_epochs=200, n_jobs=-1)
     umap_coords = reducer.fit_transform(sub_emb)
     centers_umap = reducer.transform(centers_norm)
     print(f"  Done in {time.time()-t0:.1f}s")
@@ -273,49 +274,51 @@ def main():
     print(f"  Total subclasses: {n_subclasses}")
 
     # ------------------------------------------------------------------
-    # 7. Plot 1: UMAP prediction status (3-D)
+    # 7. Plot 1: UMAP prediction status (2-D)
     # ------------------------------------------------------------------
-    print("\nGenerating 3D UMAP Prediction Status plot...")
-    fig = plt.figure(figsize=(12, 10))
-    ax = fig.add_subplot(111, projection='3d')
+    print("\nGenerating 2D UMAP Prediction Status plot...")
+    fig, ax = plt.subplots(figsize=(10, 8))
     colors = {'True Negative': '#2ca02c', 'True Positive': '#1f77b4',
               'False Positive': '#d62728', 'False Negative': '#ff7f0e'}
     markers = {'True Negative': 'o', 'True Positive': 'o',
                'False Positive': '^', 'False Negative': '^'}
-    sizes = {'True Negative': 8, 'True Positive': 8,
+    sizes = {'True Negative': 4, 'True Positive': 4,
              'False Positive': 30, 'False Negative': 30}
-    alphas = {'True Negative': 0.3, 'True Positive': 0.3,
+    alphas = {'True Negative': 0.15, 'True Positive': 0.15,
               'False Positive': 0.8, 'False Negative': 0.8}
 
     for cat in ['True Negative', 'True Positive', 'False Positive', 'False Negative']:
         mask = status == cat
         if mask.sum() > 0:
-            ax.scatter(umap_coords[mask, 0], umap_coords[mask, 1], umap_coords[mask, 2],
+            ax.scatter(umap_coords[mask, 0], umap_coords[mask, 1],
                        c=colors[cat], marker=markers[cat], s=sizes[cat],
                        alpha=alphas[cat], label=f"{cat} ({mask.sum()})", edgecolors='none')
 
-    for label, idx, color in [('W_QCD', 0, 'yellow'), ('W_Top', 1, 'magenta')]:
-        ax.scatter(centers_umap[idx, 0], centers_umap[idx, 1], centers_umap[idx, 2],
-                   marker='*', s=300, c=color, edgecolors='black', linewidth=1.5,
-                   label=label, zorder=10)
+    for lbl, idx, color in [('W_QCD', 0, 'yellow'), ('W_Top', 1, 'magenta')]:
+        ax.scatter(centers_umap[idx, 0], centers_umap[idx, 1],
+                   marker='*', s=500, c=color, edgecolors='black', linewidth=1.5,
+                   label=lbl, zorder=10)
 
-    ax.set_title("EFN + ArcFace Latent Space (3D UMAP) & Prediction Status", fontsize=14)
+    ax.set_title("EFN + ArcFace Latent Space (UMAP) & Prediction Status", fontsize=14)
     ax.set_xlabel("UMAP 1")
     ax.set_ylabel("UMAP 2")
-    ax.set_zlabel("UMAP 3")
     ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize=9)
-    ax.view_init(elev=20, azim=45)
+    ax.grid(True, alpha=0.15)
+    # Crop empty margins
+    x_pad = (umap_coords[:, 0].max() - umap_coords[:, 0].min()) * 0.05
+    y_pad = (umap_coords[:, 1].max() - umap_coords[:, 1].min()) * 0.05
+    ax.set_xlim(umap_coords[:, 0].min() - x_pad, umap_coords[:, 0].max() + x_pad)
+    ax.set_ylim(umap_coords[:, 1].min() - y_pad, umap_coords[:, 1].max() + y_pad)
     plt.tight_layout()
     plt.savefig(str(MODEL_DIR / 'umap_prediction_status.png'), dpi=200, bbox_inches='tight')
     plt.close()
     print("  Saved: umap_prediction_status.png")
 
     # ------------------------------------------------------------------
-    # 8. Plot 2: UMAP subclasses (3-D)
+    # 8. Plot 2: UMAP subclasses (2-D)
     # ------------------------------------------------------------------
-    print("Generating 3D UMAP Subclasses plot...")
-    fig = plt.figure(figsize=(12, 10))
-    ax = fig.add_subplot(111, projection='3d')
+    print("Generating 2D UMAP Subclasses plot...")
+    fig, ax = plt.subplots(figsize=(10, 8))
 
     qcd_colors = ['#a1d99b', '#74c476', '#41ab5d', '#238b45', '#005a32']
     top_colors = ['#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#084594']
@@ -324,30 +327,32 @@ def main():
     for i in range(len(active_qcd)):
         mask = (subclass_labels == i)
         if mask.sum() > 0:
-            ax.scatter(umap_coords[mask, 0], umap_coords[mask, 1], umap_coords[mask, 2],
-                       c=qcd_colors[i % len(qcd_colors)], s=10, alpha=0.4,
+            ax.scatter(umap_coords[mask, 0], umap_coords[mask, 1],
+                       c=qcd_colors[i % len(qcd_colors)], s=4, alpha=0.2,
                        label=f"QCD Subclass {i} (N={mask.sum()})", edgecolors='none')
 
     # Top subclasses (mapped to offset..offset+Kt-1)
     for i in range(len(active_top)):
         mask = (subclass_labels == (len(active_qcd) + i))
         if mask.sum() > 0:
-            ax.scatter(umap_coords[mask, 0], umap_coords[mask, 1], umap_coords[mask, 2],
-                       c=top_colors[i % len(top_colors)], s=10, alpha=0.4,
+            ax.scatter(umap_coords[mask, 0], umap_coords[mask, 1],
+                       c=top_colors[i % len(top_colors)], s=4, alpha=0.2,
                        label=f"Top Subclass {i} (N={mask.sum()})", edgecolors='none')
 
-    for label, idx, color in [('W_QCD', 0, 'yellow'), ('W_Top', 1, 'magenta')]:
-        ax.scatter(centers_umap[idx, 0], centers_umap[idx, 1], centers_umap[idx, 2],
-                   marker='*', s=300, c=color, edgecolors='black', linewidth=1.5,
-                   label=label, zorder=10)
+    for lbl, idx, color in [('W_QCD', 0, 'yellow'), ('W_Top', 1, 'magenta')]:
+        ax.scatter(centers_umap[idx, 0], centers_umap[idx, 1],
+                   marker='*', s=500, c=color, edgecolors='black', linewidth=1.5,
+                   label=lbl, zorder=10)
 
-    ax.set_title("Discovered Subclasses in Latent Space (3D UMAP + Spectral Clustering)",
+    ax.set_title("Discovered Subclasses in Latent Space (UMAP + Spectral Clustering)",
                  fontsize=14)
     ax.set_xlabel("UMAP 1")
     ax.set_ylabel("UMAP 2")
-    ax.set_zlabel("UMAP 3")
     ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize=9)
-    ax.view_init(elev=20, azim=45)
+    ax.grid(True, alpha=0.15)
+    # Crop empty margins
+    ax.set_xlim(umap_coords[:, 0].min() - x_pad, umap_coords[:, 0].max() + x_pad)
+    ax.set_ylim(umap_coords[:, 1].min() - y_pad, umap_coords[:, 1].max() + y_pad)
     plt.tight_layout()
     plt.savefig(str(MODEL_DIR / 'umap_subclasses.png'), dpi=200, bbox_inches='tight')
     plt.close()

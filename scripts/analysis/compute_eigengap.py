@@ -71,7 +71,7 @@ def main():
 
     print("Computing eigengap spectra...")
     results = {}
-    fig, axes = plt.subplots(1, 2, figsize=(16, 7))
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
     for idx, (class_name, class_val) in enumerate([("QCD", 0), ("Top", 1)]):
         mask = preds == class_val
@@ -81,26 +81,33 @@ def main():
         k_opt, evals = estimate_clusters_eigengap(X, max_k=10)
 
         ax = axes[idx]
-        ks = np.arange(1, len(evals) + 1)
-        ax.plot(ks, evals, 'bo-', markersize=4, label='Eigenvalues')
+        n_show = min(8, len(evals))  # only show first 8 eigenvalues
+        ks = np.arange(1, n_show + 1)
+        ax.plot(ks, evals[:n_show], 'bo-', markersize=6, linewidth=2, label='Eigenvalues')
         ax.axvline(k_opt, color='red', linestyle='--', linewidth=2,
                    label=f'Optimal k = {k_opt}')
 
-        gaps = np.diff(evals)
-        gap_ks = np.arange(2, len(evals) + 1)
-        ax2 = ax.inset_axes([0.55, 0.5, 0.4, 0.35])
-        ax2.bar(gap_ks, gaps, width=0.6, color='green', alpha=0.7)
+        # Inset: eigengap bar chart (large, prominent)
+        gaps = np.diff(evals[:n_show])
+        gap_ks = np.arange(2, n_show + 1)
+        ax2 = ax.inset_axes([0.35, 0.35, 0.6, 0.55])
+        bar_colors = ['red' if k == k_opt else '#4a9e4a' for k in gap_ks]
+        ax2.bar(gap_ks, gaps, width=0.6, color=bar_colors, alpha=0.8, edgecolor='black', linewidth=0.5)
         ax2.axvline(k_opt, color='red', linestyle='--', linewidth=1.5)
-        ax2.set_xlabel('k', fontsize=9)
-        ax2.set_ylabel('Eigengap', fontsize=9)
-        ax2.tick_params(labelsize=8)
-        ax2.set_title('Eigengaps', fontsize=10)
+        ax2.set_xlabel('k', fontsize=11, fontweight='bold')
+        ax2.set_ylabel('Gap', fontsize=11, fontweight='bold')
+        ax2.tick_params(labelsize=10)
+        ax2.set_title('Eigengaps', fontsize=12, fontweight='bold')
+        ax2.spines['top'].set_visible(False)
+        ax2.spines['right'].set_visible(False)
 
-        ax.set_xlabel('Eigenvalue index k', fontsize=12)
+        ax.set_xlabel('Eigenvalue index $k$', fontsize=12)
         ax.set_ylabel(r'$\lambda_k$', fontsize=12)
-        ax.set_title(f'{class_name} Embeddings (N={len(X):,})', fontsize=13)
-        ax.legend(fontsize=10)
+        ax.set_title(f'{class_name} Embeddings ($N={len(X):,}$)', fontsize=13)
+        ax.set_xticks(ks)
+        ax.legend(fontsize=10, loc='upper right')
         ax.grid(True, alpha=0.15)
+        ax.set_xlim(0.5, n_show + 0.5)
 
         results[class_name] = {
             'optimal_k': int(k_opt),
