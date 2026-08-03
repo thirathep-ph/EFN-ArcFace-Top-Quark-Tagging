@@ -31,11 +31,11 @@ from arcefn.utils.device import get_device, empty_cache
 from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.models.efn_arcface import TopTaggingModel
 
-N_EVENTS = 20000
+N_EVENTS = 404000
 BATCH_SIZE = 2048
 
-PT_SCALES = [0.5, 0.8, 1.0, 1.2, 2.0]
-ROT_ANGLES = [0.1, 0.5, 1.0, 2.0]
+PT_SCALES = [0.5, 0.8, 1.0, 1.5, 2.0]
+ROT_ANGLES = [0.0, 0.1, 0.5, 1.0, 2.0]
 DROPOUT_RATES = [0.0, 0.1, 0.2, 0.5, 0.8]
 
 
@@ -73,7 +73,7 @@ def load_test_data():
     weights : np.ndarray
         Event weights (all ones).
     """
-    test_h5 = DATA_DIR / 'test.h5'
+    test_h5 = str(DATA_DIR / 'test.h5')
     print(f"Loading {N_EVENTS:,} test events from {test_h5} ...")
     events, labels, weights = load_awkward(
         test_h5, max_events=N_EVENTS, lazy=False

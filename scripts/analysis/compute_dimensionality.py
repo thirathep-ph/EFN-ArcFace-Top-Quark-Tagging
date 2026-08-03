@@ -59,7 +59,7 @@ def load_model_and_embeddings(device, max_events=N_EVENTS):
 
     test_h5 = DATA_DIR / 'test.h5'
     print(f"Loading {max_events:,} test events ...")
-    events, labels, weights = load_awkward(test_h5, max_events=max_events, lazy=False)
+    events, labels, weights = load_awkward(str(test_h5), max_events=max_events, lazy=False)
 
     ds = JetTaggingDataset(events, labels, weights)
     loader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
@@ -82,7 +82,7 @@ def load_model_and_embeddings(device, max_events=N_EVENTS):
 
 # ── TwoNN ────────────────────────────────────────────────────────────
 
-def compute_twonn_dimension(embeddings, n_neighbors=2, random_state=42):
+def compute_twonn_dimension(embeddings, n_neighbors=3, random_state=42):
     """
     Estimate intrinsic dimension using the TwoNN estimator (Facco et al.).
 
@@ -97,7 +97,7 @@ def compute_twonn_dimension(embeddings, n_neighbors=2, random_state=42):
     embeddings : ndarray, shape (N, D)
         L2-normalised embeddings.
     n_neighbors : int
-        Number of neighbours to compute (must be ≥ 2).
+        Number of neighbours to compute (self + 1st + 2nd NN; must be ≥ 3).
     random_state : int
         Seed for the NN algorithm.
 
@@ -107,8 +107,7 @@ def compute_twonn_dimension(embeddings, n_neighbors=2, random_state=42):
         Estimated intrinsic dimension.
     """
     n = len(embeddings)
-    nbrs = NearestNeighbors(n_neighbors=n_neighbors, metric='cosine',
-                            random_state=random_state).fit(embeddings)
+    nbrs = NearestNeighbors(n_neighbors=n_neighbors, metric='cosine').fit(embeddings)
     distances, _ = nbrs.kneighbors(embeddings)
 
     # distances[:, 0] = 0 (self), distances[:, 1] = 1st NN, distances[:, 2] = 2nd NN

@@ -141,14 +141,37 @@ for i in range(len(mass_bins) - 1):
     if counts[i] >= 50:
         print(f"[{lo:3.0f},{hi:3.0f})     {counts[i]:<8} {accuracies[i]:<10.4f} {roc_aucs[i]:<10.4f}")
 
+from sklearn.metrics import roc_auc_score
+
 sig_bins = [(140, 170), (150, 200), (100, 200)]
 print("\n--- Specific mass windows ---")
+results = {
+    "n_events": int(len(all_labels)),
+    "checkpoint": "robustness_s16_m05/checkpoint.pt",
+    "per_bin_20gev": [
+        {"lo": float(mass_bins[i]), "hi": float(mass_bins[i + 1]),
+         "n": int(counts[i]), "acc": float(accuracies[i]), "auc": float(roc_aucs[i])}
+        for i in range(len(mass_bins) - 1)
+    ],
+    "windows": [],
+}
 for lo, hi in sig_bins:
-    mask = (jet_mass >= lo) & (jet_mass < hi) & (all_labels == 1)
-    if mask.sum() > 0:
-        # also get QCD in same mass range
-        mask_all = (jet_mass >= lo) & (jet_mass < hi)
-        acc = ((all_margins[mask_all] > 0) == all_labels[mask_all]).mean()
-        print(f"  Mass [{lo:3.0f},{hi:3.0f}): N_top={mask.sum():5.0f}, accuracy={acc:.4f}")
+    mask_top = (jet_mass >= lo) & (jet_mass < hi) & (all_labels == 1)
+    mask_all = (jet_mass >= lo) & (jet_mass < hi)
+    if mask_all.sum() > 0:
+        y = all_labels[mask_all]
+        s = all_margins[mask_all]
+        acc = ((s > 0) == y).mean()
+        auc = roc_auc_score(y, s) if (y == 1).any() and (y == 0).any() else 0.5
+        results["windows"].append({
+            "lo": float(lo), "hi": float(hi), "n": int(mask_all.sum()),
+            "n_top": int(mask_top.sum()), "acc": float(acc), "auc": float(auc),
+        })
+        print(f"  Mass [{lo:3.0f},{hi:3.0f}): N_top={mask_top.sum():5.0f}, accuracy={acc:.4f}, AUC={auc:.4f}")
+
+out_path = EXPERIMENTS / 'poc_mass_decoupled_results.json'
+with open(out_path, 'w') as f:
+    json.dump(results, f, indent=2)
+print(f"Saved: {out_path}")
 
 print("\n[POC COMPLETE]")

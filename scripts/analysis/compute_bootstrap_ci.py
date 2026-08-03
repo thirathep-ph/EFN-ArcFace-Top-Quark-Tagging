@@ -17,6 +17,7 @@ Output
 import json
 import time
 import gc
+import argparse
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -30,7 +31,7 @@ import matplotlib.pyplot as plt
 
 from arcefn.utils.paths import EXPERIMENTS, DATA_DIR
 from arcefn.models.efn_arcface import TopTaggingModel
-from arcefn.data.loader import load_awkward, JetTaggingDataset
+from arcefn.data.loader import load_awkward, get_h5_len
 from arcefn.utils.device import get_device
 
 TEST_H5 = str(DATA_DIR / 'test.h5')
@@ -67,9 +68,14 @@ def load_model(path, device):
     return model
 
 
-def get_model_output(model, h5_path, device, max_events=100000):
+def get_model_output(model, h5_path, device, max_events=100000, seed=42, chunk_size=100000):
     """
     Run inference and return probabilities, predictions, labels, embeddings.
+
+    The full test set is processed in chunks. When ``max_events`` is smaller
+    than the total number of events, a seeded random subsample (without
+    replacement) is drawn once and the same events are used for every model,
+    so that model comparisons remain strictly paired.
 
     Parameters
     ----------
@@ -80,7 +86,12 @@ def get_model_output(model, h5_path, device, max_events=100000):
     device : torch.device
         Compute device.
     max_events : int
-        Maximum number of events to load.
+        Maximum number of events to use. If ``>=`` the total, all events are
+        used; otherwise a seeded random subsample of this size is drawn.
+    seed : int
+        Random seed for the subsample.
+    chunk_size : int
+        Number of events loaded at a time from disk.
 
     Returns
     -------
@@ -93,26 +104,58 @@ def get_model_output(model, h5_path, device, max_events=100000):
     embeddings : ndarray, shape (N, D)
         Embedding vectors.
     """
-    events, labels, weights = load_awkward(h5_path, max_events=max_events)
-    ds = JetTaggingDataset(events, labels, weights)
-    loader = DataLoader(ds, batch_size=1024, shuffle=False, num_workers=0)
+    total = get_h5_len(h5_path)
+    if max_events is None or max_events >= total:
+        index = None
+        n_use = total
+        print(f"  Using all {total:,} events")
+    else:
+        rng = np.random.default_rng(seed)
+        index = np.sort(rng.choice(total, max_events, replace=False))
+        n_use = len(index)
+        print(f"  Using seeded random subsample of {n_use:,}/{total:,} events (seed={seed})")
 
     all_logits, all_emb, all_labels = [], [], []
 
-    with torch.no_grad():
-        for x, y, w, m, _ in loader:
-            out = model(x.to(device), mask=m.to(device))
+    for c0 in range(0, total, chunk_size):
+        c1 = min(c0 + chunk_size, total)
+        events, labels_c, _ = load_awkward(h5_path, start_event=c0, max_events=c1 - c0, lazy=True)
 
-            if isinstance(out, (tuple, list)):
-                logits = out[0]
-                emb = out[2] if len(out) > 2 else out[0]
-            else:
-                logits = out
-                emb = out
+        if index is not None:
+            sel = index[(index >= c0) & (index < c1)] - c0
+            if len(sel) == 0:
+                continue
+            E = np.asarray(events.E[sel], dtype=np.float32)
+            pX = np.asarray(events.px[sel], dtype=np.float32)
+            pY = np.asarray(events.py[sel], dtype=np.float32)
+            pZ = np.asarray(events.pz[sel], dtype=np.float32)
+            labels_c = labels_c[sel]
+        else:
+            E = np.asarray(events.E, dtype=np.float32)
+            pX = np.asarray(events.px, dtype=np.float32)
+            pY = np.asarray(events.py, dtype=np.float32)
+            pZ = np.asarray(events.pz, dtype=np.float32)
 
-            all_logits.append(logits.cpu().numpy())
-            all_emb.append(emb.cpu().numpy())
-            all_labels.append(y.numpy())
+        with torch.no_grad():
+            for b0 in range(0, len(E), 1024):
+                b1 = min(b0 + 1024, len(E))
+                x = torch.from_numpy(np.stack([E[b0:b1], pX[b0:b1], pY[b0:b1], pZ[b0:b1]], axis=-1))
+                m = (x[:, :, 0] > 0).float()
+                out = model(x.to(device), mask=m.to(device))
+
+                if isinstance(out, (tuple, list)):
+                    logits = out[0]
+                    emb = out[2] if len(out) > 2 else out[0]
+                else:
+                    logits = out
+                    emb = out
+
+                all_logits.append(logits.cpu().numpy())
+                all_emb.append(emb.cpu().numpy())
+                all_labels.append(labels_c[b0:b1])
+
+        del events, E, pX, pY, pZ
+        gc.collect()
 
     logits = np.vstack(all_logits)
     emb = np.vstack(all_emb)
@@ -260,8 +303,16 @@ def main():
     Loads five models, computes bootstrap CIs, rejection rates, and
     subclass stability matrices, then saves figures and results JSON.
     """
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--max-events', type=int, default=100000,
+                        help='Number of test events (seeded random subsample if < total; default 100000).')
+    parser.add_argument('--seed', type=int, default=42,
+                        help='Random seed for the subsample (default 42).')
+    args = parser.parse_args()
+
     device, _ = get_device()
     print(f"Device: {device}\n")
+    print(f"max_events={args.max_events}, seed={args.seed}\n")
 
     # Part 1: Bootstrap CI + Rejection Rates
     print("=" * 60)
@@ -277,6 +328,7 @@ def main():
     all_probs, all_preds, all_labels_map = {}, {}, {}
     all_embeddings = {}
     bootstrap_results, rejection_results = {}, {}
+    n_use = 0
 
     for name, path in model_configs.items():
         if not path.exists():
@@ -287,7 +339,9 @@ def main():
         t0 = time.time()
 
         model = load_model(str(path), device)
-        probs, preds, labels, emb = get_model_output(model, TEST_H5, device, max_events=100000)
+        probs, preds, labels, emb = get_model_output(
+            model, TEST_H5, device, max_events=args.max_events, seed=args.seed)
+        n_use = len(labels)
 
         all_probs[name] = probs
         all_preds[name] = preds
@@ -371,7 +425,7 @@ def main():
     ax.plot([0, 1], [0, 1], 'k--', alpha=0.5)
     ax.set_xlabel('False Positive Rate')
     ax.set_ylabel('True Positive Rate')
-    ax.set_title('ROC Curves (Full 404k Test Set)')
+    ax.set_title(f'ROC Curves ({n_use:,} Test Events)')
     ax.legend(fontsize=9)
     ax.grid(True, alpha=0.15)
     plt.tight_layout()
@@ -442,6 +496,12 @@ def main():
 
     # Save results
     results = {
+        "config": {
+            "n_events": n_use,
+            "seed": args.seed,
+            "total_events": len(all_labels_map[model_names[0]]),
+            "n_bootstrap": 1000,
+        },
         "bootstrap_ci": bootstrap_results,
         "rejection_rates": rejection_results,
         "nmi_matrix": {"model_names": model_names, "matrix": nmi_matrix.tolist()},
