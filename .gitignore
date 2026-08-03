@@ -82,4 +82,11 @@ paper/tables/
 *.vrb
 *.synctex.gz
 
+# ===== REPRODUCIBILITY (small result JSONs ARE tracked) =====
+# experiments/ checkpoints/plots stay ignored (regenerable);
+# the small result JSONs back every number in the paper, so they are versioned.
+*.onnx
+!experiments/
+!experiments/**/*.json
+
 

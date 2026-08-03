@@ -1,14 +1,15 @@
 """
-Robustness Tests: pT Rescaling, Jet Rotation, Constituent Dropout
+Robustness Tests: pT Rescaling, Azimuthal Rotation, Constituent Dropout
 ==================================================================
-Computes three robustness tests from Table 4 of the paper:
+Computes three robustness tests from Table 3 of the paper:
 
 1. **pT Rescaling** — rescale all constituent momenta by factors
-   ``[0.5, 0.8, 1.0, 1.2, 2.0]`` — expected accuracy ~91.5 % invariant.
-2. **Jet Rotation** — rotate constituent (eta, phi) coordinates by angles
-   ``[0.1, 0.5, 1.0, 2.0]`` rad — expected accuracy ~91.5 % invariant.
+   ``[0.5, 0.8, 1.0, 1.5, 2.0]`` — expected accuracy ~91.8 % invariant (IRC-safe).
+2. **Azimuthal Rotation** — rotate constituent phi by angles
+   ``[0.0, 0.1, 0.5, 1.0, 2.0]`` rad — expected accuracy ~91.8 % invariant
+   (physical azimuthal rotations leave the jet-axis-relative features unchanged).
 3. **Constituent Dropout** — randomly drop ``[0 %, 10 %, 20 %, 50 %, 80 %]``
-   of constituents — expected graceful degradation 91.5 % → 51.7 %.
+   of constituents — expected graceful degradation.
 
 Output
 ------
@@ -147,10 +148,12 @@ def rescale_pt(events, scale):
     }, with_name="Momentum4D")
 
 
-def rotate_eta_phi(events, angle):
+def rotate_azimuth(events, angle):
     """
-    Rotate constituent (eta, phi) coordinates by *angle* radians in the
-    (eta, phi) plane and convert back to Cartesian 4-momenta.
+    Apply a physical azimuthal rotation: phi_i -> phi_i + angle for every
+    constituent (eta, pT, E unchanged). Because the EFN inputs are the
+    jet-axis-relative coordinates (Delta eta, Delta phi), this
+    transformation leaves the model features exactly invariant.
 
     Parameters
     ----------
@@ -162,7 +165,7 @@ def rotate_eta_phi(events, angle):
     Returns
     -------
     ak.Array
-        Rotated events.
+        Azimuthally rotated events.
     """
     import awkward as ak
     import numpy as np
@@ -173,22 +176,17 @@ def rotate_eta_phi(events, angle):
     E  = ak.to_numpy(ak.flatten(events.E, axis=None))
 
     pt = np.sqrt(px ** 2 + py ** 2)
-    eta = np.arcsinh(pz / (pt + 1e-10))
-    phi = np.arctan2(py, px)
+    phi = np.arctan2(py, px) + angle
 
-    eta_rot = eta * np.cos(angle) - phi * np.sin(angle)
-    phi_rot = eta * np.sin(angle) + phi * np.cos(angle)
-
-    px_rot = pt * np.cos(phi_rot)
-    py_rot = pt * np.sin(phi_rot)
-    pz_rot = pt * np.sinh(eta_rot)
+    px_rot = pt * np.cos(phi)
+    py_rot = pt * np.sin(phi)
 
     counts = ak.num(events.px)
     return ak.zip({
         'E':  ak.unflatten(E, counts),
         'px': ak.unflatten(px_rot, counts),
         'py': ak.unflatten(py_rot, counts),
-        'pz': ak.unflatten(pz_rot, counts),
+        'pz': ak.unflatten(pz, counts),
     }, with_name="Momentum4D")
 
 
@@ -284,12 +282,12 @@ def main():
     }
 
     # ── 2. Jet Rotation ──────────────────────────────────────────
-    print("\n--- Jet Rotation ---")
+    print("\n--- Azimuthal Rotation ---")
     rot_accs = []
     rot_times = []
     for angle in ROT_ANGLES:
         t0 = time.time()
-        rotated = rotate_eta_phi(events, angle)
+        rotated = rotate_azimuth(events, angle)
         acc = evaluate_accuracy(model, rotated, labels, device)
         elapsed = time.time() - t0
         rot_accs.append(acc)
