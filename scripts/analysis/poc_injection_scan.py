@@ -74,8 +74,9 @@ for sf in signal_fracs:
     sig_idx = np.where(sig_mask)[0]
     bkg_idx = np.where(bkg_mask)[0]
 
-    chosen_sig = np.random.choice(sig_idx, n_sig, replace=False) if n_sig > 0 else np.array([], dtype=int)
-    chosen_bkg = np.random.choice(bkg_idx, n_bkg, replace=False)
+    rng = np.random.RandomState(42)
+    chosen_sig = rng.choice(sig_idx, n_sig, replace=False) if n_sig > 0 else np.array([], dtype=int)
+    chosen_bkg = rng.choice(bkg_idx, n_bkg, replace=False)
 
     idx = np.concatenate([chosen_sig, chosen_bkg])
     np.random.shuffle(idx)

@@ -1,21 +1,12 @@
 """
-POC: OOD Generalization Test (Fixed JetNet Conversion)
-=======================================================
-Tests whether the trained ArcFace model distinguishes OOD physics processes
-(W, Z, gluon, light quark, top) in its embedding space.
+OOD Generalization: ArcFace Cosine Similarity to Class Prototypes
+================================================================
+Loads 5 JetNet30 classes (g,q,w,z,t), runs through ArcFace model,
+and plots the cosine similarity distributions as violin plots.
 
-FIX: JetNet stores particle features as [etarel, phirel, ptrel, mask] —
-NOT (px, py, pz, E). We read H5 directly and reconstruct absolute
-4-momentum from relative coordinates.
-
-Reconstruction (per particle):
-    pt_part = ptrel * jet_pt
-    eta_part = jet_eta + etarel
-    phi_part = phirel (phi_jet=0, rotation invariant)
-    px = pt_part * cos(phi_part)
-    py = pt_part * sin(phi_part)
-    pz = pt_part * sinh(eta_part)
-    E  = pt_part * cosh(eta_part)  (massless approximation)
+The 2D scatter of (cos_QCD, cos_Top) collapses to a curve because the
+model has only 2 class centers on a hypersphere, making them anti-correlated.
+Violin plots show the per-class distributions clearly.
 """
 import os, sys, time, json
 import numpy as np
@@ -45,6 +36,7 @@ print(f"Model loaded from {CHECKPOINT}")
 
 N_PAD = 200
 JETS_PER_CLASS = 50000
+SEED = 42
 
 JETNET_DIR = get_project_root() / 'data' / 'jetnet'
 class_config = [
@@ -54,39 +46,16 @@ class_config = [
     ('z', 'Z boson'),
     ('t', 'top quark'),
 ]
-REF_JETNET_TO_TT = {
-    'g': ('gluon',    0.0, 0.0),
-    'q': ('light_q',  0.0, 0.0),
-    'w': ('W boson',  0.0, 0.0),
-    'z': ('Z boson',  0.0, 0.0),
-    't': ('top',      0.0, 0.0),
-}
 
 def reconstruct_4momenta(jets, parts):
-    """Reconstruct (E, px, py, pz) from JetNet relative coordinates.
-
-    Parameters
-    ----------
-    jets : ndarray (N, 4)
-        Jet features: [pt, eta, mass, num_particles]
-    parts : ndarray (N, 30, 4)
-        Particle features: [etarel, phirel, ptrel, mask]
-
-    Returns
-    -------
-    ndarray (N, N_PAD, 4)
-        Padded 4-momentum: (E, px, py, pz) per particle
-    ndarray (N, N_PAD)
-        Mask: 1 = real particle, 0 = padding
-    """
     N = len(jets)
-    jet_pt = jets[:, 0:1]          # (N, 1)
-    jet_eta = jets[:, 1:2]         # (N, 1)
+    jet_pt = jets[:, 0:1]
+    jet_eta = jets[:, 1:2]
 
-    pt_part = parts[:, :, 2] * jet_pt         # (N, 30)  ptrel * jet_pt
-    eta_part = jet_eta + parts[:, :, 0]        # (N, 30)  jet_eta + etarel
-    phi_part = parts[:, :, 1]                  # (N, 30)  phirel (phi_jet=0)
-    mask_30 = parts[:, :, 3]                   # (N, 30)
+    pt_part = parts[:, :, 2] * jet_pt
+    eta_part = jet_eta + parts[:, :, 0]
+    phi_part = parts[:, :, 1]
+    mask_30 = parts[:, :, 3]
 
     px = pt_part * np.cos(phi_part)
     py = pt_part * np.sin(phi_part)
@@ -102,8 +71,9 @@ def reconstruct_4momenta(jets, parts):
     mask[:, :30] = mask_30
     return result, mask
 
-all_embeddings = {}
-all_cos_sim = {}
+all_cos_qcd = {}
+all_cos_top = {}
+all_margin = {}
 total_time = 0
 
 for jtype, cname in class_config:
@@ -114,17 +84,16 @@ for jtype, cname in class_config:
         continue
 
     with h5py.File(str(h5_path), 'r') as f:
-        jets = f['jet_features'][:]          # (N, 4)
-        parts = f['particle_features'][:]    # (N, 30, 4)
+        jets = f['jet_features'][:]
+        parts = f['particle_features'][:]
 
     n_total = len(jets)
-    indices = np.random.choice(n_total, min(JETS_PER_CLASS, n_total), replace=False)
+    indices = np.random.RandomState(SEED).choice(n_total, min(JETS_PER_CLASS, n_total), replace=False)
     jets_sel = jets[indices]
     parts_sel = parts[indices]
 
     x_np, mask_np = reconstruct_4momenta(jets_sel, parts_sel)
 
-    # Find actual particle counts per jet
     n_parts = parts_sel[:, :, 3].sum(axis=1)
     print(f"  {jtype} ({cname}): {len(indices)} jets, avg particles={n_parts.mean():.0f}")
 
@@ -134,40 +103,59 @@ for jtype, cname in class_config:
     with torch.no_grad():
         logits, similarities, emb = model(x_t, mask=mask_t)
 
-    all_embeddings[cname] = emb.cpu().numpy()
-    all_cos_sim[cname] = similarities.cpu().numpy()
+    cs = similarities.cpu().numpy()
+    all_cos_qcd[cname] = cs[:, 0]
+    all_cos_top[cname] = cs[:, 1]
+    all_margin[cname] = cs[:, 1] - cs[:, 0]
 
     elapsed = time.time() - t0
     total_time += elapsed
     print(f"    Done in {elapsed:.0f}s")
 
-print(f"\nTotal: {sum(len(v) for v in all_embeddings.values())} jets in {total_time:.0f}s")
+print(f"\nTotal: {sum(len(v) for v in all_cos_qcd.values())} jets in {total_time:.0f}s")
 
-# Plot: cos_sim_QCD vs cos_sim_Top
-fig, ax = plt.subplots(figsize=(10, 8))
-colors = {'gluon': '#1f77b4', 'light quark': '#ff7f0e', 'W boson': '#2ca02c',
-          'Z boson': '#d62728', 'top quark': '#9467bd'}
-markers = {'gluon': 'o', 'light quark': 's', 'W boson': '^',
-           'Z boson': 'D', 'top quark': 'v'}
+# ── Figure: 2-panel violin plot ──
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 6))
 
-for cname in all_cos_sim:
-    cs = all_cos_sim[cname]
-    ax.scatter(cs[:, 0], cs[:, 1], c=colors[cname], marker=markers[cname],
-               s=5, alpha=0.4, label=cname, edgecolors='none')
+class_labels = ['gluon', 'light quark', 'W boson', 'Z boson', 'top quark']
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
 
-ax.plot(1.0, 0.0, 'k*', markersize=12, label='$W_{\\mathrm{QCD}}$', zorder=5)
-ax.plot(0.0, 1.0, 'k*', markersize=12, label='$W_{\\mathrm{Top}}$', zorder=5)
-ax.set_xlabel('Cosine similarity to $W_{\\mathrm{QCD}}$', fontsize=14)
-ax.set_ylabel('Cosine similarity to $W_{\\mathrm{Top}}$', fontsize=14)
-ax.set_title('OOD Generalization: ArcFace Cosine Similarity Space', fontsize=15)
-ax.legend(fontsize=11, markerscale=1.5, loc='center right',
-          framealpha=0.9, edgecolor='gray')
-ax.set_xlim(-0.05, 1.05)
-ax.set_ylim(-0.15, 1.05)
-ax.grid(True, alpha=0.3)
-ax.set_aspect('equal')
+# Panel (a): cos_sim_QCD
+data_qcd = [all_cos_qcd[c] for c in class_labels]
+parts_qcd = ax1.violinplot(data_qcd, positions=range(len(class_labels)),
+                            showmeans=True, showmedians=False, showextrema=False)
+for i, pc in enumerate(parts_qcd['bodies']):
+    pc.set_facecolor(colors[i])
+    pc.set_alpha(0.6)
+parts_qcd['cmeans'].set_color('black')
+ax1.set_xticks(range(len(class_labels)))
+ax1.set_xticklabels(class_labels, fontsize=11, rotation=15, ha='right')
+ax1.set_ylabel('Cosine similarity to $W_{\\mathrm{QCD}}$', fontsize=13)
+ax1.set_title('(a) QCD prototype', fontsize=13, fontweight='bold')
+ax1.axhline(y=0, color='gray', linestyle='--', alpha=0.4, lw=0.8)
+ax1.grid(True, axis='y', alpha=0.3)
+ax1.set_xlim(-0.6, len(class_labels) - 0.4)
+
+# Panel (b): cos_sim_Top
+data_top = [all_cos_top[c] for c in class_labels]
+parts_top = ax2.violinplot(data_top, positions=range(len(class_labels)),
+                            showmeans=True, showmedians=False, showextrema=False)
+for i, pc in enumerate(parts_top['bodies']):
+    pc.set_facecolor(colors[i])
+    pc.set_alpha(0.6)
+parts_top['cmeans'].set_color('black')
+ax2.set_xticks(range(len(class_labels)))
+ax2.set_xticklabels(class_labels, fontsize=11, rotation=15, ha='right')
+ax2.set_ylabel('Cosine similarity to $W_{\\mathrm{Top}}$', fontsize=13)
+ax2.set_title('(b) Top prototype', fontsize=13, fontweight='bold')
+ax2.axhline(y=0, color='gray', linestyle='--', alpha=0.4, lw=0.8)
+ax2.grid(True, axis='y', alpha=0.3)
+ax2.set_xlim(-0.6, len(class_labels) - 0.4)
+
+fig.suptitle('Out-of-Distribution Generalization: ArcFace Cosine Similarity',
+             fontsize=14, fontweight='bold', y=1.02)
 fig.tight_layout()
-fig.savefig(str(EXPERIMENTS / 'poc_ood_similarity.png'), dpi=150, bbox_inches='tight')
+fig.savefig(str(EXPERIMENTS / 'poc_ood_similarity.png'), dpi=200, bbox_inches='tight')
 print(f"\nSaved: {EXPERIMENTS / 'poc_ood_similarity.png'}")
 
 # Summary table
@@ -176,26 +164,28 @@ print(f"{'Class':<15} {'N':<6} {'cos_QCD_mean':<14} {'cos_QCD_std':<14} {'cos_To
 print('-'*80)
 for cname in class_config:
     cn = cname[1]
-    if cn not in all_cos_sim: continue
-    cs = all_cos_sim[cn]
-    margin = cs[:, 1] - cs[:, 0]
-    print(f"{cn:<15} {len(cs):<6} {cs[:,0].mean():<14.4f} {cs[:,0].std():<14.4f} "
-          f"{cs[:,1].mean():<14.4f} {cs[:,1].std():<14.4f} {margin.mean():<10.4f}")
+    if cn not in all_cos_qcd: continue
+    cq = all_cos_qcd[cn]
+    ct = all_cos_top[cn]
+    mg = all_margin[cn]
+    print(f"{cn:<15} {len(cq):<6} {cq.mean():<14.4f} {cq.std():<14.4f} "
+          f"{ct.mean():<14.4f} {ct.std():<14.4f} {mg.mean():<10.4f}")
 
 # Save results
 results = {}
-for cn in all_cos_sim:
-    cs = all_cos_sim[cn]
-    margin = cs[:, 1] - cs[:, 0]
+for cn in all_cos_qcd:
+    cq = all_cos_qcd[cn]
+    ct = all_cos_top[cn]
+    mg = all_margin[cn]
     results[cn] = {
-        'n': int(len(cs)),
-        'cos_qcd_mean': float(cs[:, 0].mean()),
-        'cos_qcd_std': float(cs[:, 0].std()),
-        'cos_top_mean': float(cs[:, 1].mean()),
-        'cos_top_std': float(cs[:, 1].std()),
-        'margin_mean': float(margin.mean()),
-        'margin_std': float(margin.std()),
-        'frac_top': float((cs[:, 1] > cs[:, 0]).mean()),
+        'n': int(len(cq)),
+        'cos_qcd_mean': float(cq.mean()),
+        'cos_qcd_std': float(cq.std()),
+        'cos_top_mean': float(ct.mean()),
+        'cos_top_std': float(ct.std()),
+        'margin_mean': float(mg.mean()),
+        'margin_std': float(mg.std()),
+        'frac_top': float((ct > cq).mean()),
     }
 
 with open(str(EXPERIMENTS / 'poc_ood_results.json'), 'w') as f:

@@ -86,7 +86,7 @@ def main():
     # Left: scatter subsample
     ax = axes[0]
     n_plot = min(50000, len(labels))
-    idx = np.random.choice(len(labels), n_plot, replace=False)
+    idx = np.random.RandomState(42).choice(len(labels), n_plot, replace=False)
     qcd = labels[idx] == 0
     top = labels[idx] == 1
     ax.scatter(jet_mass[idx][qcd], top_scores[idx][qcd],
