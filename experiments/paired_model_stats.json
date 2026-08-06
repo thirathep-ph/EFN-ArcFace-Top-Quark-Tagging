@@ -62,7 +62,7 @@
       "n_discordant": 10602,
       "chi2_cc": 16.717694774570834,
       "p_chi2": 4.337455201728901e-05,
-      "p_exact_binomial": 8.656031562394026e-05
+      "p_exact_binomial": 4.328015781197013e-05
     },
     "arcface_s16_m05_vs_coslinear_seed42": {
       "b": 4554,
@@ -70,7 +70,7 @@
       "n_discordant": 9668,
       "chi2_cc": 32.32116259826231,
       "p_chi2": 1.3068228426661039e-08,
-      "p_exact_binomial": 2.590245948443998e-08
+      "p_exact_binomial": 1.295122974221999e-08
     },
     "linear_seed42_vs_coslinear_seed42": {
       "b": 4755,
@@ -78,7 +78,7 @@
       "n_discordant": 9648,
       "chi2_cc": 1.94537728026534,
       "p_chi2": 0.1630858649469677,
-      "p_exact_binomial": 0.32616485925799454
+      "p_exact_binomial": 0.16308242962899727
     }
   },
   "power": {
