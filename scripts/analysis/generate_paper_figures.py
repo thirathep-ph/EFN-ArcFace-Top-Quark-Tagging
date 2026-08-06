@@ -82,7 +82,7 @@ def compute_embeddings_and_labels(model, events, labels, weights, device):
             out = model(x.to(device), mask=m.to(device))
             if isinstance(out, (tuple, list)):
                 logits = out[0]
-                emb = out[2] if len(out) > 2 else out[0]
+                emb = out[-1]
             else:
                 logits, emb = out, out
             all_emb.append(emb.cpu().numpy())

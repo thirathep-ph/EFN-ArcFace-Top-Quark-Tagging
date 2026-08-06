@@ -110,7 +110,7 @@ def get_all_embeddings(model, h5_path, device):
         for x, y, w, m, _ in loader:
             out = model(x.to(device), mask=m.to(device))
             if isinstance(out, (tuple, list)):
-                logits, emb = out[0], out[2] if len(out) > 2 else out[0]
+                logits, emb = out[0], out[-1]
             else:
                 logits, emb = out, out
 

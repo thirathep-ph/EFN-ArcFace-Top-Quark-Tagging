@@ -44,7 +44,7 @@ def paper_figures():
     _run("analysis/compute_eigengap.py", "FIG 2")
     _run("analysis/compute_mass_vs_score.py", "FIG 10")
     _run("analysis/compute_dglap_fit.py", "FIG 8 / TABLE 2")
-    _run("analysis/compute_bootstrap_ci.py", "FIG 4/12 / TABLE 1")
+    _run("analysis/compute_bootstrap_ci.py", "FIG 4/12 / TABLE 1", "--max-events", "404000")
     _run("analysis/compute_interpretation.py", "FIG 13 / TABLE 3")
     _run("analysis/compute_saliency.py", "FIG 14")
     _run("analysis/compute_dimensionality.py", "TABLE 3")

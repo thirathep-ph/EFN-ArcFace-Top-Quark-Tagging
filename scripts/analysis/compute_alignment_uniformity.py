@@ -76,16 +76,10 @@ def main():
         norms = np.linalg.norm(emb_raw, axis=1)
         print(f"  Emb: {emb_raw.shape}, norms: min={norms.min():.4f}, median={np.median(norms):.4f}, max={norms.max():.4f}")
 
-        # Pane 1: Norm histogram
+        # Pane 1: Norm histogram (raw embeddings for all models)
         ax = axes[0]
         label_clean = name.replace('\n', ' ')
-        if idx == 0:
-            # ArcFace: all norms = 1.0 (tiny residual from numerics)
-            ax.axvline(1.0, color=colors[idx], linestyle='--', linewidth=2, alpha=0.8, label=label_clean)
-            ax.text(1.02, 0.9, f'{label_clean}\n(all = 1.0)', color=colors[idx], fontsize=8,
-                    transform=ax.get_xaxis_transform(), va='top')
-        else:
-            ax.hist(norms, bins=80, color=colors[idx], alpha=0.6, density=True, label=label_clean)
+        ax.hist(norms, bins=80, color=colors[idx], alpha=0.6, density=True, label=label_clean)
 
         # Pane 2: Subclass balance via spectral clustering
         # Normalize for spectral clustering (standard practice)
@@ -120,10 +114,10 @@ def main():
                     f'{pct:.0f}%', ha='center', fontsize=7, rotation=90)
 
     # Format panel 1
-    axes[0].set_title('Embedding Norm Distribution\n(ArcFace: all = 1.0, fixed)', fontsize=10)
+    axes[0].set_title('Embedding Norm Distribution\n(raw embeddings)', fontsize=10)
     axes[0].set_xlabel('||e||₂', fontsize=9)
     axes[0].set_ylabel('Density', fontsize=9)
-    axes[0].set_xlim(0, 6)
+    axes[0].set_xlim(0, 25)
     axes[0].legend(fontsize=7)
     axes[0].grid(True, alpha=0.15)
 

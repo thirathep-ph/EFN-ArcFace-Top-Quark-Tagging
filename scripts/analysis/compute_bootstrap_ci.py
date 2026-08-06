@@ -145,7 +145,7 @@ def get_model_output(model, h5_path, device, max_events=100000, seed=42, chunk_s
 
                 if isinstance(out, (tuple, list)):
                     logits = out[0]
-                    emb = out[2] if len(out) > 2 else out[0]
+                    emb = out[-1]
                 else:
                     logits = out
                     emb = out

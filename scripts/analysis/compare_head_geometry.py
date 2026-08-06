@@ -6,8 +6,8 @@ that match DGLAP theory; Linear (unconstrained) does not.
 
 Output
 ------
-* experiments/head_comparison_params.json — fit results
-* experiments/head_comparison.png         — 2×4 comparison figure
+* experiments/head_comparison_params.json â€” fit results
+* experiments/head_comparison.png         â€” 2Ã—4 comparison figure
 """
 
 import json, gc, time, warnings
@@ -82,7 +82,7 @@ def fit_subclass(zg):
     bc = (edges[:-1] + edges[1:]) / 2
     try:
         popt, _ = curve_fit(dglap_power_law, bc, hist, p0=[-1.0, 0.0],
-                           bounds=[[-5, -10], [10, 10]], maxfev=10000)
+                           bounds=[[-5, -5], [10, 10]], maxfev=10000)
         res = hist - dglap_power_law(bc, *popt)
         r2 = 1 - np.sum(res**2) / (np.sum((hist - np.mean(hist))**2) + 1e-12)
         return {'alpha': float(popt[0]), 'beta': float(popt[1]),

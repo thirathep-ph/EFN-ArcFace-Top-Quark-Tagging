@@ -1,15 +1,15 @@
 """
 Dimensionality Metrics: TwoNN, Participation Ratio, Class Center Angle
 =======================================================================
-Computes dimensionality metrics from Table 3 of the paper:
+Computes dimensionality metrics from Table 4 of the paper:
 
-1. **TwoNN intrinsic dimension** — nearest-neighbor ratio estimator.
-   Expected: ~2.69
-2. **Participation Ratio** — from PCA eigenvalues.
+1. **TwoNN intrinsic dimension** ??" nearest-neighbor ratio estimator.
+   Expected: ~2.17
+2. **Participation Ratio** ??" from PCA eigenvalues.
    Expected: ~1.38
-3. **Class Center Angular Distance** — arccos of cosine similarity between
+3. **Class Center Angular Distance** ??" arccos of cosine similarity between
    ``W_QCD`` and ``W_Top`` from the trained model.
-   Expected: ~0.276 rad
+   Expected: ~0.76 rad
 
 Output
 ------

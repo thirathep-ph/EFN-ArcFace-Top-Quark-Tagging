@@ -43,15 +43,17 @@ command, artifact, and expected value needed to reproduce it.
 | EDA table (train 1,211,000 / val 403,000 / test 404,000; means) | `compute_eda.py` | `experiments/eda/eda_stats.json` | per-split stats |
 | EDA supplement sigma(pT)=29, sigma(M)=56, corr 0.94/0.62, tau32 0.55/0.73, mult diff ~11 | `compute_eda_supplement.py` (n=100k, seed 42) | `experiments/eda_supplement_results.json` | pT std 28.738; M std 56.432; corr 0.9436/0.6244; tau32 0.548/0.733; mult 54.70/43.37 |
 | Conformal coverage 90.1% | deleted script; see `git show 61120f0^:scripts/explore/conformal_final.py` | `experiments/conformal_results.json` | empirical_coverage 0.90066 |
-| PGD drop 0.02% (eps=0.01, n=5000) | deleted script; see `git show 61120f0^:scripts/explore/pgd_attack.py` | `experiments/pgd_attack_results.json` | 0.9148 vs clean 0.915 |
-| Figures (ROC, rejection rates, NMI/ARI) | `compute_bootstrap_ci.py --max-events 404000` | `experiments/final_roc_curves.png`, `final_rejection_rates.png`, `final_nmi_ari.png` | copied into `paper/figures/` |
+| Adversarial FGSM / PGD drop 0.7% / 0.7% (eps=0.01, n=20k, seed 42) | `compute_adversarial_tests.py` | `experiments/adversarial_results.json` | clean 0.9218; FGSM 0.9146 (0.72% drop); PGD 0.91435 (0.745% drop) |
+| Mass-cut 83.8% @ 160 GeV / 88.9% @ 140 GeV (optimal) | `compute_mass_cut.py` (reads `experiments/rf_cache_test.npz`) | `experiments/mass_cut_results.json` | acc per cut: 100->0.8165, 120->0.8682, 140->0.8891, 150->0.8775, 160->0.8379, 172->0.7283 |
+| IRC injection (200 jets): mean cos > 0.999 at all levels | `compute_irc_injection.py` (N_EVENTS=200) | `experiments/irc_injection_results.json` | soft e0.01 mean 0.99988 / min 0.99523; e0.001 mean 0.999999; collinear mean 0.9999999; masking 1.0 |
+| Figures (ROC, rejection rates, NMI/ARI) | `compute_bootstrap_ci.py --max-events 404000` | `experiments/final_roc_curves.png`, `final_rejection_rates.png`, `final_nmi_ari.png` | copied into `paper/figures/`; NMI/ARI from jet embeddings (out[-1]), not logits |
 | Lund planes, UMAP, composition, physics distributions | `generate_paper_figures.py` (MAX_EVENTS=100000) | `experiments/robustness_s16_m05/*.png` | figures (100k events — captions say 100k) |
 | Angular collimation | `generate_angular_collimation.py` (404000) | `experiments/robustness_s16_m05/angular_collimation.png` | scaling exponents |
 
 ## Statistical claims (Section "Statistical Considerations")
 
 - 95% binomial CI at n=404,000, p=0.9184: `p +- 1.96*sqrt(p(1-p)/n)` = +-0.000844 -> [91.76, 91.92] (analytic; matches bootstrap CI [91.75, 91.92]).
-- Subsampled analyses use seeded (seed 42) random draws without replacement, shared across models -> strictly paired (McNemar valid).
+- Subsampled analyses use fixed, deterministic subsets of the test set (the first N events, or a seeded random draw with seed 42 where noted), shared across models -> strictly paired (McNemar valid).
 - Power: unpaired two-proportion test on 404k resolves ~0.17 pp at 80% power; McNemar resolves differences below that; per-group n for Cohen d = 15.7/d^2 (393 for d=0.2; ~5 for d=1.75); all subclass groups >= 75k.
 
 ## Superseded / NOT to be used

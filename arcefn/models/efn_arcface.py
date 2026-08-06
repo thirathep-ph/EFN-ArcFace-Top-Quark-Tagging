@@ -250,7 +250,7 @@ class TopTaggingModel(nn.Module):
         similarities : torch.Tensor
             Raw cosine similarities to class prototypes of shape (B, 2).
         jet_emb : torch.Tensor
-            L2-normalized jet embedding of shape (B, embedding_dim).
+            Raw (unnormalized) jet embedding of shape (B, embedding_dim).
         """
         coords, z = get_efn_features(constituents, mask)
         jet_emb = self.efn(coords, z, mask)

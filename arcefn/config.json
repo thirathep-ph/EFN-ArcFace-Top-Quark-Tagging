@@ -50,7 +50,7 @@
     "best_precision": 0.90368,
     "best_recall": 0.93460,
     "best_f1": 0.91888,
-    "n_params": 46592,
+    "n_params": 59072,
     "centroid_mass_top_gev": 168.8,
     "centroid_mass_qcd_gev": 63.5,
     "n_subclasses_top": 2,

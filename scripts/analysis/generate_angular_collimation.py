@@ -1,7 +1,7 @@
 """
 Generate Angular Collimation Figure: ΔR ≈ 2M/pT scaling per subclass
 ====================================================================
-Uses a single 15k-event sample for both physics features + clustering.
+Uses the full 404k test set (N_EVENTS=404000) for physics features + clustering.
 """
 import os, gc, time, numpy as np, torch, matplotlib
 matplotlib.use('Agg')

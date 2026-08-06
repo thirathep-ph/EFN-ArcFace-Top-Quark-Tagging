@@ -5,13 +5,13 @@ Trains and evaluates two ablation baselines:
     A: EFN + Linear + CE  (standard classifier)
     B: EFN + CosLinear + CE  (ArcFace without margin)
 
-Uses chunked loading matching train_top.py for fair comparison.
+Uses chunked loading of the full datasets.
 
 Usage:
-    # Train Linear baseline (30 epochs)
-    python scripts/train_baselines.py --model linear --epochs 30
+    # Train Linear baseline (50 epochs)
+    python scripts/train_baselines.py --model linear --epochs 50
 
-    # Train CosLinear baseline (30 epochs)
+    # Train CosLinear baseline (50 epochs)
     python scripts/train_baselines.py --model coslinear --epochs 30
 
     # Train both with 3 seeds each

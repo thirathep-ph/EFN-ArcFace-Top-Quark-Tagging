@@ -1,7 +1,7 @@
 """
 Diagnostic: Is the model just learning a mass cutoff?
 =====================================================
-Plots jet mass versus cosine similarity to the Top prototype.
+Plots jet mass versus the model score P(Top|jet).
 
 A model that relies solely on mass would produce a sharp vertical
 decision boundary at :math:`m \\approx 150` GeV.  A model that learns

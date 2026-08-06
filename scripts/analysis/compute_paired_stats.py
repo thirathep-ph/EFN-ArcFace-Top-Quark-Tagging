@@ -17,8 +17,8 @@ strictly paired), then computes:
 
 Output
 ------
-* ``experiments/paired_model_stats.npz`` — aligned preds/scores/labels
-* ``experiments/paired_model_stats.json`` — all statistics
+* ``experiments/paired_model_stats.npz`` â€” aligned preds/scores/labels
+* ``experiments/paired_model_stats.json`` â€” all statistics
 """
 
 import json
@@ -66,7 +66,7 @@ def mcnemar(pred_a: np.ndarray, pred_b: np.ndarray, labels: np.ndarray):
     chi2_cc = (abs(b - c) - 1.0) ** 2 / n_disc if n_disc > 0 else 0.0
     p_chi2 = sps.chi2.sf(chi2_cc, 1)
     m = min(b, c)
-    p_exact = 2.0 * sps.binomtest(m, n_disc).pvalue if n_disc > 0 else 1.0
+    p_exact = sps.binomtest(m, n_disc).pvalue if n_disc > 0 else 1.0
     return {"b": b, "c": c, "n_discordant": n_disc,
             "chi2_cc": chi2_cc, "p_chi2": p_chi2, "p_exact_binomial": p_exact}
 

@@ -89,4 +89,7 @@ paper/tables/
 !experiments/
 !experiments/**/*.json
 
+# ===== PySR / symbolic-regression scratch (outputs/) =====
+outputs/
+
 
