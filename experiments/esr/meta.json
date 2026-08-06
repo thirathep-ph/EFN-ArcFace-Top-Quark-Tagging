@@ -1,0 +1,11 @@
+{
+  "n_events": 40000,
+  "seed": 42,
+  "n_components": 2,
+  "pca_explained_variance": [
+    0.3132766783237457,
+    0.2675528824329376
+  ],
+  "pca_cap": 500000,
+  "n_particles": 1000000
+}
