@@ -23,6 +23,7 @@ command, artifact, and expected value needed to reproduce it.
 |---|---|---|---|
 | Accuracy 91.84% [91.76, 91.92] | `compute_paired_stats.py` | `experiments/paired_model_stats.json` | acc=0.9184; 95% binomial CI [0.9176, 0.9192] |
 | Table 1 AUC / Rejection@50%TPR (0.974/0.974/0.975; 124/122/132) | `compute_bootstrap_ci.py --max-events 404000` | `experiments/final_analysis_results.json` | arcface AUC 0.9739, rej50 123.6; linear 0.9743/121.6; coslinear 0.9748/131.7 |
+| Table 1 RF baseline (92.37% / 0.977 / 150) | `compute_rf_baseline.py --max-train-events 403000 --max-events 404000 --n-estimators 500` | `experiments/rf_baseline_results.json` | acc 0.92368, AUC 0.97655, rej50 150.01 (train val.h5 -> test.h5, seed 42; features cached in `experiments/rf_cache_{val,test}.npz`) |
 | McNemar p-values (4.3e-05 / 1.3e-08 / 0.16) | `compute_paired_stats.py` | `experiments/paired_model_stats.json` | pairwise discordants + continuity-corrected chi2 |
 | Robustness pT rescaling 91.84% all scales | `compute_robustness_tests.py` (N_EVENTS=404000) | `experiments/robustness_tests_results.json` | 0.9184 at 0.5/0.8/1.0/1.5/2.0x |
 | Robustness azimuthal rotation 91.84% all angles | same | same | 0.9184 at 0/0.1/0.5/1.0/2.0 rad (phys. phi_i -> phi_i + alpha) |
