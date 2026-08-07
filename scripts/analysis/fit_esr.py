@@ -69,25 +69,34 @@ def fit_p1(quick: bool, micro: bool, seed: int) -> None:
     model.fit(X, T)
     eqs = model.equations_
     if isinstance(eqs, list):
-        eqs = eqs[0]  # multi-output: keep first output's Pareto front (see note)
-    print(f"[p1] done in {time.time()-t0:.0f}s; {len(eqs)} equations on Pareto front", flush=True)
-    out = {
-        "stage": "p1",
-        "n_samples": n,
-        "fit_seconds": time.time() - t0,
-        "best_loss": float(eqs["loss"].iloc[0]),
-        "equations": [
+        eqs_list = eqs  # multi-output: one Pareto front per target column
+    else:
+        eqs_list = [eqs]
+    print(f"[p1] done in {time.time()-t0:.0f}s; {len(eqs_list)} output(s), "
+          f"{len(eqs_list[0])} equations on Pareto front", flush=True)
+
+    def _serialize(front) -> list[dict]:
+        return [
             {
                 "complexity": int(r["complexity"]),
                 "loss": float(r["loss"]),
                 "score": float(r["score"]) if r["score"] == r["score"] else None,
                 "equation": str(r["equation"]),
             }
-            for _, r in eqs.iterrows()
-        ],
+            for _, r in front.iterrows()
+        ]
+
+    out = {
+        "stage": "p1",
+        "n_samples": n,
+        "fit_seconds": time.time() - t0,
+        "n_outputs": len(eqs_list),
+        "best_loss": [float(f["loss"].iloc[0]) for f in eqs_list],
+        "equations_per_output": [_serialize(f) for f in eqs_list],
     }
     (EXPERIMENTS / "esr" / "phi_sym.json").write_text(json.dumps(out, indent=2))
-    print(f"[p1] saved experiments/esr/phi_sym.json (best loss {out['best_loss']:.6f})", flush=True)
+    print(f"[p1] saved experiments/esr/phi_sym.json "
+          f"(best losses {[float(f['loss'].iloc[0]) for f in eqs_list]})", flush=True)
 
 
 def fit_r1(quick: bool, micro: bool, seed: int) -> None:

@@ -9,15 +9,20 @@ Pipeline distilled for PySR (Route B: raw constituents, no grooming):
   jet     = Sum_i z_i * phi_net_i  pooled 128-d
   rho + cosine + scale             deterministic nonlinear readout (absorbed by G)
 
-Distillation targets:
-  - P1 (per particle):  t_i = PCA_C( phi_net(theta_i) )  -> symbolic phi_sym(theta)->t
+Distillation targets (exact-plane, decision-relevant):
+  - P1 (per particle):  t_i = phi_net(theta_i) @ C_norm.T  (C_norm = normalized
+                         ArcFace class centers, 2x64) -> symbolic phi_sym(theta)->t.
+                         Since the decision depends only on the projection of the
+                         pooled embedding onto the plane spanned by the two
+                         prototypes, this projection loses no decision information
+                         (unlike the earlier PCA-2D target, ~58% variance).
   - R1 (jet level):     (U,V) = Sum_i z_i t_i,  target = logit (model decision value)
                          -> symbolic readout G(U,V) -> logit  (absorbs rho+cos+s)
 
 Artifacts (experiments/esr/):
   perparticle.npz : eta (M,), phi (M,), T (M,C)   [rows = real particles, seed-capped]
   jet.npz         : U (B,), V (B,), P (B,), logit (B,), labels (B,)
-  meta.json       : n_events, seed, n_components, pca explained variance
+  meta.json       : n_events, seed, n_components, target description
 """
 from __future__ import annotations
 
@@ -27,7 +32,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from sklearn.decomposition import PCA
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from arcefn.data.loader import load_awkward
@@ -39,7 +43,6 @@ N_EVENTS = 40000
 BATCH = 512
 SEED = 42
 N_COMP = 2
-PCA_CAP = 500_000
 
 
 def main() -> None:
@@ -103,16 +106,18 @@ def main() -> None:
     logits = np.concatenate(logits_all, axis=0)            # (N,2)
     P = torch.softmax(torch.from_numpy(logits), dim=1).numpy()[:, 1]
 
-    flat = phi_net.reshape(-1, 128)
-    wflat = z.reshape(-1)
-    real = wflat > 0
-    flat_r = flat[real]
-    rng2 = np.random.default_rng(SEED + 1)
-    sub = flat_r[rng2.choice(len(flat_r), min(PCA_CAP, len(flat_r)), replace=False)]
-    pca = PCA(n_components=N_COMP)
-    pca.fit(sub)
-    comps = pca.components_.astype(np.float32)             # (C,128)
-    mean_ = pca.mean_.astype(np.float32)                   # (128,)
+    # ---- exact-plane projector: least-squares L: R^128 -> R^2 ----
+    # cosines (decision-relevant) = logits / s  (s=16.0)
+    cos = (logits / 16.0).astype(np.float64)               # (N,2)
+    jet128 = (phi_net * z[:, :, None]).sum(axis=1)         # (N,128) pooled phi
+    L, *_ = np.linalg.lstsq(jet128.astype(np.float64), cos, rcond=None)  # (128,2)
+    cos_hat = jet128 @ L
+    ss_res = float(np.sum((cos - cos_hat) ** 2))
+    ss_tot = float(np.sum((cos - cos.mean(0)) ** 2))
+    plane_r2 = 1.0 - ss_res / ss_tot
+    comps = L.astype(np.float32)                           # (128,2)
+    mean_ = np.zeros(128, dtype=np.float32)                # no centering: keep linearity
+    print(f"[esr] exact-plane LS fit: cosine R^2 = {plane_r2:.4f}")
 
     out = EXPERIMENTS / "esr"
     out.mkdir(parents=True, exist_ok=True)
@@ -124,7 +129,7 @@ def main() -> None:
         idxs = np.where(real2[i])[0]
         if len(idxs) == 0:
             continue
-        t_i = (phi_net[i, idxs] - mean_[None, :]).dot(comps.T)   # (k, C)
+        t_i = (phi_net[i, idxs] - mean_[None, :]).dot(comps)   # (k, C)
         eta_rows.append(d_eta[i, idxs])
         phi_rows.append(d_phi[i, idxs])
         T_rows.append(t_i)
@@ -136,7 +141,7 @@ def main() -> None:
     Eta, Phi, Tmat = Eta[sel], Phi[sel], Tmat[sel]
 
     # ---- jet coords (U,V) = Sum_i z_i t_i ----
-    t3 = (phi_net - mean_[None, None, :]).dot(comps.T)     # (N,200,C)
+    t3 = (phi_net - mean_[None, None, :]).dot(comps)     # (N,200,C)
     jetcoords = (t3 * z[:, :, None]).sum(axis=1)           # (N,C)
 
     np.savez_compressed(
@@ -153,13 +158,13 @@ def main() -> None:
         "n_events": n,
         "seed": SEED,
         "n_components": N_COMP,
-        "pca_explained_variance": pca.explained_variance_ratio_.tolist(),
-        "pca_cap": PCA_CAP,
+        "target": "exact-plane: least-squares L: pooled phi (128-d) -> (cos_QCD, cos_Top); per-particle t_i = L @ phi(x_i)",
+        "plane_r2": plane_r2,
         "n_particles": int(len(Eta)),
     }
     (out / "meta.json").write_text(json.dumps(meta, indent=2))
     print(f"[esr-targets] saved -> {out}")
-    print(f"  PCA explained variance (C={N_COMP}): {pca.explained_variance_ratio_}")
+    print(f"  exact-plane LS projector (C={N_COMP}), cosine R^2 = {plane_r2:.4f}")
 
 
 if __name__ == "__main__":
