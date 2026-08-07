@@ -1,0 +1,95 @@
+{
+  "n_events": 404000,
+  "embedding_dim": 64,
+  "kappa_cap": 600.0,
+  "classes": {
+    "QCD": {
+      "n": 201914,
+      "partitions": {
+        "spectral_eigengap": {
+          "k": 2,
+          "subclasses": {
+            "subclass_0": {
+              "n": 123322,
+              "rbar": 0.9758221507072449,
+              "kappa_hat": 600.0,
+              "theta_mean_deg": 12.624825777429185,
+              "angular_rms_deg": 12.599301344747929
+            },
+            "subclass_1": {
+              "n": 78592,
+              "rbar": 0.9103084802627563,
+              "kappa_hat": 324.5869982560812,
+              "theta_mean_deg": 24.45198392248992,
+              "angular_rms_deg": 24.26684530529781
+            },
+            "kappa_cap_hit": true
+          }
+        },
+        "spherical_kmeans_k2": {
+          "subclasses": {
+            "subclass_0": {
+              "n": 126533,
+              "rbar": 0.9712170362472534,
+              "kappa_hat": 600.0,
+              "theta_mean_deg": 13.7801078538321,
+              "angular_rms_deg": 13.74691937705858
+            },
+            "subclass_1": {
+              "n": 75381,
+              "rbar": 0.9168977737426758,
+              "kappa_hat": 351.6055475604159,
+              "theta_mean_deg": 23.523309881946368,
+              "angular_rms_deg": 23.358446697400776
+            },
+            "kappa_cap_hit": true
+          }
+        }
+      }
+    },
+    "Top": {
+      "n": 202086,
+      "partitions": {
+        "spectral_eigengap": {
+          "k": 2,
+          "subclasses": {
+            "subclass_0": {
+              "n": 101260,
+              "rbar": 0.9669601917266846,
+              "kappa_hat": 600.0,
+              "theta_mean_deg": 14.769284273803416,
+              "angular_rms_deg": 14.728427777791522
+            },
+            "subclass_1": {
+              "n": 100826,
+              "rbar": 0.9723485708236694,
+              "kappa_hat": 600.0,
+              "theta_mean_deg": 13.505238945713122,
+              "angular_rms_deg": 13.473996236229102
+            },
+            "kappa_cap_hit": true
+          }
+        },
+        "spherical_kmeans_k2": {
+          "subclasses": {
+            "subclass_0": {
+              "n": 101558,
+              "rbar": 0.9668733477592468,
+              "kappa_hat": 600.0,
+              "theta_mean_deg": 14.788790148740626,
+              "angular_rms_deg": 14.747771650698644
+            },
+            "subclass_1": {
+              "n": 100528,
+              "rbar": 0.972453236579895,
+              "kappa_hat": 600.0,
+              "theta_mean_deg": 13.47953602869402,
+              "angular_rms_deg": 13.44847127950176
+            },
+            "kappa_cap_hit": true
+          }
+        }
+      }
+    }
+  }
+}

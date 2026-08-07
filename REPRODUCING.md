@@ -49,6 +49,8 @@ command, artifact, and expected value needed to reproduce it.
 | Figures (ROC, rejection rates, NMI/ARI) | `compute_bootstrap_ci.py --max-events 404000` | `experiments/final_roc_curves.png`, `final_rejection_rates.png`, `final_nmi_ari.png` | copied into `paper/figures/`; NMI/ARI from jet embeddings (out[-1]), not logits |
 | Lund planes, UMAP, composition, physics distributions | `generate_paper_figures.py` (MAX_EVENTS=100000) | `experiments/robustness_s16_m05/*.png` | figures (100k events — captions say 100k) |
 | Angular collimation | `generate_angular_collimation.py` (404000) | `experiments/robustness_s16_m05/angular_collimation.png` | scaling exponents |
+| Clustering robustness: k=2 robust (SC vs SKM vs vMF); SKM ARI 0.94 QCD / 0.99 Top | `compute_subclass_clustering.py` | `experiments/subclass_clustering_comparison.json` | QCD SC sil 0.838 vs SKM 0.844; Top all 0.736; vMF degenerate (kappa cap) |
+| Subclass angular concentration (12.6/24.5 deg QCD Core/Edge; 14.8/13.5 deg Top) | `compute_subclass_concentration.py` | `experiments/subclass_concentration_results.json` | rbar + kappa_hat + theta_mean per subclass |
 
 ## Statistical claims (Section "Statistical Considerations")
 
