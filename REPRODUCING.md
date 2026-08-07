@@ -96,3 +96,9 @@ field of the submission form with the same statement.
    - B) soft-membership analysis: vMF membership entropy per jet vs mass — QCD boundary blurry vs Top sharp (physics finding).
    - C) vMF on the intrinsic 2D latent plane (cos_QCD, cos_Top) — connects effective-dim-2 story.
    - Note: plain vMF EM fails on this data (kappa hits 600 cap; BIC monotone; QCD partition diverges ARI 0.619) — needs MAP prior / bounded-kappa if revisited.
+
+3. **2D-latent clustering study** (script WRITTEN but NOT run; user deferred, noted 2026-08-07):
+   - Script: `scripts/analysis/compute_subclass_2dlatent.py` (ready to run; output `experiments/subclass_2dlatent_results.json`).
+   - Motivation: embeddings lie on a ~2D intrinsic submanifold of S^63 (TwoNN 2.17, PR 1.38, PCA 99.9% in 2 comps); vMF's kappa divergence is a dimension-mismatch symptom (full-S^63 assumption vs actual 2D latent), not a vMF defect. Clustering should move to the real geometry.
+   - Plan: per true class — PCA-2D of embeddings, then GMM (k=2..4, BIC/AIC), vMF-on-S^1 (bounded kappa via brentq, soft resp), SKM-2D, HDBSCAN (density-based arbiter for continuum-vs-bimodal), plus soft-membership entropy vs mass (option B); compare partitions vs spectral SC (ARI), silhouette on S^63 (cosine), and DGLAP fits (physics arbiter).
+   - Current validated baseline stands: SC k=2 (DGLAP Table 2 exact); SKM ARI 0.937 QCD / 0.994 Top; theta_mean QCD-Core 12.6 deg / QCD-Edge 24.5 deg / Top 14.8 / 13.5 deg.
