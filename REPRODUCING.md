@@ -83,3 +83,16 @@ field of the submission form with the same statement.
 
 - `experiments/*.json` (small result files) ARE tracked; checkpoints, `.npz`, `.png`, `.onnx` are ignored (regenerable).
 - Repo: https://github.com/thirathep-ph/ArcEFN (branch `main`).
+
+## Pending / planned extensions (decided, not yet executed)
+
+1. **Full-embedding symbolic distillation with SymTorch** (user's choice A, noted 2026-08-07):
+   - Goal: replace the ENTIRE learned mapping (per-particle `phi` 128-d and/or the 64-d embedding) with closed-form symbolic expressions, going BEYOND the 2D decision-plane distillation which is capped at ~85.2% accuracy (info loss from the LS plane projection, R2=0.677; see `experiments/esr/plane_ceiling.json`).
+   - Tool: `torch-symbolic` (SymTorch, PyPI) — PySR-powered, torch-native, by E. Tan, A. Soubki, M. Cranmer (arXiv 2602.21307). Depends on `pysr`; requires Python >=3.11 (repo venv is 3.12; install via `pip install torch-symbolic`).
+   - Existing POC artifacts to build on: `experiments/esr/{perparticle.npz, jet.npz, phi_sym.json, readout_sym.json, validation_results.json, plane_ceiling.json}`; scripts `compute_esr_targets.py` (exact-plane LS targets), `fit_esr.py` (PySR two-stage), `compute_esr_validate.py` (full-404k closed-form validation), `check_esr_ceiling.py`.
+   - Open questions when we resume: per-output distillation of the 128-d `phi` map vs end-to-end neuro-symbolic training; whether a hybrid model (symbolic surrogates inside EFN) can match 91.84% accuracy while keeping the ~17x speedup measured for the 2D plane.
+
+2. **vMF options not yet done** (from the subclass-clustering comparison study, `experiments/subclass_clustering_comparison.json`):
+   - B) soft-membership analysis: vMF membership entropy per jet vs mass — QCD boundary blurry vs Top sharp (physics finding).
+   - C) vMF on the intrinsic 2D latent plane (cos_QCD, cos_Top) — connects effective-dim-2 story.
+   - Note: plain vMF EM fails on this data (kappa hits 600 cap; BIC monotone; QCD partition diverges ARI 0.619) — needs MAP prior / bounded-kappa if revisited.
