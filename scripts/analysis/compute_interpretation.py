@@ -40,6 +40,7 @@ from arcefn.models.efn_arcface import TopTaggingModel
 from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.utils.device import get_device
 from arcefn.utils.physics import compute_features
+from arcefn.utils.clustering import spectral_clustering_subclass
 
 TEST_H5 = str(DATA_DIR / 'test.h5')
 RESULTS_PATH = str(EXPERIMENTS / 'interpretation_full_results.json')
@@ -297,8 +298,13 @@ def main():
     for cls in [0, 1]:
         mask = labels == cls
         if mask.sum() > 10:
-            km = KMeans(n_clusters=2, random_state=42, n_init='auto').fit(emb_norm[mask])
-            subclass_labels[mask] = km.labels_ + (2 * cls)
+            sc_labels, _n_sc = spectral_clustering_subclass(emb_norm[mask], max_k=5)
+            order = sorted(
+                (c for c in np.unique(sc_labels) if c >= 0),
+                key=lambda c: -int((sc_labels == c).sum()),
+            )
+            mapped = np.array([order.index(int(l)) if l >= 0 else -1 for l in sc_labels])
+            subclass_labels[mask] = mapped + (2 * cls)
 
     effect_sizes = {}
     for i, name in enumerate(FEATURE_NAMES):
