@@ -239,23 +239,23 @@ def main():
     print(f"  Done in {time.time()-t0:.1f}s")
 
     # ------------------------------------------------------------------
-    # 6. Spectral clustering per predicted class
+    # 6. Spectral clustering per true class
     # ------------------------------------------------------------------
-    print("\nSpectral clustering on predicted classes...")
+    print("\nSpectral clustering on true classes...")
     subclass_labels = np.full(len(sub_emb), -1, dtype=int)
 
-    top_mask = sub_preds == 1
+    top_mask = sub_labels == 1
     if top_mask.sum() > 0:
-        top_subclasses, k_top = spectral_clustering_subclass(sub_emb[top_mask], max_k=10)
+        top_subclasses, k_top = spectral_clustering_subclass(sub_emb[top_mask], max_k=5)
         active_top, counts_top = np.unique(top_subclasses, return_counts=True)
         subclass_labels[top_mask] = top_subclasses + 1  # reserve 0 for unassigned
         print(f"  Top subclasses: {dict(zip(active_top, counts_top))}")
     else:
         active_top = np.array([], dtype=int)
 
-    qcd_mask = sub_preds == 0
+    qcd_mask = sub_labels == 0
     if qcd_mask.sum() > 0:
-        qcd_subclasses, k_qcd = spectral_clustering_subclass(sub_emb[qcd_mask], max_k=10)
+        qcd_subclasses, k_qcd = spectral_clustering_subclass(sub_emb[qcd_mask], max_k=5)
         active_qcd, counts_qcd = np.unique(qcd_subclasses, return_counts=True)
         subclass_labels[qcd_mask] = -(qcd_subclasses + 1)  # negative = QCD
         print(f"  QCD subclasses: {dict(zip(active_qcd, counts_qcd))}")
