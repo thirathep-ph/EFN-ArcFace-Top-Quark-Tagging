@@ -46,7 +46,7 @@ command, artifact, and expected value needed to reproduce it.
 | ~8% of jets > 160 GeV misclassified as QCD | `compute_mass_vs_score.py` (50000) | printed diagnostic | 7.6% QCD-like |
 | Injection scan 0.416+-0.004 / -0.516+-0.006 / CE 0.046 | `poc_injection_scan.py` | `experiments/poc_injection_scan_results.json` | margins per 5% step, 20k/step |
 | OOD JetNet30 cos values (W/Z 0.58, gluon 0.39, quark 0.45; top < -0.2 / < -0.6) | `poc_ood_generalization.py` (JETS_PER_CLASS=50000) | `experiments/poc_ood_results.json` | per-class cosine similarities |
-| Head comparison 30/20/25/25 vs 45/5/43/6, R2, beta | `compute_head_geometry.py` (N_EVENTS=50000) | `experiments/head_geometry_params.json` | N per subclass + fit params |
+| Head comparison 30/20/25/25 vs 45/5/43/6, R2, beta | `compute_head_geometry.py` (N_EVENTS=50000) | `experiments/head_geometry_params.json` | N per subclass + fit params; fit P(zg)=A·zg^α·(1-zg)^β (amplitude A included, matches Table 5) |
 | Embedding norms 7.73/4.94 (ArcFace), 3.69/2.40 (Linear) | `compute_alignment_uniformity.py` (50000) | `experiments/embedding_geometry_results.json` | medians + std |
 | EDA table (train 1,211,000 / val 403,000 / test 404,000; means) | `compute_eda.py` | `experiments/eda/eda_stats.json` | per-split stats |
 | EDA supplement sigma(pT)=29, sigma(M)=56, corr 0.94/0.62, tau32 0.55/0.73, mult diff ~11 | `compute_eda_supplement.py` (n=100k, seed 42) | `experiments/eda_supplement_results.json` | pT std 28.738; M std 56.432; corr 0.9436/0.6244; tau32 0.548/0.733; mult 54.70/43.37 |

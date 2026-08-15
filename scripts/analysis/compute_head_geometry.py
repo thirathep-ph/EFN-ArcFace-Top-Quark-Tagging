@@ -12,6 +12,7 @@ Output
 
 import json, gc, time, warnings
 warnings.filterwarnings('ignore')
+from collections import Counter
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -35,9 +36,9 @@ BATCH_SIZE = 1024
 
 NAME_MAP = {0: 'QCD_Core', 1: 'QCD_Edge', 2: 'Top_Core', 3: 'Top_Edge'}
 
-def dglap_power_law(z, alpha, beta):
+def dglap_power_law(z, A, alpha, beta):
     z = np.clip(z, 1e-10, 1 - 1e-10)
-    return z**alpha * (1 - z)**beta
+    return A * z**alpha * (1 - z)**beta
 
 def get_embeddings(model, loader, device):
     model.eval()
@@ -58,6 +59,12 @@ def assign_subclasses(emb, labels):
         if mask.sum() < 10:
             continue
         sl, k = spectral_clustering_subclass(emb[mask], max_k=5)
+        if k >= 2:
+            counts = Counter(sl)
+            order = sorted(counts.keys(), key=lambda c: -counts[c])
+            label_map = {order[0]: 0, order[1]: 1}
+            sl = np.array([label_map.get(l, 0) for l in sl])
+        sl = sl % 2
         sub[mask] = sl + offset
     return sub
 
@@ -82,11 +89,11 @@ def fit_subclass(zg):
     hist, edges = np.histogram(v, bins=30, density=True)
     bc = (edges[:-1] + edges[1:]) / 2
     try:
-        popt, _ = curve_fit(dglap_power_law, bc, hist, p0=[-1.0, 0.0],
-                           bounds=[[-5, -5], [10, 10]], maxfev=10000)
+        popt, _ = curve_fit(dglap_power_law, bc, hist, p0=[1.0, -1.0, 0.0],
+                           bounds=[[0, -5, -5], [100, 10, 10]], maxfev=10000)
         res = hist - dglap_power_law(bc, *popt)
         r2 = 1 - np.sum(res**2) / (np.sum((hist - np.mean(hist))**2) + 1e-12)
-        return {'alpha': float(popt[0]), 'beta': float(popt[1]),
+        return {'A': float(popt[0]), 'alpha': float(popt[1]), 'beta': float(popt[2]),
                 'R2': float(r2), 'N': int(len(v))}
     except Exception:
         return None
@@ -158,7 +165,7 @@ def main():
                    label=f'{sc_name} ($N={len(v):,}$)')
             if fit:
                 z_grid = np.linspace(0.1, 0.5, 100)
-                ax.plot(z_grid, dglap_power_law(z_grid, fit['alpha'], fit['beta']),
+                ax.plot(z_grid, dglap_power_law(z_grid, fit['A'], fit['alpha'], fit['beta']),
                        '-', color=sc_colors[sc_id], linewidth=1.2,
                        label=f'$\\alpha$={fit["alpha"]:.2f}, $R^2$={fit["R2"]:.3f}')
             ax.set_xlabel('$z_g$')
