@@ -59,6 +59,7 @@ command, artifact, and expected value needed to reproduce it.
 | Angular collimation | `generate_angular_collimation.py` (404000) | `experiments/robustness_s16_m05/angular_collimation.png` | scaling exponents |
 | Clustering robustness: k=2 robust (SC vs SKM vs vMF); SKM ARI 0.94 QCD / 0.99 Top | `compute_subclass_clustering.py` | `experiments/subclass_clustering_comparison.json` | QCD SC sil 0.838 vs SKM 0.844; Top all 0.736; vMF degenerate (kappa cap) |
 | Subclass angular concentration (12.6/24.5 deg QCD Core/Edge; 14.8/13.5 deg Top) | `compute_subclass_concentration.py` | `experiments/subclass_concentration_results.json` | rbar + kappa_hat + theta_mean per subclass |
+| Mass-matched DGLAP control (Top 178/174 GeV tau32 0.63/0.46; QCD 64/145 GeV, [95,133) GeV bin Core -1.89 vs Edge -1.38) | `compute_mass_matched_dglap.py` | `experiments/mass_matched_dglap.json` | per-subclass mean mass/tau32 + per-mass-bin alpha/beta/R2/delta_alpha |
 
 ## Statistical claims (Section "Statistical Considerations")
 
