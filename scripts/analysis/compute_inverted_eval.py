@@ -6,7 +6,7 @@ and rewrites every Pareto-front equation in terms of the raw, physical
 sample to verify that metrics are invariant under the (affine) transform.
 
 Usage:
-  python -m scripts.analysis.invert_equation --fit fit_quick.json [--refit]
+  python -m scripts.analysis.compute_inverted_eval --fit fit_quick.json [--refit]
 
 Output:
   experiments/physics_sr/inverted_<mode>.json: raw-space equations + metrics;

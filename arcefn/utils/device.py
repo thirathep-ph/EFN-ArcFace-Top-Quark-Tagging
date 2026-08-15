@@ -12,6 +12,14 @@ point of change for device management across the entire project.
 Usage:
     from arcefn.utils.device import get_device, empty_cache, amp_available, get_amp_scaler
     device, backend = get_device()
+
+NOTE (this machine): the project venv pins ``torch==2.3.1`` +
+``torch-directml`` (AMD Radeon RX 5700 XT).  torch-directml is
+version-locked to the torch 2.3.x series: upgrading torch beyond 2.3.x
+breaks the DML plugin and silently falls back to CPU.  Also,
+``torch.__version__`` reporting ``2.3.1+cpu`` is expected and correct
+for DirectML installs (the plugin sits on top of the CPU wheel) — do
+not "fix" it by reinstalling a different torch build.
 """
 import torch
 
@@ -29,7 +37,9 @@ def get_device() -> tuple[torch.device, str]:
         backend-specific operations (AMP, cache clearing, etc.).
     """
     # Priority 1: DirectML (AMD GPU on Windows)
-    # Requires: pip install torch-directml
+    # Requires: pip install torch-directml — and numpy<2, because the DML
+    # plugin is compiled against NumPy 1.x and its import fails under
+    # NumPy 2.x (RuntimeError, not ImportError → silent CPU fallback).
     try:
         import torch_directml  # noqa: F401
         dml_device = torch_directml.device()
@@ -37,6 +47,11 @@ def get_device() -> tuple[torch.device, str]:
         return dml_device, 'dml'
     except ImportError:
         pass
+    except Exception as exc:
+        print(
+            f"  WARNING: torch-directml import failed ({exc!r}) — falling back to CUDA/CPU. "
+            "If this machine has an AMD GPU, downgrade numpy: pip install 'numpy<2'"
+        )
 
     # Priority 2: CUDA (NVIDIA GPU on any OS)
     if torch.cuda.is_available():

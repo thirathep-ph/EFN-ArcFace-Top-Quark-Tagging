@@ -20,6 +20,7 @@ from arcefn.data.loader import load_awkward, get_h5_len
 from arcefn.utils.physics import compute_features, print_feature_stats
 from arcefn.utils.device import get_device
 from arcefn.utils.paths import DATA_DIR, EXPERIMENTS
+from arcefn.utils.figure_style import apply_style, panel_label, add_grid, save_fig, COLORS, LEGEND_KWARGS
 OUT = EXPERIMENTS / 'eda'
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -27,7 +28,6 @@ TRAIN_H5 = str(DATA_DIR / 'train.h5')
 VAL_H5 = str(DATA_DIR / 'val.h5')
 TEST_H5 = str(DATA_DIR / 'test.h5')
 N_SUBSET = 100_000
-plt.rcParams.update({'font.size': 11, 'figure.dpi': 150})
 
 
 # ── 1. Dataset statistics ───────────────────────────────────────────
@@ -107,6 +107,7 @@ def compute_substructure() -> dict:
 # ── 3. Plotting ─────────────────────────────────────────────────────
 def plot_fig1_class_balance(stats_list: list[dict], outdir: Path):
     """Fig A1: Dataset overview — split sizes + class balance."""
+    apply_style()
     fig, axes = plt.subplots(1, 2, figsize=(9, 4))
 
     splits = [s['split'] for s in stats_list]
@@ -135,14 +136,12 @@ def plot_fig1_class_balance(stats_list: list[dict], outdir: Path):
     axes[1].set_ylim(0, 100)
 
     plt.tight_layout()
-    fpath = outdir / 'eda_figA1_dataset_overview.png'
-    fig.savefig(fpath, bbox_inches='tight', dpi=150)
-    print(f"  Saved {fpath}")
-    plt.close(fig)
+    save_fig(fig, 'eda_figA1_dataset_overview.png')
 
 
 def plot_fig2_kinematics(full: dict, outdir: Path):
     """Fig A2: Kinematics — pT, eta, mass, multiplicity (2x2)."""
+    apply_style()
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
     labels = full['labels']
     top_mask = labels == 1
@@ -169,14 +168,12 @@ def plot_fig2_kinematics(full: dict, outdir: Path):
              "Number of constituents", r"Constituent Multiplicity", xlim=(0, 200))
 
     plt.tight_layout()
-    fpath = outdir / 'eda_figA2_kinematics.png'
-    fig.savefig(fpath, bbox_inches='tight', dpi=150)
-    print(f"  Saved {fpath}")
-    plt.close(fig)
+    save_fig(fig, 'eda_figA2_kinematics.png')
 
 
 def plot_fig3_substructure(sub: dict, outdir: Path):
     """Fig A3: All 10 substructure features (2x5 grid)."""
+    apply_style()
     feats, labels = sub['features'], sub['labels']
     names_tex = sub['tex_names']
     top_mask = labels == 1
@@ -231,29 +228,26 @@ def plot_fig4_correlation(sub: dict, outdir: Path):
     corr = np.corrcoef(feats.T)
     mask = np.triu(np.ones_like(corr, dtype=bool), k=1)
 
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots(figsize=(8, 7))
     cmap = plt.cm.RdBu_r
     im = ax.imshow(corr, cmap=cmap, vmin=-1, vmax=1)
 
     ax.set_xticks(range(len(names_short)))
     ax.set_yticks(range(len(names_short)))
-    ax.set_xticklabels(names_short, rotation=45, ha='right', fontsize=10)
-    ax.set_yticklabels(names_short, fontsize=10)
+    ax.set_xticklabels(names_short, rotation=45, ha='right')
+    ax.set_yticklabels(names_short)
 
     for i in range(len(names_short)):
         for j in range(len(names_short)):
             if not mask[i, j]:
                 val = corr[i, j]
                 color = 'white' if abs(val) > 0.5 else 'black'
-                ax.text(j, i, f"{val:.2f}", ha='center', va='center', fontsize=7, color=color)
+                ax.text(j, i, f"{val:.2f}", ha='center', va='center',
+                        fontsize=6, color=color)
 
-    fig.colorbar(im, ax=ax, shrink=0.8, label='Pearson r')
-    ax.set_title("Feature Correlation Matrix (100K training events)", fontsize=13)
+    fig.colorbar(im, ax=ax, shrink=0.8, label='Pearson $r$')
     plt.tight_layout()
-    fpath = outdir / 'eda_figA4_correlation.png'
-    fig.savefig(fpath, bbox_inches='tight', dpi=150)
-    print(f"  Saved {fpath}")
-    plt.close(fig)
+    save_fig(fig, 'eda_figA4_correlation.png')
 
 
 # ── Main ─────────────────────────────────────────────────────────────

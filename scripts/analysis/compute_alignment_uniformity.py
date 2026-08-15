@@ -25,6 +25,7 @@ from arcefn.models.efn_linear import TopTaggingLinear
 from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.utils.device import get_device
 from arcefn.utils.clustering import spectral_clustering_subclass
+from arcefn.utils.figure_style import apply_style, panel_label, add_grid, save_fig, COLORS, LEGEND_KWARGS
 
 TEST_H5 = str(DATA_DIR / 'test.h5')
 N_EVENTS = 50000
@@ -61,9 +62,10 @@ def main():
     ]
 
     results = {}
+    apply_style()
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 
-    colors = ['#e41a1c', '#377eb8']
+    colors = [COLORS['top'], COLORS['qcd']]
 
     for idx, (name, model, ckpt_path) in enumerate(models):
         print(f"\n--- {name} ---")
@@ -114,26 +116,24 @@ def main():
                     f'{pct:.0f}%', ha='center', fontsize=7, rotation=90)
 
     # Format panel 1
-    axes[0].set_title('Embedding Norm Distribution\n(raw embeddings)', fontsize=10)
-    axes[0].set_xlabel('||e||₂', fontsize=9)
-    axes[0].set_ylabel('Density', fontsize=9)
+    axes[0].set_xlabel('$\\|\\mathbf{e}\\|_2$')
+    axes[0].set_ylabel('Density')
     axes[0].set_xlim(0, 25)
-    axes[0].legend(fontsize=7)
-    axes[0].grid(True, alpha=0.15)
+    axes[0].legend(**LEGEND_KWARGS)
+    add_grid(axes[0])
+    panel_label(axes[0], 'a')
 
     # Format panel 2
-    axes[1].set_title('Subclass Balance\n(ArcFace: balanced; Linear: unbalanced)', fontsize=10)
-    axes[1].set_ylabel('N events (50k total)', fontsize=9)
+    axes[1].set_ylabel('$N$ events (50k total)')
     axes[1].set_xticks(np.arange(4) + 0.15)
     axes[1].set_xticklabels(['QCD\nCore', 'QCD\nEdge', 'Top\nCore', 'Top\nEdge'], fontsize=7)
-    axes[1].legend(fontsize=7)
-    axes[1].grid(True, alpha=0.15, axis='y')
+    axes[1].legend(**LEGEND_KWARGS)
+    add_grid(axes[1], axis='y')
+    panel_label(axes[1], 'b')
 
     plt.tight_layout()
-    out_png = str(EXPERIMENTS / 'embedding_geometry.png')
-    plt.savefig(out_png, dpi=150, bbox_inches='tight')
-    plt.close()
-    print(f"\nSaved: {out_png}")
+    save_fig(fig, 'embedding_geometry.png')
+    print(f"\nSaved: embedding_geometry.png")
 
     results_json = str(EXPERIMENTS / 'embedding_geometry_results.json')
     with open(results_json, 'w') as f:

@@ -30,7 +30,7 @@ command, artifact, and expected value needed to reproduce it.
 | Robustness dropout 91.84/91.04/88.95/79.23/55.91% | same | same | at 0/10/20/50/80% |
 | Table 4 TwoNN 2.17, PR 1.38, center angle 0.76 rad | `compute_dimensionality.py` (N_EVENTS=50000) | `experiments/dimensionality_results.json` | twonn 2.1749; PR 1.3776; angle 0.7611 rad |
 | Table 4 PCA 2 comps > 99.9% (83.7/16.3) | `compute_interpretation.py` | `experiments/interpretation_full_results.json` | pca_variance [0.837078, 0.162916, ...] |
-| Table 2 DGLAP exponents (Table 2) | `compute_dglap_fit.py` (MAX_EVENTS=404000) | `experiments/ap_dglap_fit_params.json` | QCD_Core -1.267/-1.275/0.999; QCD_Edge -0.859/-0.264/0.995; Top_Core -0.543/0.118/0.967; Top_Edge 1.106/6.600/0.988 |
+| Table 2 DGLAP exponents (Table 2) | `compute_dglap_fit.py` (MAX_EVENTS=404000) | `experiments/dglap_fit_params.json` | QCD_Core -1.267/-1.275/0.999; QCD_Edge -0.859/-0.264/0.995; Top_Core -0.543/0.118/0.967; Top_Edge 1.106/6.600/0.988 |
 | Subclass counts 123,322/78,592/101,260/100,826 | `compute_interpretation.py` | same | n_qcd_core/n_qcd_edge/n_top_core/n_top_edge (canonical spectral partition; an earlier version of the interpretation analysis used KMeans labels, giving 126,514/75,400/100,421/101,665 on the same embeddings — replaced 2026-08-10 so all subclass analyses share the spectral partition of Table 2; the 2026-08-10 spectral rerun of `compute_interpretation.py` reports 123,320/78,594/101,263/100,823, within +/-2-3 events per class of these counts due to float-level differences between fresh inference and the saved embeddings (k=2, both sum to 404,000)) |
 | MI top-5 dims > 0.92 with Mass; effect sizes (d=1.73 QCD, 1.11 Top tau32) | `compute_interpretation.py` | same | top_mi_pairs; effect_sizes |
 | Saliency top-1 ~15%, top-3 ~40%, 12 -> 50%, 28 -> 80% | `compute_saliency.py` (N_EVENTS=5000) | `experiments/saliency_fixed_results.json` | n_for_50pct=12, n_for_80pct=28 |
@@ -38,7 +38,7 @@ command, artifact, and expected value needed to reproduce it.
 | ~8% of jets > 160 GeV misclassified as QCD | `compute_mass_vs_score.py` (50000) | printed diagnostic | 7.6% QCD-like |
 | Injection scan 0.416+-0.004 / -0.516+-0.006 / CE 0.046 | `poc_injection_scan.py` | `experiments/poc_injection_scan_results.json` | margins per 5% step, 20k/step |
 | OOD JetNet30 cos values (W/Z 0.58, gluon 0.39, quark 0.45; top < -0.2 / < -0.6) | `poc_ood_generalization.py` (JETS_PER_CLASS=50000) | `experiments/poc_ood_results.json` | per-class cosine similarities |
-| Head comparison 30/20/25/25 vs 45/5/43/6, R2, beta | `compare_head_geometry.py` (N_EVENTS=50000) | `experiments/head_comparison_params.json` | N per subclass + fit params |
+| Head comparison 30/20/25/25 vs 45/5/43/6, R2, beta | `compute_head_geometry.py` (N_EVENTS=50000) | `experiments/head_geometry_params.json` | N per subclass + fit params |
 | Embedding norms 7.73/4.94 (ArcFace), 3.69/2.40 (Linear) | `compute_alignment_uniformity.py` (50000) | `experiments/embedding_geometry_results.json` | medians + std |
 | EDA table (train 1,211,000 / val 403,000 / test 404,000; means) | `compute_eda.py` | `experiments/eda/eda_stats.json` | per-split stats |
 | EDA supplement sigma(pT)=29, sigma(M)=56, corr 0.94/0.62, tau32 0.55/0.73, mult diff ~11 | `compute_eda_supplement.py` (n=100k, seed 42) | `experiments/eda_supplement_results.json` | pT std 28.738; M std 56.432; corr 0.9436/0.6244; tau32 0.548/0.733; mult 54.70/43.37 |
@@ -66,7 +66,7 @@ cited:
 
 - `comprehensive_analysis_results.json` — orphaned producer script (never in repo); l4 dropout/rotation numbers WRONG
 - `full_analysis_results.json` — old pre-audit numbers
-- `ap_splitting_results.json` — superseded by `ap_dglap_fit_params.json` (bounds change)
+- `ap_splitting_results.json` — superseded by `dglap_fit_params.json` (bounds change)
 - `robustness_results.json`, `robustness_results_table.md` — old s x m sweep, different n and method
 - `bayesian_results*.json`, `decision_tree_results.json`, `dt_rules_results.json`, `grooming_sweep_results.json`, `onnx_results.json`, `emd_validation_results.json`, `interpretation_results.json` — exploratory, not in paper
 - `alignment_uniformity_results.json` — superseded by `embedding_geometry_results.json`
@@ -89,7 +89,7 @@ field of the submission form with the same statement.
 1. **Full-embedding symbolic distillation with SymTorch** (user's choice A, noted 2026-08-07):
    - Goal: replace the ENTIRE learned mapping (per-particle `phi` 128-d and/or the 64-d embedding) with closed-form symbolic expressions, going BEYOND the 2D decision-plane distillation which is capped at ~85.2% accuracy (info loss from the LS plane projection, R2=0.677; see `experiments/esr/plane_ceiling.json`).
    - Tool: `torch-symbolic` (SymTorch, PyPI) — PySR-powered, torch-native, by E. Tan, A. Soubki, M. Cranmer (arXiv 2602.21307). Depends on `pysr`; requires Python >=3.11 (repo venv is 3.12; install via `pip install torch-symbolic`).
-   - Existing POC artifacts to build on: `experiments/esr/{perparticle.npz, jet.npz, phi_sym.json, readout_sym.json, validation_results.json, plane_ceiling.json}`; scripts `compute_esr_targets.py` (exact-plane LS targets), `fit_esr.py` (PySR two-stage), `compute_esr_validate.py` (full-404k closed-form validation), `check_esr_ceiling.py`.
+   - Existing POC artifacts to build on: `experiments/esr/{perparticle.npz, jet.npz, phi_sym.json, readout_sym.json, validation_results.json, plane_ceiling.json}`; scripts `compute_esr_targets.py` (exact-plane LS targets), `fit_esr.py` (PySR two-stage), `compute_esr_validate.py` (full-404k closed-form validation), `compute_esr_ceiling.py`.
    - Open questions when we resume: per-output distillation of the 128-d `phi` map vs end-to-end neuro-symbolic training; whether a hybrid model (symbolic surrogates inside EFN) can match 91.84% accuracy while keeping the ~17x speedup measured for the 2D plane.
 
 2. **vMF options not yet done** (from the subclass-clustering comparison study, `experiments/subclass_clustering_comparison.json`):

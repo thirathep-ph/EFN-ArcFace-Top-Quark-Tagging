@@ -16,6 +16,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import torch
 
+from arcefn.utils.figure_style import apply_style, panel_label, add_grid, save_fig, LEGEND_KWARGS
+
 import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
@@ -29,10 +31,12 @@ device = dev
 print(f"Device: {device} ({backend})")
 
 model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128).to(device)
-sd = torch.load(CHECKPOINT, map_location=device, weights_only=False)
+sd = torch.load(CHECKPOINT, map_location="cpu", weights_only=False)
 model.load_state_dict(sd, strict=True)
 model.eval()
 print(f"Model loaded from {CHECKPOINT}")
+
+apply_style()
 
 N_PAD = 200
 JETS_PER_CLASS = 50000
@@ -115,10 +119,9 @@ for jtype, cname in class_config:
 print(f"\nTotal: {sum(len(v) for v in all_cos_qcd.values())} jets in {total_time:.0f}s")
 
 # ── Figure: 2-panel violin plot ──
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 6))
-
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 class_labels = ['gluon', 'light quark', 'W boson', 'Z boson', 'top quark']
-colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
+colors = ['#377eb8', '#ff7f0e', '#2ca02c', '#e41a1c', '#984ea3']
 
 # Panel (a): cos_sim_QCD
 data_qcd = [all_cos_qcd[c] for c in class_labels]
@@ -129,11 +132,11 @@ for i, pc in enumerate(parts_qcd['bodies']):
     pc.set_alpha(0.6)
 parts_qcd['cmeans'].set_color('black')
 ax1.set_xticks(range(len(class_labels)))
-ax1.set_xticklabels(class_labels, fontsize=11, rotation=15, ha='right')
-ax1.set_ylabel('Cosine similarity to $W_{\\mathrm{QCD}}$', fontsize=13)
-ax1.set_title('(a) QCD prototype', fontsize=13, fontweight='bold')
+ax1.set_xticklabels(class_labels, rotation=15, ha='right')
+ax1.set_ylabel('Cosine similarity to $W_{\\mathrm{QCD}}$')
+panel_label(ax1, '(a)')
 ax1.axhline(y=0, color='gray', linestyle='--', alpha=0.4, lw=0.8)
-ax1.grid(True, axis='y', alpha=0.3)
+add_grid(ax1)
 ax1.set_xlim(-0.6, len(class_labels) - 0.4)
 
 # Panel (b): cos_sim_Top
@@ -145,18 +148,15 @@ for i, pc in enumerate(parts_top['bodies']):
     pc.set_alpha(0.6)
 parts_top['cmeans'].set_color('black')
 ax2.set_xticks(range(len(class_labels)))
-ax2.set_xticklabels(class_labels, fontsize=11, rotation=15, ha='right')
-ax2.set_ylabel('Cosine similarity to $W_{\\mathrm{Top}}$', fontsize=13)
-ax2.set_title('(b) Top prototype', fontsize=13, fontweight='bold')
+ax2.set_xticklabels(class_labels, rotation=15, ha='right')
+ax2.set_ylabel('Cosine similarity to $W_{\\mathrm{Top}}$')
+panel_label(ax2, '(b)')
 ax2.axhline(y=0, color='gray', linestyle='--', alpha=0.4, lw=0.8)
-ax2.grid(True, axis='y', alpha=0.3)
+add_grid(ax2)
 ax2.set_xlim(-0.6, len(class_labels) - 0.4)
 
-fig.suptitle('Out-of-Distribution Generalization: ArcFace Cosine Similarity',
-             fontsize=14, fontweight='bold', y=1.02)
 fig.tight_layout()
-fig.savefig(str(EXPERIMENTS / 'poc_ood_similarity.png'), dpi=200, bbox_inches='tight')
-print(f"\nSaved: {EXPERIMENTS / 'poc_ood_similarity.png'}")
+save_fig(fig, 'poc_ood_similarity.png')
 
 # Summary table
 print(f"\n{'='*80}")

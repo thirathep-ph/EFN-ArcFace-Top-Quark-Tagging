@@ -5,8 +5,8 @@ Fixes the issue where saliency was looking at padding constituents.
 Masks out padding (E=0) before computing gradients.
 
 Reports top 10 most important constituents by saliency magnitude.
-Saves plot to ``EXPERIMENTS / 'saliency_fixed.png'`` and results JSON
-to ``EXPERIMENTS / 'saliency_fixed_results.json'``.
+Saves plot to ``EXPERIMENTS / 'saliency.png'`` and results JSON
+to ``EXPERIMENTS / 'saliency_results.json'``.
 
 Examples
 --------
@@ -27,6 +27,7 @@ from arcefn.utils.paths import DATA_DIR, EXPERIMENTS, MODEL_DIR, CHECKPOINT
 from arcefn.utils.device import get_device
 from arcefn.models.efn_arcface import TopTaggingModel
 from arcefn.data.loader import load_awkward, JetTaggingDataset
+from arcefn.utils.figure_style import apply_style, panel_label, add_grid, save_fig, COLORS, LEGEND_KWARGS
 
 N_EVENTS = 5000
 BATCH_SIZE = 64
@@ -178,48 +179,48 @@ def plot_saliency(results, save_path):
     save_path : Path
         Destination path for the figure.
     """
-    fig, axes = plt.subplots(1, 3, figsize=(18, 7))
+    apply_style()
+    fig, axes = plt.subplots(1, 3, figsize=(14, 5))
 
     ax = axes[0]
     n_show = 50
     ranks = np.arange(n_show)
     mean_sal = results["mean_rank_saliency"][:n_show]
     std_sal = results["std_rank_saliency"][:n_show]
-    ax.fill_between(ranks, mean_sal - std_sal, mean_sal + std_sal, alpha=0.3, color='steelblue')
-    ax.plot(ranks, mean_sal, 'o-', color='steelblue', markersize=3)
-    ax.set_xlabel("Constituent Rank (by saliency)")
-    ax.set_ylabel("Mean Saliency (|d logit/d x|)")
-    ax.set_title("Saliency by Constituent Rank")
-    ax.grid(True, alpha=0.15)
+    ax.fill_between(ranks, mean_sal - std_sal, mean_sal + std_sal, alpha=0.25, color=COLORS['qcd'])
+    ax.plot(ranks, mean_sal, 'o-', color=COLORS['qcd'], markersize=2, lw=0.8)
+    ax.set_xlabel("Constituent rank (by saliency)")
+    ax.set_ylabel("Mean saliency ($|\\partial \\ell / \\partial x|$)")
     ax.set_yscale('log')
+    add_grid(ax)
+    panel_label(ax, 'a')
 
     ax = axes[1]
     n_show_cum = 100
-    ax.plot(np.arange(n_show_cum), results["mean_cumulative_fraction"][:n_show_cum], 'o-', color='darkorange', markersize=3)
-    ax.axhline(0.5, color='gray', linestyle='--', alpha=0.5, label='50%')
-    ax.axhline(0.8, color='gray', linestyle=':', alpha=0.5, label='80%')
-    ax.axhline(0.9, color='red', linestyle='--', alpha=0.5, label='90%')
-    ax.set_xlabel("Number of Top Constituents")
-    ax.set_ylabel("Cumulative Fraction of Total Saliency")
-    ax.set_title("Saliency Concentration")
-    ax.legend()
-    ax.grid(True, alpha=0.15)
+    ax.plot(np.arange(n_show_cum), results["mean_cumulative_fraction"][:n_show_cum], 'o-', color=COLORS['orange'], markersize=2, lw=0.8)
+    ax.axhline(0.5, color='0.5', linestyle='--', lw=0.7, label='50%')
+    ax.axhline(0.8, color='0.5', linestyle=':', lw=0.7, label='80%')
+    ax.axhline(0.9, color=COLORS['top'], linestyle='--', lw=0.7, label='90%')
+    ax.set_xlabel("Number of top constituents")
+    ax.set_ylabel("Cumulative fraction of total saliency")
+    ax.legend(**LEGEND_KWARGS)
+    add_grid(ax)
+    panel_label(ax, 'b')
 
     ax = axes[2]
     top_10_mean = results["top_10_mean"]
     top_10_std = results["top_10_std"]
-    bars = ax.bar(range(10), top_10_mean, yerr=top_10_std, capsize=3,
-                  color='steelblue', edgecolor='black', linewidth=0.5)
-    ax.set_xlabel("Constituent Rank")
-    ax.set_ylabel("Mean Saliency")
-    ax.set_title("Top 10 Most Important Constituents")
-    ax.grid(True, alpha=0.15, axis='y')
+    ax.bar(range(10), top_10_mean, yerr=top_10_std, capsize=2,
+           color=COLORS['qcd'], edgecolor='white', linewidth=0.5)
+    ax.set_xlabel("Constituent rank")
+    ax.set_ylabel("Mean saliency")
+    add_grid(ax, axis='y')
+    panel_label(ax, 'c')
     for i, (v, s) in enumerate(zip(top_10_mean, top_10_std)):
         ax.text(i, v + s + 0.001, f'{v:.4f}', ha='center', va='bottom', fontsize=7)
 
     plt.tight_layout()
-    plt.savefig(save_path, dpi=150, bbox_inches='tight')
-    plt.close()
+    save_fig(fig, save_path.name)
     print(f"  Saved: {save_path}")
 
 
@@ -271,7 +272,7 @@ def main():
     print(f"    Top {n_90} constituents capture 90% of total saliency")
 
     print(f"\nStep 5: Generating plots...")
-    plot_saliency(results, EXPERIMENTS / "saliency_fixed.png")
+    plot_saliency(results, EXPERIMENTS / "saliency.png")
 
     out = {
         "n_events": int(N_EVENTS),
@@ -282,7 +283,7 @@ def main():
         "n_for_80pct": int(n_80),
         "n_for_90pct": int(n_90),
     }
-    json_path = EXPERIMENTS / "saliency_fixed_results.json"
+    json_path = EXPERIMENTS / "saliency_results.json"
     with open(json_path, 'w') as f:
         json.dump(out, f, indent=2)
     print(f"  Saved: {json_path}")

@@ -6,8 +6,8 @@ that match DGLAP theory; Linear (unconstrained) does not.
 
 Output
 ------
-* experiments/head_comparison_params.json â€” fit results
-* experiments/head_comparison.png         â€” 2Ã—4 comparison figure
+* experiments/head_geometry_params.json — fit results
+* experiments/head_geometry.png         — 2x4 comparison figure
 """
 
 import json, gc, time, warnings
@@ -27,6 +27,7 @@ from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.utils.device import get_device
 from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.physics import compute_features
+from arcefn.utils.figure_style import apply_style, panel_label, add_grid, save_fig, SUBCLASS_COLORS, LEGEND_KWARGS
 
 TEST_H5 = str(DATA_DIR / 'test.h5')
 N_EVENTS = 50000
@@ -112,8 +113,10 @@ def main():
     ]
 
     all_results = {}
+    apply_style()
     fig, axes = plt.subplots(2, 4, figsize=(14, 6))
-    colors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3']
+    sc_colors = [SUBCLASS_COLORS['QCD core'], SUBCLASS_COLORS['QCD edge'],
+                 SUBCLASS_COLORS['Top core'], SUBCLASS_COLORS['Top edge']]
 
     for row, (name, model, ckpt_path) in enumerate(models):
         print(f"\n--- {name} ---")
@@ -151,30 +154,28 @@ def main():
             if len(v) < 10:
                 ax.text(0.5, 0.5, 'N<10', ha='center', va='center')
                 continue
-            ax.hist(v, bins=30, density=True, alpha=0.4, color=colors[sc_id],
-                   label=f'{sc_name} (N={len(v)})')
+            ax.hist(v, bins=30, density=True, alpha=0.4, color=sc_colors[sc_id],
+                   label=f'{sc_name} ($N={len(v):,}$)')
             if fit:
                 z_grid = np.linspace(0.1, 0.5, 100)
                 ax.plot(z_grid, dglap_power_law(z_grid, fit['alpha'], fit['beta']),
-                       '-', color=colors[sc_id], linewidth=2,
-                       label=f'a={fit["alpha"]:.2f}, R2={fit["R2"]:.3f}')
+                       '-', color=sc_colors[sc_id], linewidth=1.2,
+                       label=f'$\\alpha$={fit["alpha"]:.2f}, $R^2$={fit["R2"]:.3f}')
             ax.set_xlabel('$z_g$')
             if sc_id == 0:
                 ax.set_ylabel('P($z_g$)')
-            ax.set_title(f'{name}: {sc_name}')
-            ax.legend(fontsize=6)
+            ax.set_title(f'{sc_name}')
+            ax.legend(**{**LEGEND_KWARGS, "fontsize": 6})
 
         all_results[name] = results
 
     plt.tight_layout()
-    out_png = str(EXPERIMENTS / 'head_comparison.png')
-    plt.savefig(out_png, dpi=150, bbox_inches='tight')
-    plt.close()
-    print(f"\nSaved: {out_png}")
+    save_fig(fig, 'head_geometry.png')
+    print(f"\nSaved: head_geometry.png")
 
-    with open(str(EXPERIMENTS / 'head_comparison_params.json'), 'w') as f:
+    with open(str(EXPERIMENTS / 'head_geometry_params.json'), 'w') as f:
         json.dump(all_results, f, indent=2)
-    print("Saved: head_comparison_params.json")
+    print("Saved: head_geometry_params.json")
 
     # Print comparison table
     print(f"\n{'='*70}")

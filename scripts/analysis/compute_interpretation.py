@@ -41,6 +41,10 @@ from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.utils.device import get_device
 from arcefn.utils.physics import compute_features
 from arcefn.utils.clustering import spectral_clustering_subclass
+from arcefn.utils.figure_style import (
+    apply_style, panel_label, add_grid, save_fig, COLORS,
+)
+apply_style()
 
 TEST_H5 = str(DATA_DIR / 'test.h5')
 RESULTS_PATH = str(EXPERIMENTS / 'interpretation_full_results.json')
@@ -372,19 +376,17 @@ def main():
     print("=" * 60)
 
     # Plot 1: MI heatmap
-    fig, ax = plt.subplots(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(9, 6))
     top_emb = np.argsort(class_corr)[::-1][:20]
     im = ax.imshow(mi_matrix[top_emb, :], aspect='auto', cmap='YlOrRd')
     ax.set_yticks(range(len(top_emb)))
-    ax.set_yticklabels([f"Emb {d}" for d in top_emb], fontsize=8)
+    ax.set_yticklabels([f"Emb {d}" for d in top_emb], fontsize=7)
     ax.set_xticks(range(len(FEATURE_NAMES)))
     ax.set_xticklabels(FEATURE_NAMES, rotation=45, ha='right', fontsize=8)
-    ax.set_title(f"Mutual Information: Embedding Dims vs Physics Features (N={len(labels):,})")
-    plt.colorbar(im, label='MI')
-    plt.tight_layout()
-    plt.savefig(str(EXPERIMENTS / "interpretation_full_mi.png"), dpi=150, bbox_inches='tight')
-    plt.close()
-    print("  Saved: interpretation_full_mi.png")
+    ax.set_ylabel('Embedding dimension')
+    ax.set_xlabel('Physics observable')
+    plt.colorbar(im, label='Mutual information (nats)', shrink=0.85, pad=0.02)
+    save_fig(fig, "interpretation_full_mi.png")
 
     # Plot 2: Effect sizes
     fig, axes = plt.subplots(1, 3, figsize=(18, 7))
@@ -413,21 +415,27 @@ def main():
     print("  Saved: interpretation_full_effects.png")
 
     # Plot 3: PCA
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(6, 4))
     n_show = min(10, len(var_exp))
-    ax.bar(range(n_show), var_exp[:n_show], color='steelblue', alpha=0.7, label='Individual')
-    ax.plot(range(n_show), np.cumsum(var_exp[:n_show]), 'ro-', label='Cumulative')
-    ax.axhline(0.9, color='green', linestyle='--', label='90%')
-    ax.axhline(0.99, color='red', linestyle='--', label='99%')
-    ax.set_xlabel('Principal Component')
-    ax.set_ylabel('Variance Explained')
-    ax.set_title('PCA: Embedding Space Dimensionality')
-    ax.legend()
-    ax.grid(True, alpha=0.15)
-    plt.tight_layout()
-    plt.savefig(str(EXPERIMENTS / "interpretation_full_pca.png"), dpi=150, bbox_inches='tight')
-    plt.close()
-    print("  Saved: interpretation_full_pca.png")
+    x = np.arange(n_show)
+    ax.bar(x, var_exp[:n_show], color=COLORS["qcd"], alpha=0.6, width=0.6,
+           edgecolor="white", linewidth=0.3, label='Individual')
+    ax.plot(x, np.cumsum(var_exp[:n_show]), 'o-', color=COLORS["top"],
+            markersize=4, linewidth=1, label='Cumulative')
+    ax.axhline(0.9, color='0.4', linestyle='--', linewidth=0.6, label='90%')
+    ax.axhline(0.99, color='0.2', linestyle=':', linewidth=0.6, label='99%')
+    ax.set_xlabel('Principal component')
+    ax.set_ylabel('Variance explained')
+    ax.set_xticks(x)
+    ax.set_xticklabels([str(i+1) for i in range(n_show)])
+    ax.legend(loc="center right", **{k: v for k, v in {
+        "frameon": True, "fancybox": True, "framealpha": 0.92,
+        "edgecolor": "0.45", "facecolor": "white", "fontsize": 8,
+    }.items()})
+    add_grid(ax, axis='y')
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    save_fig(fig, "interpretation_full_pca.png")
 
     # Save results
     results = {

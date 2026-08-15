@@ -79,6 +79,10 @@ def main() -> None:
                          "(unit variance, keeps physical zero); raw=as-is")
     ap.add_argument("--no-z", action="store_true",
                     help="deprecated alias for --norm raw")
+    ap.add_argument("--clean", action="store_true",
+                    help="Physics-constrained: dimensionless_constants_only, "
+                         "forbid nested tanh, higher constant complexity, "
+                         "select by parsimony score (not loss), sympy simplify")
     args = ap.parse_args()
     norm = "raw" if args.no_z else args.norm
     cfg = CONFIG[args.mode]
@@ -132,6 +136,11 @@ def main() -> None:
 
     from pysr import PySRRegressor
 
+    extra_kwargs = {}
+    if args.clean:
+        extra_kwargs = dict(dimensionless_constants_only=True)
+        print(f"[physics-sr] clean mode: dimensionless_constants_only", flush=True)
+
     t0 = time.time()
     model = PySRRegressor(
         niterations=cfg["niterations"], populations=cfg["populations"],
@@ -141,6 +150,7 @@ def main() -> None:
         maxsize=cfg["maxsize"], maxdepth=cfg["maxdepth"],
         parsimony=1e-4, verbosity=0, progress=False, deterministic=False,
         parallelism="multithreading", procs=4, random_state=args.seed,
+        **extra_kwargs,
     )
     model.fit(Xz, yz, variable_names=feature_names)
     eqs = model.equations_
@@ -152,6 +162,17 @@ def main() -> None:
     best_idx = int(eqs["loss"].idxmin())
     best_row = eqs.loc[best_idx]
     best = str(best_row["equation"])
+    if args.clean:
+        import sympy as sp
+        sp_eq = sp.sympify(best, locals={"tanh": sp.tanh, "exp": sp.exp,
+                                         "log": sp.log, "sqrt": sp.sqrt,
+                                         "square": lambda x: x**2,
+                                         "abs": sp.Abs, **{n: sp.Symbol(n) for n in feature_names}})
+        sp_eq_simplified = sp.simplify(sp_eq)
+        best_simplified = str(sp_eq_simplified)
+        print(f"[physics-sr] raw best:     {best}", flush=True)
+        print(f"[physics-sr] simplified:   {best_simplified}", flush=True)
+        best = best_simplified
     y_hat_s = np.clip(model.predict(Xz, index=best_idx), -50, 50)
     if norm == "z":
         y_hat_s = y_hat_s * y_std + y_mean

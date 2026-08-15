@@ -8,8 +8,8 @@ and compares alpha against DGLAP splitting function predictions:
   - Top Core:  alpha ~  0.0  (W->qqbar flat, no soft divergence)
   - Top Edge:  alpha ~ -0.3  (QCD-like contamination)
 
-Saves figure to ``EXPERIMENTS / 'ap_dglap_fit.png'`` and fit parameters
-to ``EXPERIMENTS / 'ap_dglap_fit_params.json'``.
+Saves figure to ``EXPERIMENTS / 'dglap_fit.png'`` and fit parameters
+to ``EXPERIMENTS / 'dglap_fit_params.json'``.
 
 Examples
 --------
@@ -19,7 +19,6 @@ Run from the project root::
 """
 import time, json
 import numpy as np
-from scipy.optimize import curve_fit
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -33,6 +32,11 @@ from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.models.efn_arcface import TopTaggingModel
 from arcefn.utils.physics import compute_features
 from arcefn.utils.clustering import spectral_clustering_subclass
+from arcefn.utils.figure_style import (
+    apply_style, panel_label, add_grid, save_fig,
+    SUBCLASS_COLORS, LEGEND_KWARGS,
+)
+apply_style()
 
 MAX_EVENTS = 404000
 BATCH_SIZE = 2048
@@ -103,6 +107,7 @@ def fit_zg(zg_values, z_cut=0.1, n_bins=30):
     if len(centers) < 3:
         return None
     try:
+        from scipy.optimize import curve_fit
         popt, _ = curve_fit(ap_power_law, centers, hist, p0=[1.0, -0.5, 0.5],
                             bounds=([0, -5, -5], [100, 10, 10]), maxfev=10000)
         pred = ap_power_law(centers, *popt)
@@ -121,10 +126,10 @@ def main():
     print("=" * 60)
 
     device, _ = get_device()
-
-    model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128).to(device)
-    sd = torch.load(CHECKPOINT, map_location=device, weights_only=False)
+    model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128)
+    sd = torch.load(CHECKPOINT, map_location="cpu", weights_only=False)
     model.load_state_dict(sd, strict=True)
+    model = model.to(device)
     model.eval()
     print(f"  Model loaded from {CHECKPOINT}")
 
@@ -176,8 +181,14 @@ def main():
 
     print("\nStep 5: Fitting AP splitting functions per subclass...")
     results = {}
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    colors = ['blue', 'cyan', 'red', 'orange']
+    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+    panel_labels = ["(a)", "(b)", "(c)", "(d)"]
+    sc_colors = [
+        SUBCLASS_COLORS["QCD core"],
+        SUBCLASS_COLORS["QCD edge"],
+        SUBCLASS_COLORS["Top core"],
+        SUBCLASS_COLORS["Top edge"],
+    ]
 
     for sc in range(4):
         mask = subclass_labels == sc
@@ -197,22 +208,26 @@ def main():
 
         ax = axes[sc // 2, sc % 2]
         zg_plot = zg_sub[(zg_sub > 0.1) & (zg_sub < 0.5)]
-        ax.hist(zg_plot, bins=30, density=True, alpha=0.5, color=colors[sc], label='Data')
+        ax.hist(zg_plot, bins=30, density=True, alpha=0.45, color=sc_colors[sc],
+                edgecolor="white", linewidth=0.3, label='Data')
         if fit:
             zg_range = np.linspace(0.1, 0.5, 100)
             ax.plot(zg_range, ap_power_law(zg_range, fit['A'], fit['alpha'], fit['beta']),
-                    'k-', lw=2, label=f'Fit: alpha={fit["alpha"]:.2f}, R^2={fit["r2"]:.3f}')
+                    color="0.2", linewidth=1.2,
+                    label=f'Fit: $\\alpha$={fit["alpha"]:.2f}, $R^2$={fit["r2"]:.3f}')
         ax.set_xlabel('$z_g$')
         ax.set_ylabel('$P(z_g)$')
-        ax.set_title(f'{name} -- Theory: {DGLAP_DESC[sc]}')
-        ax.legend(fontsize=8)
-        ax.grid(True, alpha=0.15)
+        panel_label(ax, panel_labels[sc])
+        display_name = name.replace("_", " ")
+        ax.text(0.97, 0.95, display_name, transform=ax.transAxes,
+                fontsize=9, ha='right', va='top',
+                bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8, edgecolor='0.7'))
+        ax.legend(loc="upper right", **{k: v for k, v in LEGEND_KWARGS.items() if k not in ("ncol",)})
+        add_grid(ax)
+        ax.set_xlim(0.08, 0.52)
 
-    plt.tight_layout()
-    plot_path = EXPERIMENTS / 'ap_dglap_fit.png'
-    plt.savefig(plot_path, dpi=150, bbox_inches='tight')
-    plt.close()
-    print(f"\n  Saved: {plot_path}")
+    plt.tight_layout(w_pad=1.5, h_pad=1.2)
+    save_fig(fig, "dglap_fit.png")
 
     print(f"\n{'='*60}\nDGLAP COMPARISON TABLE\n{'='*60}")
     print(f"  {'Subclass':12s}  {'alpha_fit':>9s}  {'alpha_DGLAP':>11s}  {'Delta':>7s}  {'beta':>7s}  {'R^2':>6s}  {'N':>8s}")
@@ -225,7 +240,7 @@ def main():
         else:
             print(f"  {name:12s}  {'FAILED':>9s}")
 
-    json_path = EXPERIMENTS / 'ap_dglap_fit_params.json'
+    json_path = EXPERIMENTS / 'dglap_fit_params.json'
     with open(json_path, 'w') as f:
         json.dump(results, f, indent=2)
     print(f"\n  Saved: {json_path}")

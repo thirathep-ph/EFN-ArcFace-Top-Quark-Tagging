@@ -30,6 +30,11 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from arcefn.utils.paths import EXPERIMENTS, DATA_DIR
+from arcefn.utils.figure_style import (
+    apply_style, panel_label, add_grid, save_fig,
+    COLORS, LEGEND_KWARGS, PAPER_FIGURES,
+)
+apply_style()
 from arcefn.models.efn_arcface import TopTaggingModel
 from arcefn.data.loader import load_awkward, get_h5_len
 from arcefn.utils.device import get_device
@@ -385,16 +390,16 @@ def main():
     print("=" * 60)
 
     # Plot 1: ROC curves with bootstrap CI shading
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(7, 5.5))
     display_names = {
         "arcface_s16_m05": "EFN + ArcFace (ours)",
         "linear_seed42": "EFN + Linear",
         "coslinear_seed42": "EFN + CosLinear",
     }
     colors = {
-        "arcface_s16_m05": "#1f77b4",
-        "linear_seed42": "#2ca02c",
-        "coslinear_seed42": "#d62728",
+        "arcface_s16_m05": COLORS["qcd"],
+        "linear_seed42": COLORS["green"],
+        "coslinear_seed42": COLORS["top"],
     }
 
     for name in model_names:
@@ -422,19 +427,18 @@ def main():
                         np.clip(mean_tpr + 1.96 * std_tpr, 0, 1),
                         color=colors.get(name, None), alpha=0.15)
 
-    ax.plot([0, 1], [0, 1], 'k--', alpha=0.5)
+    ax.plot([0, 1], [0, 1], 'k--', alpha=0.5, linewidth=0.6)
     ax.set_xlabel('False Positive Rate')
     ax.set_ylabel('True Positive Rate')
-    ax.set_title(f'ROC Curves ({n_use:,} Test Events)')
-    ax.legend(fontsize=9)
-    ax.grid(True, alpha=0.15)
-    plt.tight_layout()
-    plt.savefig(str(EXPERIMENTS / "final_roc_curves.png"), dpi=200, bbox_inches='tight')
-    plt.close()
-    print("  Saved: final_roc_curves.png")
+    panel_label(ax, "(a)", loc="left")
+    ax.legend(loc="lower right", **{k: v for k, v in LEGEND_KWARGS.items() if k != "ncol"})
+    add_grid(ax)
+    ax.set_xlim(-0.01, 1.01)
+    ax.set_ylim(-0.01, 1.01)
+    save_fig(fig, "final_roc_curves.png")
 
     # Plot 2: Rejection rates line curve
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(7, 5.5))
     tpr_labels = ["tpr_30", "tpr_50", "tpr_70", "tpr_80", "tpr_90", "tpr_95"]
     tpr_values = [0.30, 0.50, 0.70, 0.80, 0.90, 0.95]
 
@@ -444,20 +448,17 @@ def main():
             r = rejection_results[name]["rejection_rates"].get(tpr_key, {})
             rejections.append(r.get("rejection", 0) or 0)
         ax.plot(tpr_values, rejections, 'o-', color=colors.get(name, None),
-                label=display_names.get(name, name[:15]), linewidth=2, markersize=6)
+                label=display_names.get(name, name[:15]), linewidth=1.2, markersize=5)
 
     ax.set_xlabel('Signal Efficiency (TPR)')
-    ax.set_ylabel('Background Rejection (1/FPR)')
-    ax.set_title('Background Rejection at Fixed Signal Efficiency')
+    ax.set_ylabel('Background Rejection ($1/\\mathrm{FPR}$)')
+    panel_label(ax, "(b)", loc="left")
     ax.set_xticks(tpr_values)
     ax.set_xticklabels([f'{int(v*100)}%' for v in tpr_values])
-    ax.legend(fontsize=9)
-    ax.grid(True, alpha=0.3)
+    ax.legend(loc="upper right", **{k: v for k, v in LEGEND_KWARGS.items() if k != "ncol"})
+    add_grid(ax)
     ax.set_yscale('log')
-    plt.tight_layout()
-    plt.savefig(str(EXPERIMENTS / "final_rejection_rates.png"), dpi=200, bbox_inches='tight')
-    plt.close()
-    print("  Saved: final_rejection_rates.png")
+    save_fig(fig, "final_rejection_rates.png")
 
     # Plot 3: NMI / ARI heatmaps
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))

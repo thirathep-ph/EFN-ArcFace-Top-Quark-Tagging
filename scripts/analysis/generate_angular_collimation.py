@@ -14,6 +14,7 @@ from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.utils.device import get_device
 from arcefn.utils.physics import compute_features
 from arcefn.utils.clustering import spectral_clustering_subclass
+from arcefn.utils.figure_style import apply_style, panel_label, add_grid, save_fig, SUBCLASS_COLORS, LEGEND_KWARGS
 
 TEST_H5 = str(DATA_DIR / 'test.h5')
 N_EVENTS = 404000  # full test set
@@ -25,7 +26,7 @@ def main():
 
     model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128)
     ckpt = str(MODEL_DIR / 'checkpoint.pt')
-    sd = torch.load(ckpt, map_location=device, weights_only=False)
+    sd = torch.load(ckpt, map_location="cpu", weights_only=False)
     model.load_state_dict(sd, strict=True)
     model.to(device)
     model.eval()
@@ -92,47 +93,40 @@ def main():
             sc_map[top_mask & (subclass_labels == (sc + 1))] = offset + i
     sc_map_final = sc_map
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-    qcd_colors = ['#a1d99b', '#74c476', '#41ab5d', '#238b45']
-    top_colors = ['#9ecae1', '#6baed6', '#4292c6', '#2171b5']
+    apply_style()
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    qcd_sc_colors = [SUBCLASS_COLORS['QCD core'], SUBCLASS_COLORS['QCD edge'], '#66c2a5', '#2ca02c']
+    top_sc_colors = [SUBCLASS_COLORS['Top core'], SUBCLASS_COLORS['Top edge'], '#9467bd', '#8c564b']
 
-    max_plot = 25000  # subsample plot for clarity, full N used in label
+    max_plot = 25000
     rng = np.random.RandomState(42)
     for i, sc_idx in enumerate(active_qcd):
         mask = (sc_map_final == (i)) & (theta_g > 0.01) & (theta_g < 1.5) & (two_m_pt > 0.01) & (two_m_pt < 1.5)
         idx_plot = rng.choice(np.where(mask)[0], min(max_plot, mask.sum()), replace=False)
-        label = f"QCD Subclass {sc_idx} (N={mask.sum()})"
+        label = f"Subclass {sc_idx} ($N={mask.sum():,}$)"
         axes[0].scatter(two_m_pt[idx_plot], theta_g[idx_plot], alpha=0.15, s=3,
-                       color=qcd_colors[i % len(qcd_colors)], label=label)
+                       color=qcd_sc_colors[i % len(qcd_sc_colors)], label=label)
 
     for i, sc_idx in enumerate(active_top):
         idx = len(active_qcd) + i
         mask = (sc_map_final == idx) & (theta_g > 0.01) & (theta_g < 1.5) & (two_m_pt > 0.01) & (two_m_pt < 1.5)
         idx_plot = rng.choice(np.where(mask)[0], min(max_plot, mask.sum()), replace=False)
-        label = f"Top Subclass {sc_idx} (N={mask.sum()})"
+        label = f"Subclass {sc_idx} ($N={mask.sum():,}$)"
         axes[1].scatter(two_m_pt[idx_plot], theta_g[idx_plot], alpha=0.15, s=3,
-                       color=top_colors[i % len(top_colors)], label=label)
+                       color=top_sc_colors[i % len(top_sc_colors)], label=label)
 
-    for ax, lbl in [(axes[0], "QCD Subclasses"), (axes[1], "Top Subclasses")]:
-        ax.plot([0, 1.5], [0, 1.5], 'k--', lw=1.5, label=r'$\Delta R = 2M/p_T$')
-        ax.set_xlabel(r"$2M/p_T$ (predicted $\Delta R$)")
-        ax.set_ylabel(r"$\theta_g$ (measured)")
-        ax.set_title(lbl)
+    for idx_ax, (ax, lbl) in enumerate(zip(axes, ["QCD", "Top"])):
+        ax.plot([0, 1.5], [0, 1.5], 'k--', lw=0.8, label=r'$\Delta R = 2M/p_T$')
+        ax.set_xlabel(r"$2M/p_T$")
+        ax.set_ylabel(r"$\theta_g$")
         ax.set_xlim(0, 1.2); ax.set_ylim(0, 1.5)
-        ax.legend(fontsize=8, loc='upper left')
-        ax.grid(True, alpha=0.15)
+        ax.legend(loc='lower right', **{**LEGEND_KWARGS, "fontsize": 7})
+        add_grid(ax)
+        panel_label(ax, chr(ord('a') + idx_ax))
 
-    plt.suptitle(r"Relativistic Angular Scaling: $\theta_g \approx 2M/p_T$", fontsize=13, y=1.02)
     plt.tight_layout()
     out = MODEL_DIR / 'angular_collimation.png'
-    plt.savefig(str(out), dpi=200, bbox_inches='tight')
-    plt.close()
-    print(f"Saved: {out}")
-
-    paper_fig = os.path.join(os.path.dirname(os.path.dirname(str(MODEL_DIR))), 'paper', 'figures', 'angular_collimation.png')
-    from shutil import copy2
-    copy2(str(out), paper_fig)
-    print(f"Copied: {paper_fig}")
+    save_fig(fig, 'angular_collimation.png')
 
 if __name__ == '__main__':
     main()

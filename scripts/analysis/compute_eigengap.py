@@ -26,6 +26,7 @@ from arcefn.utils.device import get_device
 from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.models.efn_arcface import TopTaggingModel
 from arcefn.utils.clustering import estimate_clusters_eigengap
+from arcefn.utils.figure_style import apply_style, panel_label, add_grid, save_fig, COLORS, LEGEND_KWARGS
 
 MAX_EVENTS = 80000
 BATCH_SIZE = 2048
@@ -71,7 +72,8 @@ def main():
 
     print("Computing eigengap spectra...")
     results = {}
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    apply_style()
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
     for idx, (class_name, class_val) in enumerate([("QCD", 0), ("Top", 1)]):
         mask = preds == class_val
@@ -81,33 +83,34 @@ def main():
         k_opt, evals = estimate_clusters_eigengap(X, max_k=10)
 
         ax = axes[idx]
-        n_show = min(8, len(evals))  # only show first 8 eigenvalues
+        n_show = min(8, len(evals))
         ks = np.arange(1, n_show + 1)
-        ax.plot(ks, evals[:n_show], 'bo-', markersize=6, linewidth=2, label='Eigenvalues')
-        ax.axvline(k_opt, color='red', linestyle='--', linewidth=2,
-                   label=f'Optimal k = {k_opt}')
+        color = COLORS['qcd'] if class_name == "QCD" else COLORS['top']
+        ax.plot(ks, evals[:n_show], 'o-', color=color, markersize=5, linewidth=1.2, label='Eigenvalues')
+        ax.axvline(k_opt, color='0.3', linestyle='--', linewidth=0.8,
+                   label=f'Optimal $k$ = {k_opt}')
 
-        # Inset: eigengap bar chart (large, prominent)
+        # Inset: eigengap bar chart
         gaps = np.diff(evals[:n_show])
         gap_ks = np.arange(2, n_show + 1)
         ax2 = ax.inset_axes([0.35, 0.35, 0.6, 0.55])
-        bar_colors = ['red' if k == k_opt else '#4a9e4a' for k in gap_ks]
-        ax2.bar(gap_ks, gaps, width=0.6, color=bar_colors, alpha=0.8, edgecolor='black', linewidth=0.5)
-        ax2.axvline(k_opt, color='red', linestyle='--', linewidth=1.5)
-        ax2.set_xlabel('k', fontsize=11, fontweight='bold')
-        ax2.set_ylabel('Gap', fontsize=11, fontweight='bold')
-        ax2.tick_params(labelsize=10)
-        ax2.set_title('Eigengaps', fontsize=12, fontweight='bold')
+        bar_colors = [COLORS['top'] if k == k_opt else '0.65' for k in gap_ks]
+        ax2.bar(gap_ks, gaps, width=0.6, color=bar_colors, alpha=0.8, edgecolor='white', linewidth=0.5)
+        ax2.axvline(k_opt, color='0.3', linestyle='--', linewidth=0.8)
+        ax2.set_xlabel('$k$', fontsize=9)
+        ax2.set_ylabel('Gap', fontsize=9)
+        ax2.tick_params(labelsize=8)
+        ax2.set_title('Eigengaps', fontsize=9, pad=2)
         ax2.spines['top'].set_visible(False)
         ax2.spines['right'].set_visible(False)
 
-        ax.set_xlabel('Eigenvalue index $k$', fontsize=12)
-        ax.set_ylabel(r'$\lambda_k$', fontsize=12)
-        ax.set_title(f'{class_name} Embeddings ($N={len(X):,}$)', fontsize=13)
+        ax.set_xlabel('Eigenvalue index $k$')
+        ax.set_ylabel(r'$\lambda_k$')
         ax.set_xticks(ks)
-        ax.legend(fontsize=10, loc='upper right')
-        ax.grid(True, alpha=0.15)
+        ax.legend(loc='lower right', **LEGEND_KWARGS)
+        add_grid(ax)
         ax.set_xlim(0.5, n_show + 0.5)
+        panel_label(ax, chr(ord('a') + idx))
 
         results[class_name] = {
             'optimal_k': int(k_opt),
@@ -115,11 +118,9 @@ def main():
             'eigenvalues': [float(v) for v in evals],
         }
 
-    plt.suptitle('Eigengap Heuristic: Optimal Number of Subclasses', fontsize=14, y=1.02)
     plt.tight_layout()
     save_path = EXPERIMENTS / 'eigengap_spectrum.png'
-    plt.savefig(save_path, dpi=150, bbox_inches='tight')
-    plt.close()
+    save_fig(fig, 'eigengap_spectrum.png')
     print(f"\n  Saved: {save_path}")
 
     print(f"\nResults: QCD optimal_k={results['QCD']['optimal_k']}, Top optimal_k={results['Top']['optimal_k']}")

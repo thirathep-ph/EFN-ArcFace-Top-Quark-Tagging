@@ -27,6 +27,7 @@ from torch.utils.data import DataLoader
 from arcefn.utils.paths import EXPERIMENTS, DATA_DIR, CHECKPOINT
 from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.models.efn_arcface import TopTaggingModel
+from arcefn.utils.figure_style import apply_style, panel_label, add_grid, save_fig, COLORS, LEGEND_KWARGS
 from arcefn.utils.physics import compute_features
 from arcefn.utils.device import get_device
 
@@ -81,7 +82,8 @@ def main():
     print(f"  Done in {time.time()-t0:.0f}s")
 
     print("\nStep 4: Plotting...")
-    fig, axes = plt.subplots(1, 2, figsize=(18, 8))
+    apply_style()
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
     # Left: scatter subsample
     ax = axes[0]
@@ -90,32 +92,31 @@ def main():
     qcd = labels[idx] == 0
     top = labels[idx] == 1
     ax.scatter(jet_mass[idx][qcd], top_scores[idx][qcd],
-               c='blue', alpha=0.3, s=2, label='QCD', rasterized=True)
+               c=COLORS['qcd'], alpha=0.3, s=2, label='QCD', rasterized=True)
     ax.scatter(jet_mass[idx][top], top_scores[idx][top],
-               c='red', alpha=0.3, s=2, label='Top', rasterized=True)
-    ax.axhline(0.5, color='black', linestyle='--', lw=1.5, label='Decision boundary')
-    ax.set_xlabel('Jet Mass (GeV)')
-    ax.set_ylabel('P(Top | jet)')
-    ax.set_title(f'Mass vs Model Score (n={n_plot:,})')
-    ax.legend(markerscale=5)
-    ax.grid(True, alpha=0.15)
+               c=COLORS['top'], alpha=0.3, s=2, label='Top', rasterized=True)
+    ax.axhline(0.5, color='0.3', linestyle='--', lw=0.8, label='Decision boundary')
+    ax.set_xlabel('Jet mass (GeV)')
+    ax.set_ylabel('$P(\\mathrm{top} \\mid \\mathrm{jet})$')
+    ax.legend(markerscale=5, **LEGEND_KWARGS)
+    add_grid(ax)
+    panel_label(ax, 'a')
 
     # Right: 2D density all events (same x-range as left for consistency)
     ax = axes[1]
     h = ax.hist2d(jet_mass, top_scores, bins=(80, 80), cmap='viridis',
                   range=[[0, 350], [0, 1]])
     plt.colorbar(h[3], ax=ax, label='Count')
-    ax.axhline(0.5, color='white', linestyle='--', lw=1.5, label='Decision boundary')
-    ax.set_xlabel('Jet Mass (GeV)')
-    ax.set_ylabel('P(Top | jet)')
-    ax.set_title(f'Mass vs Model Score — Density ({len(jet_mass):,} events)')
-    ax.legend()
-    ax.grid(True, alpha=0.1)
+    ax.axhline(0.5, color='white', linestyle='--', lw=0.8, label='Decision boundary')
+    ax.set_xlabel('Jet mass (GeV)')
+    ax.set_ylabel('$P(\\mathrm{top} \\mid \\mathrm{jet})$')
+    ax.legend(**LEGEND_KWARGS)
+    add_grid(ax)
+    panel_label(ax, 'b')
 
     plt.tight_layout()
     save_path = os.path.join(str(EXPERIMENTS), 'mass_vs_score_scatter.png')
-    plt.savefig(save_path, dpi=150, bbox_inches='tight')
-    plt.close()
+    save_fig(fig, 'mass_vs_score_scatter.png')
     print(f"\n  Saved: {save_path}")
 
     print(f"\n{'='*60}\nDIAGNOSTIC\n{'='*60}")

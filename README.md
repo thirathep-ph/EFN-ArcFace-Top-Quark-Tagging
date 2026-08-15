@@ -126,14 +126,13 @@ scripts/analysis/                   # Paper figure & analysis scripts (all resul
 +-- generate_paper_figures.py           # Fig: UMAP, Lund planes, subclass physics
 +-- compute_eda.py                      # Appendix: EDA figures (kinematics, substructure)
 +-- compute_svd_variance.py             # SVD dimensionality analysis
-+-- compare_head_geometry.py            # ArcFace vs Linear head comparison
++-- compute_head_geometry.py            # ArcFace vs Linear head comparison
 +-- compute_alignment_uniformity.py     # Alignment & uniformity analysis
 +-- generate_angular_collimation.py     # Angular collimation ΔR ≈ 2M/pT
 +-- poc_ood_generalization.py           # OOD generalization (JetNet dataset)
 +-- poc_mass_decoupled_accuracy.py      # Mass-decoupled accuracy test
 +-- poc_injection_scan.py               # Injection scan (signal fraction sweep)
 +-- poc_embedding_physics_manifold.py   # Embedding-physics manifold analysis
-+-- make_combined_figure.py             # Combiner for multi-panel figures
 
 data/                               # Datasets (not tracked in git)
 +-- top_tagging/                    # Top Tagging Reference Dataset (H5)
@@ -195,7 +194,7 @@ python scripts/analysis/compute_dimensionality.py      # Table: TwoNN, PR
 python scripts/analysis/compute_robustness_tests.py    # Table: robustness
 python scripts/analysis/generate_paper_figures.py      # UMAP, Lund, subclass
 python scripts/analysis/compute_eda.py                 # Appendix: EDA figures
-python scripts/analysis/compare_head_geometry.py       # ArcFace vs Linear comparison
+python scripts/analysis/compute_head_geometry.py       # ArcFace vs Linear comparison
 python scripts/analysis/compute_alignment_uniformity.py# Embedding quality metrics
 python scripts/analysis/poc_ood_generalization.py      # OOD generalization
 ```

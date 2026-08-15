@@ -38,6 +38,11 @@ from arcefn.utils.paths import DATA_DIR, MODEL_DIR
 from arcefn.models.efn_arcface import TopTaggingModel
 from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.utils.device import get_device
+from arcefn.utils.figure_style import (
+    apply_style, panel_label, add_grid, save_fig,
+    COLORS, SUBCLASS_COLORS, LEGEND_KWARGS, PAPER_FIGURES,
+)
+apply_style()
 from arcefn.utils.physics import compute_features
 from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.plotting import plot_lund_plane
@@ -149,7 +154,7 @@ def main():
 
     checkpoint_path = str(MODEL_DIR / 'checkpoint.pt')
     model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128)
-    sd = torch.load(checkpoint_path, map_location=device, weights_only=False)
+    sd = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     model.load_state_dict(sd, strict=True)
     model.to(device)
     model.eval()
@@ -277,15 +282,15 @@ def main():
     # 7. Plot 1: UMAP prediction status (2-D)
     # ------------------------------------------------------------------
     print("\nGenerating 2D UMAP Prediction Status plot...")
-    fig, ax = plt.subplots(figsize=(10, 8))
-    colors = {'True Negative': '#2ca02c', 'True Positive': '#1f77b4',
-              'False Positive': '#d62728', 'False Negative': '#ff7f0e'}
+    fig, ax = plt.subplots(figsize=(8, 6.5))
+    colors = {'True Negative': COLORS["qcd"], 'True Positive': COLORS["top"],
+              'False Positive': COLORS["top_edge"], 'False Negative': COLORS["orange"]}
     markers = {'True Negative': 'o', 'True Positive': 'o',
                'False Positive': '^', 'False Negative': '^'}
-    sizes = {'True Negative': 4, 'True Positive': 4,
-             'False Positive': 30, 'False Negative': 30}
-    alphas = {'True Negative': 0.15, 'True Positive': 0.15,
-              'False Positive': 0.8, 'False Negative': 0.8}
+    sizes = {'True Negative': 3, 'True Positive': 3,
+             'False Positive': 20, 'False Negative': 20}
+    alphas = {'True Negative': 0.12, 'True Positive': 0.12,
+              'False Positive': 0.7, 'False Negative': 0.7}
 
     for cat in ['True Negative', 'True Positive', 'False Positive', 'False Negative']:
         mask = status == cat
@@ -296,67 +301,56 @@ def main():
 
     for lbl, idx, color in [('W_QCD', 0, 'yellow'), ('W_Top', 1, 'magenta')]:
         ax.scatter(centers_umap[idx, 0], centers_umap[idx, 1],
-                   marker='*', s=500, c=color, edgecolors='black', linewidth=1.5,
+                   marker='*', s=400, c=color, edgecolors='black', linewidth=0.8,
                    label=lbl, zorder=10)
 
-    ax.set_title("EFN + ArcFace Latent Space (UMAP) & Prediction Status", fontsize=14)
     ax.set_xlabel("UMAP 1")
     ax.set_ylabel("UMAP 2")
-    ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize=9)
-    ax.grid(True, alpha=0.15)
-    # Crop empty margins
+    panel_label(ax, "(a)", loc="left")
+    ax.legend(loc='upper left', **{k: v for k, v in LEGEND_KWARGS.items() if k != "ncol"})
+    add_grid(ax)
     x_pad = (umap_coords[:, 0].max() - umap_coords[:, 0].min()) * 0.05
     y_pad = (umap_coords[:, 1].max() - umap_coords[:, 1].min()) * 0.05
     ax.set_xlim(umap_coords[:, 0].min() - x_pad, umap_coords[:, 0].max() + x_pad)
     ax.set_ylim(umap_coords[:, 1].min() - y_pad, umap_coords[:, 1].max() + y_pad)
-    plt.tight_layout()
-    plt.savefig(str(MODEL_DIR / 'umap_prediction_status.png'), dpi=200, bbox_inches='tight')
-    plt.close()
-    print("  Saved: umap_prediction_status.png")
+    save_fig(fig, "umap_prediction_status.png", to_paper=True)
 
     # ------------------------------------------------------------------
     # 8. Plot 2: UMAP subclasses (2-D)
     # ------------------------------------------------------------------
     print("Generating 2D UMAP Subclasses plot...")
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots(figsize=(8, 6.5))
 
     qcd_colors = ['#a1d99b', '#74c476', '#41ab5d', '#238b45', '#005a32']
     top_colors = ['#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#084594']
 
-    # QCD subclasses (negative original labels mapped to 0..Kq-1)
     for i in range(len(active_qcd)):
         mask = (subclass_labels == i)
         if mask.sum() > 0:
             ax.scatter(umap_coords[mask, 0], umap_coords[mask, 1],
-                       c=qcd_colors[i % len(qcd_colors)], s=4, alpha=0.2,
+                       c=qcd_colors[i % len(qcd_colors)], s=3, alpha=0.15,
                        label=f"QCD Subclass {i} (N={mask.sum()})", edgecolors='none')
 
-    # Top subclasses (mapped to offset..offset+Kt-1)
     for i in range(len(active_top)):
         mask = (subclass_labels == (len(active_qcd) + i))
         if mask.sum() > 0:
             ax.scatter(umap_coords[mask, 0], umap_coords[mask, 1],
-                       c=top_colors[i % len(top_colors)], s=4, alpha=0.2,
+                       c=top_colors[i % len(top_colors)], s=3, alpha=0.15,
                        label=f"Top Subclass {i} (N={mask.sum()})", edgecolors='none')
 
     for lbl, idx, color in [('W_QCD', 0, 'yellow'), ('W_Top', 1, 'magenta')]:
         ax.scatter(centers_umap[idx, 0], centers_umap[idx, 1],
-                   marker='*', s=500, c=color, edgecolors='black', linewidth=1.5,
+                   marker='*', s=400, c=color, edgecolors='black', linewidth=0.8,
                    label=lbl, zorder=10)
 
-    ax.set_title("Discovered Subclasses in Latent Space (UMAP + Spectral Clustering)",
-                 fontsize=14)
     ax.set_xlabel("UMAP 1")
     ax.set_ylabel("UMAP 2")
-    ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize=9)
-    ax.grid(True, alpha=0.15)
-    # Crop empty margins
+    panel_label(ax, "(b)", loc="left")
+    ax.legend(loc='upper left', **{k: v for k, v in LEGEND_KWARGS.items() if k != "ncol"})
+    add_grid(ax)
     ax.set_xlim(umap_coords[:, 0].min() - x_pad, umap_coords[:, 0].max() + x_pad)
     ax.set_ylim(umap_coords[:, 1].min() - y_pad, umap_coords[:, 1].max() + y_pad)
-    plt.tight_layout()
-    plt.savefig(str(MODEL_DIR / 'umap_subclasses.png'), dpi=200, bbox_inches='tight')
-    plt.close()
-    print("  Saved: umap_subclasses.png")
+    save_fig(fig, "umap_subclasses.png", to_paper=True)
 
     # ------------------------------------------------------------------
     # 9. Stratified ~15 k sample for physics + Lund planes
@@ -417,78 +411,63 @@ def main():
     # 10. Plot 3: Subclass physics distributions (KDE)
     # ------------------------------------------------------------------
     print("Generating subclass physics distributions KDE plots...")
-    fig, axes = plt.subplots(3, 3, figsize=(18, 14))
+    fig, axes = plt.subplots(3, 3, figsize=(12, 10))
+    panel_labels_grid = ["(a)", "(b)", "(c)", "(d)", "(e)", "(f)", "(g)", "(h)", "(i)"]
+    feature_labels = ["Jet mass (GeV)", r"$\tau_{32}$", r"$\sqrt{d_{12}}$ (GeV)"]
+    row_labels_grid = ["Jet mass", r"$\tau_{32}$", r"$\sqrt{d_{12}}$ (GeV)"]
+    sc_qcd_colors = [COLORS["qcd"], COLORS["qcd_edge"]]
+    sc_top_colors = [COLORS["top"], COLORS["top_edge"]]
+    tp_color = COLORS["qcd"]
+    fn_color = COLORS["orange"]
+    tn_color = COLORS["green"]
+    fp_color = COLORS["top"]
 
-    # Col 0: Top subclasses
     for i in range(len(active_top)):
         sc = len(active_qcd) + i
         mask = phys_subclass == sc
         if mask.sum() > 5:
-            sns.kdeplot(mass_all[mask], ax=axes[0, 0], label=f"Subclass {i}", fill=True, alpha=0.1)
-            sns.kdeplot(tau32_all[mask], ax=axes[1, 0], label=f"Subclass {i}", fill=True, alpha=0.1)
-            sns.kdeplot(d12_all[mask], ax=axes[2, 0], label=f"Subclass {i}", fill=True, alpha=0.1)
-    axes[0, 0].set_title("Discovered Top Subclasses: Jet Mass")
-    axes[0, 0].set_xlabel("Mass (GeV)")
-    axes[0, 0].legend()
-    axes[1, 0].set_title("Discovered Top Subclasses: N-subjettiness Tau32")
-    axes[1, 0].set_xlabel("Tau32")
-    axes[1, 0].legend()
-    axes[2, 0].set_title("Discovered Top Subclasses: Splitting Scale sqrt(d12)")
-    axes[2, 0].set_xlabel("sqrt(d12) (GeV)")
-    axes[2, 0].legend()
+            sns.kdeplot(mass_all[mask], ax=axes[0, 0], fill=True, alpha=0.35,
+                        color=sc_top_colors[i], label=f"Top subclass {i}")
+            sns.kdeplot(tau32_all[mask], ax=axes[1, 0], fill=True, alpha=0.35,
+                        color=sc_top_colors[i], label=f"Top subclass {i}")
+            sns.kdeplot(d12_all[mask], ax=axes[2, 0], fill=True, alpha=0.35,
+                        color=sc_top_colors[i], label=f"Top subclass {i}")
 
-    # Col 1: QCD TN vs FP
     tn_sub = phys_status == 'True Negative'
     fp_sub = phys_status == 'False Positive'
     if tn_sub.sum() > 5:
-        sns.kdeplot(mass_all[tn_sub], ax=axes[0, 1], label="True QCD (TN)", color='green',
-                    fill=True, alpha=0.1)
-        sns.kdeplot(tau32_all[tn_sub], ax=axes[1, 1], label="True QCD (TN)", color='green',
-                    fill=True, alpha=0.1)
-        sns.kdeplot(d12_all[tn_sub], ax=axes[2, 1], label="True QCD (TN)", color='green',
-                    fill=True, alpha=0.1)
+        sns.kdeplot(mass_all[tn_sub], ax=axes[0, 1], fill=True, alpha=0.3, color=tn_color, label="TN (QCD)")
+        sns.kdeplot(tau32_all[tn_sub], ax=axes[1, 1], fill=True, alpha=0.3, color=tn_color, label="TN (QCD)")
+        sns.kdeplot(d12_all[tn_sub], ax=axes[2, 1], fill=True, alpha=0.3, color=tn_color, label="TN (QCD)")
     if fp_sub.sum() > 5:
-        sns.kdeplot(mass_all[fp_sub], ax=axes[0, 1], label="Mistaken QCD (FP)", color='red', lw=2)
-        sns.kdeplot(tau32_all[fp_sub], ax=axes[1, 1], label="Mistaken QCD (FP)", color='red', lw=2)
-        sns.kdeplot(d12_all[fp_sub], ax=axes[2, 1], label="Mistaken QCD (FP)", color='red', lw=2)
-    axes[0, 1].set_title("QCD Mistakes: Jet Mass")
-    axes[0, 1].set_xlabel("Mass (GeV)")
-    axes[0, 1].legend()
-    axes[1, 1].set_title("QCD Mistakes: N-subjettiness Tau32")
-    axes[1, 1].set_xlabel("Tau32")
-    axes[1, 1].legend()
-    axes[2, 1].set_title("QCD Mistakes: Splitting Scale sqrt(d12)")
-    axes[2, 1].set_xlabel("sqrt(d12) (GeV)")
-    axes[2, 1].legend()
+        sns.kdeplot(mass_all[fp_sub], ax=axes[0, 1], fill=False, linewidth=1.2, color=fp_color, label="FP (QCD→Top)")
+        sns.kdeplot(tau32_all[fp_sub], ax=axes[1, 1], fill=False, linewidth=1.2, color=fp_color, label="FP (QCD→Top)")
+        sns.kdeplot(d12_all[fp_sub], ax=axes[2, 1], fill=False, linewidth=1.2, color=fp_color, label="FP (QCD→Top)")
 
-    # Col 2: Top TP vs FN
     tp_sub = phys_status == 'True Positive'
     fn_sub = phys_status == 'False Negative'
     if tp_sub.sum() > 5:
-        sns.kdeplot(mass_all[tp_sub], ax=axes[0, 2], label="True Top (TP)", color='blue',
-                    fill=True, alpha=0.1)
-        sns.kdeplot(tau32_all[tp_sub], ax=axes[1, 2], label="True Top (TP)", color='blue',
-                    fill=True, alpha=0.1)
-        sns.kdeplot(d12_all[tp_sub], ax=axes[2, 2], label="True Top (TP)", color='blue',
-                    fill=True, alpha=0.1)
+        sns.kdeplot(mass_all[tp_sub], ax=axes[0, 2], fill=True, alpha=0.3, color=tp_color, label="TP (Top)")
+        sns.kdeplot(tau32_all[tp_sub], ax=axes[1, 2], fill=True, alpha=0.3, color=tp_color, label="TP (Top)")
+        sns.kdeplot(d12_all[tp_sub], ax=axes[2, 2], fill=True, alpha=0.3, color=tp_color, label="TP (Top)")
     if fn_sub.sum() > 5:
-        sns.kdeplot(mass_all[fn_sub], ax=axes[0, 2], label="Mistaken Top (FN)", color='orange', lw=2)
-        sns.kdeplot(tau32_all[fn_sub], ax=axes[1, 2], label="Mistaken Top (FN)", color='orange', lw=2)
-        sns.kdeplot(d12_all[fn_sub], ax=axes[2, 2], label="Mistaken Top (FN)", color='orange', lw=2)
-    axes[0, 2].set_title("Top Mistakes: Jet Mass")
-    axes[0, 2].set_xlabel("Mass (GeV)")
-    axes[0, 2].legend()
-    axes[1, 2].set_title("Top Mistakes: N-subjettiness Tau32")
-    axes[1, 2].set_xlabel("Tau32")
-    axes[1, 2].legend()
-    axes[2, 2].set_title("Top Mistakes: Splitting Scale sqrt(d12)")
-    axes[2, 2].set_xlabel("sqrt(d12) (GeV)")
-    axes[2, 2].legend()
+        sns.kdeplot(mass_all[fn_sub], ax=axes[0, 2], fill=False, linewidth=1.2, color=fn_color, label="FN (Top→QCD)")
+        sns.kdeplot(tau32_all[fn_sub], ax=axes[1, 2], fill=False, linewidth=1.2, color=fn_color, label="FN (Top→QCD)")
+        sns.kdeplot(d12_all[fn_sub], ax=axes[2, 2], fill=False, linewidth=1.2, color=fn_color, label="FN (Top→QCD)")
 
-    plt.tight_layout()
-    plt.savefig(str(MODEL_DIR / 'subclass_physics_distributions.png'), dpi=200, bbox_inches='tight')
-    plt.close()
-    print("  Saved: subclass_physics_distributions.png")
+    col_titles = ["Top subclasses", "QCD: TN vs FP", "Top: TP vs FN"]
+    for j in range(3):
+        axes[0, j].set_title(col_titles[j], fontsize=9)
+        for i in range(3):
+            panel_label(axes[i, j], panel_labels_grid[i * 3 + j], fontsize=9, pad=4)
+            axes[i, j].set_xlabel(feature_labels[i] if i == 2 else "")
+            axes[i, j].set_ylabel("Density" if j == 0 else "")
+            axes[i, j].legend(fontsize=6.5, loc="upper right",
+                              frameon=True, fancybox=True, framealpha=0.85, edgecolor="0.7")
+            add_grid(axes[i, j])
+
+    plt.tight_layout(w_pad=1.0, h_pad=0.8)
+    save_fig(fig, "subclass_physics_distributions.png", to_paper=True)
 
     # ------------------------------------------------------------------
     # 11. Plot 4: Subclass composition heatmap
@@ -511,17 +490,15 @@ def main():
             row_labels.append(label)
 
     if len(composition_matrix) > 0:
-        plt.figure(figsize=(10, 6))
-        sns.heatmap(composition_matrix, annot=True, fmt=".1f",
+        fig, ax = plt.subplots(figsize=(8, 5))
+        sns.heatmap(composition_matrix, annot=True, fmt=".1f", ax=ax,
                     xticklabels=categories, yticklabels=row_labels,
-                    cmap="YlGnBu", cbar_kws={'label': 'Percentage (%)'})
-        plt.title("Subclass Classification Purity / Composition", fontsize=14)
-        plt.xlabel("Prediction Status")
-        plt.ylabel("Discovered Subclasses")
+                    cmap="YlGnBu", cbar_kws={'label': 'Percentage (%)', 'shrink': 0.8},
+                    annot_kws={"fontsize": 8})
+        ax.set_xlabel("Prediction status")
+        ax.set_ylabel("Discovered subclasses")
         plt.tight_layout()
-        plt.savefig(str(MODEL_DIR / 'subclass_composition_heatmap.png'), dpi=200, bbox_inches='tight')
-        plt.close()
-        print("  Saved: subclass_composition_heatmap.png")
+        save_fig(fig, "subclass_composition_heatmap.png", to_paper=True)
 
     # ------------------------------------------------------------------
     # 12. Plot 5: Lund planes (TP / TN / FP / FN)

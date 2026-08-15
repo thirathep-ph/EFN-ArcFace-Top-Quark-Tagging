@@ -1,0 +1,3 @@
+UserWarning: dcut and exclusive jets for jet-finders other than kt, C/A or genkt with p>=0 should be interpreted with care.
+RuntimeWarning: invalid value encountered in divide
+RuntimeWarning: invalid value encountered in divide

@@ -6,7 +6,7 @@ non-symbolic measures on the full 404k test set:
   1. Univariate AUC per feature (labels vs feature alone).
   2. Random-forest feature importances (subsample, fast).
 
-Run: python -m scripts.analysis.probe_features
+Run: python -m scripts.analysis.compute_feature_probe
 Artifact: experiments/physics_sr/probe_features.json
 """
 from __future__ import annotations
