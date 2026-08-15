@@ -92,4 +92,5 @@ paper/tables/
 # ===== PySR / symbolic-regression scratch (outputs/) =====
 outputs/
 
-
+# training run error logs
+experiments/*.log.err
