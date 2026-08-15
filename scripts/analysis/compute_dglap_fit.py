@@ -1,8 +1,10 @@
 """
-AP Splitting Fit vs DGLAP Theory
-=================================
-Fits P(zg) = A * zg^alpha * (1-zg)^beta per subclass
-and compares alpha against DGLAP splitting function predictions:
+AP Splitting Fit vs DGLAP Reference
+===================================
+Fits P(zg) = A * zg^alpha * (1-zg)^beta per subclass and compares
+alpha against rough reference values (heuristics for display only, NOT
+DGLAP predictions; the LO 1/z soft divergence is an asymptotic statement,
+not a prediction of the fitted global exponent under grooming/Sudakov):
   - QCD Core:  alpha ~ -1.0  (g->gg soft divergence P(z) propto 1/z)
   - QCD Edge:  alpha ~ -0.8  (mixed perturbative / non-perturbative)
   - Top Core:  alpha ~  0.0  (W->qqbar flat, no soft divergence)
@@ -42,8 +44,8 @@ MAX_EVENTS = 404000
 BATCH_SIZE = 2048
 
 SUBCLASS_NAMES = {0: "QCD_Core", 1: "QCD_Edge", 2: "Top_Core", 3: "Top_Edge"}
-DGLAP_ALPHA = {0: -1.0, 1: -0.8, 2: 0.0, 3: -0.3}
-DGLAP_DESC = {
+REFERENCE_ALPHA = {0: -1.0, 1: -0.8, 2: 0.0, 3: -0.3}
+REFERENCE_DESC = {
     0: r"g->gg P(z) $\propto$ 1/z (soft divergence)",
     1: r"Mixed QCD",
     2: r"W->qq (no soft divergence)",
@@ -198,11 +200,11 @@ def main():
 
         if fit:
             results[name] = fit
-            delta = fit['alpha'] - DGLAP_ALPHA[sc]
+            delta = fit['alpha'] - REFERENCE_ALPHA[sc]
             print(f"\n  {name}:")
-            print(f"    alpha_fit = {fit['alpha']:.3f}  |  alpha_DGLAP = {DGLAP_ALPHA[sc]:+.1f}  |  Delta = {delta:+.3f}")
+            print(f"    alpha_fit = {fit['alpha']:.3f}  |  alpha_ref = {REFERENCE_ALPHA[sc]:+.1f}  |  Delta = {delta:+.3f}")
             print(f"    beta = {fit['beta']:.3f}  |  R^2 = {fit['r2']:.4f}  |  N = {fit['n']:,}")
-            print(f"    Theory: {DGLAP_DESC[sc]}")
+            print(f"    Reference: {REFERENCE_DESC[sc]}")
         else:
             print(f"\n  {name}: Fit failed (N={mask.sum():,})")
 
@@ -230,13 +232,13 @@ def main():
     save_fig(fig, "dglap_fit.png")
 
     print(f"\n{'='*60}\nDGLAP COMPARISON TABLE\n{'='*60}")
-    print(f"  {'Subclass':12s}  {'alpha_fit':>9s}  {'alpha_DGLAP':>11s}  {'Delta':>7s}  {'beta':>7s}  {'R^2':>6s}  {'N':>8s}")
+    print(f"  {'Subclass':12s}  {'alpha_fit':>9s}  {'alpha_ref':>11s}  {'Delta':>7s}  {'beta':>7s}  {'R^2':>6s}  {'N':>8s}")
     for sc in range(4):
         name = SUBCLASS_NAMES[sc]
         if name in results:
             r = results[name]
-            d = r['alpha'] - DGLAP_ALPHA[sc]
-            print(f"  {name:12s}  {r['alpha']:>9.3f}  {DGLAP_ALPHA[sc]:>+11.1f}  {d:>+7.3f}  {r['beta']:>7.3f}  {r['r2']:>6.4f}  {r['n']:>8,}")
+            d = r['alpha'] - REFERENCE_ALPHA[sc]
+            print(f"  {name:12s}  {r['alpha']:>9.3f}  {REFERENCE_ALPHA[sc]:>+11.1f}  {d:>+7.3f}  {r['beta']:>7.3f}  {r['r2']:>6.4f}  {r['n']:>8,}")
         else:
             print(f"  {name:12s}  {'FAILED':>9s}")
 
