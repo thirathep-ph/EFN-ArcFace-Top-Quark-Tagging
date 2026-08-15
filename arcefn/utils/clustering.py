@@ -55,6 +55,10 @@ def estimate_clusters_eigengap(X_norm: np.ndarray, max_k: int = 10) -> tuple[int
 
     try:
         k_eigen = min(max_k + 2, n_samples - 2)
+        # M = D^{-1/2} A D^{-1/2} is PSD: A_ij = (1 + cos(theta_ij)) / 2 is a
+        # Gram-based affinity, so all eigenvalues are non-negative and
+        # `which='LM'` returns the largest eigenvalues of M (equivalently the
+        # smallest eigenvalues of L_norm) with no negative-value interleaving.
         vals, _ = eigsh(M_op, k=k_eigen, which='LM')
 
         # eigenvalues of L_norm = 1.0 - vals, sorted in ascending order
@@ -63,8 +67,10 @@ def estimate_clusters_eigengap(X_norm: np.ndarray, max_k: int = 10) -> tuple[int
         max_k_checked = min(max_k, len(eigenvalues) - 2)
         if max_k_checked < 2:
             return 2, eigenvalues
-        gaps = np.diff(eigenvalues[1:max_k_checked + 2])
-        optimal_k = np.argmax(gaps) + 2
+        # Gaps between consecutive non-trivial eigenvalues lambda_1..lambda_{max_k};
+        # argmax + 2 maps the first gap (lambda_2 - lambda_1) to k=2, capped at max_k.
+        gaps = np.diff(eigenvalues[1:max_k_checked + 1])
+        optimal_k = int(np.argmax(gaps) + 2)
         return optimal_k, eigenvalues
     except Exception as e:
         print(f"Warning in eigengap calculation: {e}. Falling back to default k=5.")

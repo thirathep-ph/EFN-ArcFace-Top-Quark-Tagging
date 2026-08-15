@@ -180,7 +180,12 @@ def load_awkward(
         pxs = raw[:, 1:N_CONS*4:4]
         pys = raw[:, 2:N_CONS*4:4]
         pzs = raw[:, 3:N_CONS*4:4]
-        labels = raw[:, 800].astype(np.int8) if raw.shape[1] > 800 else np.zeros(n)
+        if raw.shape[1] > 800:
+            labels = raw[:, 800].astype(np.int8)
+        else:
+            raise ValueError(
+                f"Flat H5 layout missing the label column (shape[1]={raw.shape[1]} <= 800); "
+                "cannot proceed without labels.")
 
     f.close()
     weights = np.ones(n, dtype=np.float32)

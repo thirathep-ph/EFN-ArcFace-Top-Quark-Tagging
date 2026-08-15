@@ -63,16 +63,13 @@ def compute_features(events: ak.Array) -> np.ndarray:
     d23 = ak.to_numpy(np.sqrt(np.abs(cs.exclusive_dmerge(2))))
 
     # --- Shape Features ---
+    # N-subjettiness uses the FastJet wrapper defaults: OnePass_KT axes,
+    # normalized measure, beta=1.0, R0=0.8. R0 cancels in the tau21/tau32
+    # ratios, so its specific value does not affect the downstream ratios.
     nj = cs.njettiness()
     tau1, tau2, tau3 = ak.to_numpy(nj[:, 0]), ak.to_numpy(nj[:, 1]), ak.to_numpy(nj[:, 2])
     tau21 = np.where(tau1 > 1e-10, tau2 / tau1, 1.0)
     tau32 = np.where(tau2 > 1e-10, tau3 / tau2, 1.0)
-
-    # Energy Correlator D2
-    ecf1 = ak.to_numpy(cs.exclusive_jets_energy_correlator(npoint=1, normalized=False))
-    ecf2 = ak.to_numpy(cs.exclusive_jets_energy_correlator(npoint=2, normalized=False))
-    ecf3 = ak.to_numpy(cs.exclusive_jets_energy_correlator(npoint=3, normalized=False))
-    d2 = np.where(ecf2 > 1e-10, ecf3 * (ecf1**3) / (ecf2**3), 0.0)
 
     # --- Groomed Variables (zg, theta_g, nSD) ---
     # Using specific field names from fastjet Python wrapper

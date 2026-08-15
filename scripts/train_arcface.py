@@ -9,10 +9,12 @@ Usage
 -----
 ::
 
-    python scripts/train_arcface.py --epochs 30 --amp
+    python scripts/train_arcface.py --epochs 50 --amp
     python scripts/train_arcface.py --quick
 """
 import json
+import os
+import random
 import time
 import gc
 import argparse
@@ -199,7 +201,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Train EFN + ArcFace (no post-training analysis)")
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
-    parser.add_argument('--epochs', type=int, default=30)
+    parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--max_events', type=int, default=None)
     parser.add_argument('--quick', action='store_true')
     parser.add_argument('--scale', type=float, default=16.0,
@@ -225,6 +227,8 @@ def main():
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
+    random.seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
 
     device, backend_type = get_device()
     use_amp = args.amp and amp_available(backend_type)
@@ -360,7 +364,6 @@ def main():
         tag = " [NEW BEST]" if v_acc > best_acc else ""
         if v_acc > best_acc:
             best_acc = v_acc
-            import os
             os.makedirs(args.checkpoint_dir, exist_ok=True)
             torch.save(model.state_dict(),
                        os.path.join(args.checkpoint_dir, 'checkpoint.pt'))
@@ -371,10 +374,14 @@ def main():
               f"| Val: Acc={v_acc:.4f}{tag}")
 
     # Save training history
-    import os
     os.makedirs(args.output_dir, exist_ok=True)
     with open(os.path.join(args.output_dir, 'history.json'), 'w') as f:
         json.dump(history, f, indent=4)
+
+    # Save a run-config snapshot alongside the checkpoint for reproducibility
+    os.makedirs(args.checkpoint_dir, exist_ok=True)
+    with open(os.path.join(args.checkpoint_dir, 'config.json'), 'w') as f:
+        json.dump(vars(args), f, indent=4, default=str)
 
     print(f"\n[COMPLETE] Best val acc: {best_acc:.4f}")
 
