@@ -1,10 +1,12 @@
 """
-Robustness Tests: pT Rescaling, Azimuthal Rotation, Constituent Dropout
-==================================================================
+Robustness Tests: 4-Momentum Rescaling, Azimuthal Rotation, Constituent Dropout
+================================================================================
 Computes three robustness tests from Table 3 of the paper:
 
-1. **pT Rescaling** — rescale all constituent momenta by factors
-   ``[0.5, 0.8, 1.0, 1.5, 2.0]`` — expected accuracy ~91.8 % invariant (IRC-safe).
+1. **4-Momentum Rescaling** — rescale all constituent four-momenta
+   (E, px, py, pz) by factors ``[0.5, 0.8, 1.0, 1.5, 2.0]`` (a jet-energy-scale
+   variation) — expected accuracy ~91.8 % invariant, by $z$-normalization
+   invariance (energy fractions are invariant under a global momentum scaling).
 2. **Azimuthal Rotation** — rotate constituent phi by angles
    ``[0.0, 0.1, 0.5, 1.0, 2.0]`` rad — expected accuracy ~91.8 % invariant
    (physical azimuthal rotations leave the jet-axis-relative features unchanged).
@@ -123,9 +125,9 @@ def evaluate_accuracy(model, events, labels, device, batch_size=BATCH_SIZE):
 
 # ── Perturbation helpers ─────────────────────────────────────────────
 
-def rescale_pt(events, scale):
+def rescale_4momentum(events, scale):
     """
-    Rescale all constituent 4-momenta by *scale*.
+    Rescale all constituent 4-momenta (E, px, py, pz) by *scale*.
 
     Parameters
     ----------
@@ -263,13 +265,13 @@ def main():
 
     results = {}
 
-    # ── 1. pT Rescaling ──────────────────────────────────────────
-    print("\n--- pT Rescaling ---")
+    # ── 1. 4-Momentum Rescaling ─────────────────────────────────
+    print("\n--- 4-Momentum Rescaling ---")
     pt_accs = []
     pt_times = []
     for scale in PT_SCALES:
         t0 = time.time()
-        scaled = rescale_pt(events, scale)
+        scaled = rescale_4momentum(events, scale)
         acc = evaluate_accuracy(model, scaled, labels, device)
         elapsed = time.time() - t0
         pt_accs.append(acc)
