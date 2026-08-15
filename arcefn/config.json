@@ -46,14 +46,16 @@
     "softdrop_R0": 2.0
   },
   "results": {
-    "best_accuracy": 0.91745,
-    "best_precision": 0.90368,
-    "best_recall": 0.93460,
-    "best_f1": 0.91888,
+    "test_accuracy": 0.9184,
+    "test_accuracy_ci": [0.9176, 0.9192],
+    "test_precision": 0.9009,
+    "test_recall": 0.9403,
+    "test_f1": 0.9202,
     "n_params": 59072,
     "centroid_mass_top_gev": 168.8,
     "centroid_mass_qcd_gev": 63.5,
     "n_subclasses_top": 2,
-    "n_subclasses_qcd": 2
+    "n_subclasses_qcd": 2,
+    "source": "experiments/robustness_s16_m05 (checkpoint.pt 2026-06-24 + embeddings.npz 2026-07-03, test split n=404000)"
   }
 }

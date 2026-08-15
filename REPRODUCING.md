@@ -16,6 +16,13 @@ command, artifact, and expected value needed to reproduce it.
 - Unless stated otherwise: **seed 42**, **no replacement**, and **full 404k test set**.
 - Checkpoints live in `experiments/*/checkpoint.pt` (not tracked in git; regenerate with
   `scripts/train_arcface.py`, `scripts/train_baselines.py`). All result JSONs ARE tracked.
+- Main-run provenance (`experiments/robustness_s16_m05/`): `checkpoint.pt` (2026-06-24) and
+  `embeddings.npz` (2026-07-03) are the authoritative model + embedding artifacts behind every
+  test-set number. `history.json` (2026-08-15) is the training/validation curve (regenerable);
+  its final val_acc is 0.9175, and the paper's 0.9184 is the disjoint test-set accuracy.
+  `arcefn/config.json` was previously populated from the superseded 100-epoch run
+  (`arcface_100ep/metrics.json`, 0.91745 acc / 46,592 params) — corrected 2026-08-15 to the
+  main run (59,072 params).
 
 ## Number -> command -> artifact -> expected value
 
