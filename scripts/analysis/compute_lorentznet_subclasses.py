@@ -56,8 +56,13 @@ def build_model(device: torch.device, checkpoint: str = str(DEFAULT_CHECKPOINT),
 
 def compute_embeddings(device: torch.device, model, batch_size: int = 32,
                        chunk_size: int = 100000, max_events: int = 404000,
-                       max_constits: int = 64) -> tuple[np.ndarray, np.ndarray]:
-    """Chunked forward pass over the full test set -> (embeddings, labels)."""
+                       max_constits: int = 64,
+                       cooldown_s: float = 0.0) -> tuple[np.ndarray, np.ndarray]:
+    """Chunked forward pass over the full test set -> (embeddings, labels).
+
+    cooldown_s: sleep seconds between chunks (reduces sustained GPU load to
+    avoid thermal shutdown on the RX 5700 XT under DirectML).
+    """
     total_len = min(max_events, 404000)
     emb_list, lab_list = [], []
     n_chunks = int(np.ceil(total_len / chunk_size))
@@ -80,6 +85,9 @@ def compute_embeddings(device: torch.device, model, batch_size: int = 32,
             del loader, ds, ev, lab, w
             gc.collect()
             print(f"  chunk {ci + 1}/{n_chunks} done ({time.strftime('%H:%M:%S')})")
+            if cooldown_s > 0 and ci < n_chunks - 1:
+                print(f"  cooldown {cooldown_s}s...")
+                time.sleep(cooldown_s)
     return np.concatenate(emb_list), np.concatenate(lab_list)
 
 
@@ -138,6 +146,10 @@ def main() -> None:
     ap.add_argument("--device", type=str, default="cpu", choices=["cpu", "dml"],
                     help="dml uses the AMD GPU (risk: thermal shutdown under "
                          "sustained load on this machine); cpu is safe/slower")
+    ap.add_argument("--batch_size", type=int, default=32)
+    ap.add_argument("--chunk_size", type=int, default=100000)
+    ap.add_argument("--cooldown", type=float, default=0.0,
+                    help="seconds to sleep between chunks (GPU thermal safety)")
     args = ap.parse_args()
 
     max_events = min(args.max_test_events, 404000)
@@ -157,8 +169,13 @@ def main() -> None:
         ln_emb, ln_labels = z["embeddings"], z["labels"]
         print(f"Loaded cached embeddings {out_emb.name}")
     else:
-        print(f"Computing embeddings on first {max_events} test events (~4 min)...")
-        ln_emb, ln_labels = compute_embeddings(device, model, max_events=max_events)
+        print(f"Computing embeddings on first {max_events} test events "
+              f"(batch {args.batch_size}, chunk {args.chunk_size}, "
+              f"cooldown {args.cooldown}s)...")
+        ln_emb, ln_labels = compute_embeddings(
+            device, model, batch_size=args.batch_size,
+            chunk_size=args.chunk_size, max_events=max_events,
+            cooldown_s=args.cooldown)
         np.savez_compressed(out_emb, embeddings=ln_emb, labels=ln_labels)
         print(f"Saved embeddings -> {out_emb}")
 
