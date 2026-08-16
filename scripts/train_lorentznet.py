@@ -23,6 +23,7 @@ import json
 import os
 import random
 import gc
+import time
 import argparse
 import numpy as np
 import torch
@@ -145,6 +146,9 @@ def main():
     parser.add_argument('--epochs', type=int, default=35)
     parser.add_argument('--warmup_epochs', type=int, default=10,
                         help='ArcFace margin warmup schedule length in epochs')
+    parser.add_argument('--epoch_cooldown', type=float, default=0.0,
+                        help='seconds to sleep after each epoch (GPU thermal '
+                             'safety on the RX 5700 XT under DirectML)')
     parser.add_argument('--max_events', type=int, default=None)
     parser.add_argument('--val_events', type=int, default=None,
                         help='Validation events (default: same as --max_events)')
@@ -318,6 +322,10 @@ def main():
               f"| LR={curr_lr:.6f}")
         print(f"  Train: Loss={t_loss:.4f}, Acc={t_acc:.4f} "
               f"| Val: Acc={v_acc:.4f}{tag}")
+
+        if args.epoch_cooldown > 0 and epoch < args.epochs - 1:
+            print(f"  cooldown {args.epoch_cooldown}s...")
+            time.sleep(args.epoch_cooldown)
 
     os.makedirs(args.output_dir, exist_ok=True)
     with open(os.path.join(args.output_dir, 'history.json'), 'w') as f:
