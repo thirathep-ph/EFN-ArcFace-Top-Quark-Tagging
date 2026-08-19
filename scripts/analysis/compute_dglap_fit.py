@@ -1,25 +1,6 @@
-"""
-AP Splitting Fit vs DGLAP Reference
-===================================
-Fits P(zg) = A * zg^alpha * (1-zg)^beta per subclass and compares
-alpha against rough reference values (heuristics for display only, NOT
-DGLAP predictions; the LO 1/z soft divergence is an asymptotic statement,
-not a prediction of the fitted global exponent under grooming/Sudakov):
-  - QCD Core:  alpha ~ -1.0  (g->gg soft divergence P(z) propto 1/z)
-  - QCD Edge:  alpha ~ -0.8  (mixed perturbative / non-perturbative)
-  - Top Core:  alpha ~  0.0  (W->qqbar flat, no soft divergence)
-  - Top Edge:  alpha ~ -0.3  (QCD-like contamination)
-
-Saves figure to ``EXPERIMENTS / 'dglap_fit.png'`` and fit parameters
-to ``EXPERIMENTS / 'dglap_fit_params.json'``.
-
-Examples
---------
-Run from the project root::
-
-    python scripts/analysis/compute_dglap_fit.py
-"""
-import time, json
+import os
+import time
+import json
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -27,11 +8,12 @@ import matplotlib.pyplot as plt
 import torch
 from torch.utils.data import DataLoader
 from collections import Counter
+from pathlib import Path
 
-from arcefn.utils.paths import DATA_DIR, EXPERIMENTS, MODEL_DIR, CHECKPOINT
+from arcefn.utils.paths import DATA_DIR, EXPERIMENTS
 from arcefn.utils.device import get_device
+from arcefn.utils.model_loading import load_model_from_dir
 from arcefn.data.loader import load_awkward, JetTaggingDataset
-from arcefn.models.efn_arcface import TopTaggingModel
 from arcefn.utils.physics import compute_features
 from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.figure_style import (
@@ -123,22 +105,32 @@ def fit_zg(zg_values, z_cut=0.1, n_bins=30):
 
 def main():
     """Run DGLAP fit analysis: load model, discover subclasses, fit and plot."""
+    import argparse
+    parser = argparse.ArgumentParser(description="DGLAP fit analysis")
+    parser.add_argument("--model_dir", type=str, default=None,
+                        help="Model directory (config.json + checkpoint.pt). "
+                             "Default: canonical MODEL_DIR.")
+    parser.add_argument("--embedding_dim", type=int, default=None,
+                        help="Embedding dimension (overrides config.json if provided)")
+    parser.add_argument("--max_events", type=int, default=MAX_EVENTS,
+                        help="Number of test events (default %(default)s).")
+    args = parser.parse_args()
+
+    model_dir = Path(args.model_dir) if args.model_dir else None
+    out_dir = model_dir if model_dir else EXPERIMENTS
+
     print("=" * 60)
     print("AP Splitting Fit vs DGLAP Theory")
     print("=" * 60)
 
     device, _ = get_device()
-    model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128)
-    sd = torch.load(CHECKPOINT, map_location="cpu", weights_only=False)
-    model.load_state_dict(sd, strict=True)
-    model = model.to(device)
-    model.eval()
-    print(f"  Model loaded from {CHECKPOINT}")
+    model = load_model_from_dir(model_dir, device)
+    print(f"  Model loaded from {model_dir}")
 
-    test_h5 = DATA_DIR / 'test.h5'
-    print(f"\nStep 1: Loading test data ({MAX_EVENTS:,} events)...")
+    test_h5 = str(DATA_DIR / 'test.h5')
+    print(f"\nStep 1: Loading test data ({args.max_events:,} events)...")
     t0 = time.time()
-    events, labels, weights = load_awkward(test_h5, max_events=MAX_EVENTS, lazy=False)
+    events, labels, weights = load_awkward(test_h5, max_events=args.max_events, lazy=False)
     print(f"  Done in {time.time()-t0:.0f}s")
 
     print("\nStep 2: Computing embeddings...")
@@ -242,7 +234,7 @@ def main():
         else:
             print(f"  {name:12s}  {'FAILED':>9s}")
 
-    json_path = EXPERIMENTS / 'dglap_fit_params.json'
+    json_path = out_dir / 'dglap_fit_params.json'
     with open(json_path, 'w') as f:
         json.dump(results, f, indent=2)
     print(f"\n  Saved: {json_path}")
