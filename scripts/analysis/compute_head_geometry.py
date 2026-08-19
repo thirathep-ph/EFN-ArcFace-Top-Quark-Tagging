@@ -21,9 +21,10 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+from pathlib import Path
+
 from arcefn.utils.paths import EXPERIMENTS, DATA_DIR
-from arcefn.models.efn_arcface import TopTaggingModel
-from arcefn.models.efn_linear import TopTaggingLinear
+from arcefn.utils.model_loading import load_model_from_dir
 from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.utils.device import get_device
 from arcefn.utils.clustering import spectral_clustering_subclass
@@ -99,11 +100,22 @@ def fit_subclass(zg):
         return None
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Head geometry comparison (ArcFace vs Linear)")
+    parser.add_argument("--model_dir", type=str, default=None,
+                        help="Primary model dir (config.json + checkpoint.pt). "
+                             "Default: canonical 64-d ArcFace + 64-d Linear.")
+    parser.add_argument("--compare_dir", type=str, default=None,
+                        help="Second model dir to compare against (only used with --model_dir).")
+    parser.add_argument("--max_events", type=int, default=N_EVENTS,
+                        help="Number of test events (default %(default)s).")
+    args = parser.parse_args()
+
     device, _ = get_device()
     print(f"Device: {device}")
 
-    print(f"Loading {N_EVENTS:,} events...")
-    events, labels, weights = load_awkward(TEST_H5, max_events=N_EVENTS)
+    print(f"Loading {args.max_events:,} events...")
+    events, labels, weights = load_awkward(TEST_H5, max_events=args.max_events)
     ds = JetTaggingDataset(events, labels, weights)
     loader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
@@ -112,12 +124,17 @@ def main():
     zg = compute_zg_safe(events)
     print(f"  Done in {time.time()-t0:.0f}s")
 
-    models = [
-        ('ArcFace', TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128).to(device),
-         EXPERIMENTS / 'robustness_s16_m05' / 'checkpoint.pt'),
-        ('Linear', TopTaggingLinear(embedding_dim=64, particle_dim=128).to(device),
-         EXPERIMENTS / 'baselines_linear_seed_42' / 'checkpoint.pt'),
-    ]
+    if args.model_dir:
+        model_dirs = [Path(args.model_dir)]
+        names = ['ArcFace']
+        if args.compare_dir:
+            model_dirs.append(Path(args.compare_dir))
+            names.append('Linear')
+        out_dir = model_dirs[0]
+    else:
+        model_dirs = [EXPERIMENTS / 'robustness_s16_m05', EXPERIMENTS / 'baselines_linear_seed_42']
+        names = ['ArcFace', 'Linear']
+        out_dir = EXPERIMENTS
 
     all_results = {}
     apply_style()
@@ -125,12 +142,10 @@ def main():
     sc_colors = [SUBCLASS_COLORS['QCD core'], SUBCLASS_COLORS['QCD edge'],
                  SUBCLASS_COLORS['Top core'], SUBCLASS_COLORS['Top edge']]
 
-    for row, (name, model, ckpt_path) in enumerate(models):
+    for row, (name, ckpt_dir) in enumerate(zip(names, model_dirs)):
         print(f"\n--- {name} ---")
         t0 = time.time()
-        sd = torch.load(str(ckpt_path), map_location='cpu', weights_only=False)
-        model.load_state_dict(sd, strict=True)
-        model.eval()
+        model = load_model_from_dir(ckpt_dir, device)
         emb, y = get_embeddings(model, loader, device)
         del model; gc.collect()
         print(f"  Emb: {emb.shape} in {time.time()-t0:.0f}s")
@@ -180,9 +195,9 @@ def main():
     save_fig(fig, 'head_geometry.png')
     print(f"\nSaved: head_geometry.png")
 
-    with open(str(EXPERIMENTS / 'head_geometry_params.json'), 'w') as f:
+    with open(str(out_dir / 'head_geometry_params.json'), 'w') as f:
         json.dump(all_results, f, indent=2)
-    print("Saved: head_geometry_params.json")
+    print(f"Saved: head_geometry_params.json")
 
     # Print comparison table
     print(f"\n{'='*70}")
