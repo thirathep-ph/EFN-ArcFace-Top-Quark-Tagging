@@ -23,9 +23,10 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+from pathlib import Path
 from arcefn.utils.paths import DATA_DIR, EXPERIMENTS, MODEL_DIR, CHECKPOINT
 from arcefn.utils.device import get_device
-from arcefn.models.efn_arcface import TopTaggingModel
+from arcefn.utils.model_loading import load_model_from_dir
 from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.utils.figure_style import apply_style, panel_label, add_grid, save_fig, COLORS, LEGEND_KWARGS
 
@@ -226,29 +227,39 @@ def plot_saliency(results, save_path):
 
 def main():
     """Run saliency analysis: load model, compute gradients, plot and save."""
+    import argparse
+    parser = argparse.ArgumentParser(description="Saliency analysis")
+    parser.add_argument("--model_dir", type=str, default=None,
+                        help="Directory containing config.json + checkpoint.pt "
+                             "(default: ARCEFN_MODEL_DIR env or canonical robustness_s16_m05)")
+    parser.add_argument("--n_events", type=int, default=N_EVENTS)
+    parser.add_argument("--batch_size", type=int, default=BATCH_SIZE)
+    args = parser.parse_args()
+
+    n_events = args.n_events
+    batch_size = args.batch_size
+
     device, backend_type = get_device()
     print(f"Device: {device}\n")
     print("=" * 60)
     print("SALIENCY ANALYSIS (FIXED -- PADDING MASKED)")
     print("=" * 60)
 
+    model_dir = Path(args.model_dir) if args.model_dir else MODEL_DIR
     print("\nStep 1: Loading model...")
-    sd = torch.load(CHECKPOINT, map_location='cpu', weights_only=False)
-    model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128).to(device)
-    model.load_state_dict(sd, strict=True)
-    model.eval()
-    print(f"  Model loaded from {CHECKPOINT}")
+    model = load_model_from_dir(model_dir, device)
+    print(f"  Model loaded from {model_dir / 'checkpoint.pt'}")
 
     test_h5 = DATA_DIR / 'test.h5'
-    print(f"\nStep 2: Loading {N_EVENTS} test events...")
-    events, labels, weights = load_awkward(test_h5, max_events=N_EVENTS)
+    print(f"\nStep 2: Loading {n_events} test events...")
+    events, labels, weights = load_awkward(str(test_h5), max_events=n_events)
     ds = JetTaggingDataset(events, labels, weights)
-    loader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+    loader = DataLoader(ds, batch_size=batch_size, shuffle=False, num_workers=0)
     print(f"  Loaded {len(ds)} events")
 
     print(f"\nStep 3: Computing gradient saliency (padding masked)...")
     t0 = time.time()
-    saliencies, labels_arr, preds_arr = compute_saliency(model, loader, device, N_EVENTS)
+    saliencies, labels_arr, preds_arr = compute_saliency(model, loader, device, n_events)
     acc = np.mean(preds_arr == labels_arr)
     print(f"  Saliency computed in {time.time()-t0:.1f}s")
     print(f"  Accuracy on these events: {acc:.4f}")
@@ -272,10 +283,10 @@ def main():
     print(f"    Top {n_90} constituents capture 90% of total saliency")
 
     print(f"\nStep 5: Generating plots...")
-    plot_saliency(results, EXPERIMENTS / "saliency.png")
+    plot_saliency(results, model_dir / "saliency.png")
 
     out = {
-        "n_events": int(N_EVENTS),
+        "n_events": int(n_events),
         "accuracy": float(acc),
         "top_10_mean_saliency": results["top_10_mean"].tolist(),
         "top_10_std_saliency": results["top_10_std"].tolist(),
@@ -283,7 +294,10 @@ def main():
         "n_for_80pct": int(n_80),
         "n_for_90pct": int(n_90),
     }
-    json_path = EXPERIMENTS / "saliency_results.json"
+    # Backward compatible: default run writes to EXPERIMENTS root (as before);
+    # explicit --model_dir writes per-model results into that directory.
+    out_dir = model_dir if args.model_dir else EXPERIMENTS
+    json_path = out_dir / "saliency_results.json"
     with open(json_path, 'w') as f:
         json.dump(out, f, indent=2)
     print(f"  Saved: {json_path}")
