@@ -29,40 +29,55 @@ from torch.utils.data import DataLoader
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from arcefn.data.loader import load_awkward, JetTaggingDataset
-from arcefn.models.efn_arcface import TopTaggingModel
 from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.device import get_device
+from arcefn.utils.model_loading import load_model_from_dir
 from arcefn.utils.paths import DATA_DIR, EXPERIMENTS
 from scripts.analysis.compute_dglap_fit import SUBCLASS_NAMES, fit_zg
 
 MAX_EVENTS = 404000
 BATCH_SIZE = 2048
 
-SEED_DIRS = {
+CANONICAL_SEED_DIRS = {
     42: EXPERIMENTS / "robustness_s16_m05",
     123: EXPERIMENTS / "arcface_seed_123",
     7: EXPERIMENTS / "arcface_seed_7",
 }
 
 
-def embeddings_for(seed: int, device: torch.device) -> np.ndarray:
+def seed_dirs_for(model_dir: Path | None) -> dict[int, Path]:
+    """Resolve per-seed model directories.
+
+    With ``model_dir`` (e.g. ``experiments/ablation_dim_2``) the per-seed dirs
+    are ``<model_dir>`` (seed 42) and ``<model_dir>_seed_<s>`` (other seeds);
+    otherwise the canonical 64-d ArcFace directories are used.
+    """
+    if model_dir is None:
+        return dict(CANONICAL_SEED_DIRS)
+    parent = model_dir.parent
+    name = model_dir.name
+    return {
+        42: model_dir,
+        123: parent / f"{name}_seed_123",
+        7: parent / f"{name}_seed_7",
+    }
+
+
+def embeddings_for(seed: int, seed_dirs: dict[int, Path], device: torch.device) -> np.ndarray:
     """Return test embeddings for ``seed``, computing them if not cached."""
-    cache = SEED_DIRS[seed] / "embeddings.npz"
+    cache = seed_dirs[seed] / "embeddings.npz"
     if cache.exists():
         return np.load(cache)["embeddings"]
 
-    ckpt = SEED_DIRS[seed] / "checkpoint.pt"
-    if not ckpt.exists():
-        raise FileNotFoundError(f"no checkpoint for seed {seed}: {ckpt}")
+    ckpt_dir = seed_dirs[seed]
+    if not (ckpt_dir / "checkpoint.pt").exists():
+        raise FileNotFoundError(f"no checkpoint for seed {seed}: {ckpt_dir}")
 
-    model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128).to(device)
-    ck = torch.load(ckpt, map_location=device, weights_only=False)
-    sd = ck.get("model_state_dict", ck) if isinstance(ck, dict) else ck
-    model.load_state_dict(sd, strict=True)
+    model = load_model_from_dir(ckpt_dir, device)
     model.eval()
 
     events, labels, weights = load_awkward(
-        DATA_DIR / "test.h5", max_events=MAX_EVENTS, lazy=False
+        str(DATA_DIR / "test.h5"), max_events=MAX_EVENTS, lazy=False
     )
     ds = JetTaggingDataset(events, labels, weights)
     loader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
@@ -95,20 +110,28 @@ def subclass_labels(embeddings: np.ndarray, cls_labels: np.ndarray) -> np.ndarra
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--seeds", type=int, nargs="+", default=[42, 123, 7])
+    parser.add_argument("--model_dir", type=str, default=None,
+                        help="Base model directory (e.g. experiments/ablation_dim_2). "
+                             "Default: canonical 64-d ArcFace dirs.")
     args = parser.parse_args()
 
     t0 = time.time()
     device, _ = get_device()
+    seed_dirs = seed_dirs_for(Path(args.model_dir) if args.model_dir else None)
+    out_dir = Path(args.model_dir) if args.model_dir else EXPERIMENTS
     feat = np.load(EXPERIMENTS / "rf_cache_test.npz")
     cls_labels = feat["labels"].astype(int)
     zg_all = feat["features"][:, 8]
     assert len(cls_labels) == MAX_EVENTS
 
     seeds: dict[int, dict] = {}
+    embed_dim = None
     for seed in args.seeds:
-        print(f"=== Seed {seed} ({SEED_DIRS[seed].name}) ===")
-        emb = embeddings_for(seed, device)
-        assert emb.shape == (MAX_EVENTS, 64), emb.shape
+        print(f"=== Seed {seed} ({seed_dirs[seed].name}) ===")
+        emb = embeddings_for(seed, seed_dirs, device)
+        if embed_dim is None:
+            embed_dim = emb.shape[1]
+        assert emb.shape == (MAX_EVENTS, embed_dim), emb.shape
         sub = subclass_labels(emb, cls_labels)
         combined = (sub + 2 * cls_labels).astype(int)
 
@@ -172,7 +195,7 @@ def main() -> None:
         "agreement_vs_seed42": {str(k): v for k, v in agreement.items()},
         "elapsed_seconds": round(time.time() - t0, 1),
     }
-    path = EXPERIMENTS / "seed_stability_analysis.json"
+    path = out_dir / "seed_stability_analysis.json"
     path.write_text(json.dumps(out, indent=2))
     print(f"\nSaved: {path}  ({out['elapsed_seconds']}s)")
 
