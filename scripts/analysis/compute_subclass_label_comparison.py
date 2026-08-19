@@ -11,13 +11,14 @@ Everything is read from existing artifacts (no retraining):
   * rf_cache_test.npz -> cached FastJet features (zg = features[:, 8])
   * checkpoint.pt   -> class centers (predictions = argmax cos(theta))
 
-Run: python -m scripts.analysis.compute_subclass_label_comparison
+Run: python -m scripts.analysis.compute_subclass_label_comparison [--model_dir DIR]
 """
 from __future__ import annotations
 
 import json
 import time
 from collections import Counter
+from pathlib import Path
 
 import numpy as np
 from sklearn.metrics import adjusted_rand_score
@@ -26,10 +27,7 @@ from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.paths import EXPERIMENTS
 from scripts.analysis.compute_dglap_fit import SUBCLASS_NAMES, fit_zg
 
-EMBEDDINGS = EXPERIMENTS / "robustness_s16_m05" / "embeddings.npz"
 FEATURES = EXPERIMENTS / "rf_cache_test.npz"
-CHECKPOINT = EXPERIMENTS / "robustness_s16_m05" / "checkpoint.pt"
-OUT = EXPERIMENTS / "subclass_label_comparison.json"
 MAX_K = 5
 
 
@@ -37,10 +35,10 @@ def normalize(x: np.ndarray) -> np.ndarray:
     return x / (np.linalg.norm(x, axis=1, keepdims=True) + 1e-10)
 
 
-def load_centers() -> np.ndarray:
+def load_centers(checkpoint: Path) -> np.ndarray:
     import torch
     import torch_directml  # noqa: F401  (registers PrivateUse1 so the checkpoint loads)
-    sd = torch.load(CHECKPOINT, map_location="cpu", weights_only=False)
+    sd = torch.load(str(checkpoint), map_location="cpu", weights_only=False)
     return normalize(sd["arcface_head.class_centers"].detach().cpu().numpy())
 
 
@@ -69,13 +67,27 @@ def subclass_summary(emb_norm: np.ndarray, zg: np.ndarray, mask: np.ndarray, cls
 
 
 def main() -> None:
+    import argparse
+    parser = argparse.ArgumentParser(description="True vs predicted-label subclass comparison")
+    parser.add_argument("--model_dir", type=str, default=None,
+                        help="Model directory (embeddings.npz + checkpoint.pt). "
+                             "Default: canonical 64-d model dir.")
+    args = parser.parse_args()
+
+    model_dir = Path(args.model_dir) if args.model_dir else None
+    base_dir = model_dir if model_dir else EXPERIMENTS / "robustness_s16_m05"
+    out_dir = model_dir if model_dir else EXPERIMENTS
+    embeddings_path = base_dir / "embeddings.npz"
+    checkpoint_path = base_dir / "checkpoint.pt"
+    out_path = out_dir / "subclass_label_comparison.json"
+
     t0 = time.time()
-    emb_np = np.load(EMBEDDINGS)
+    emb_np = np.load(embeddings_path)
     embeddings, labels = emb_np["embeddings"], emb_np["labels"]
     zg_all = np.load(FEATURES)["features"][:, 8]
     assert len(embeddings) == len(labels) == len(zg_all) == 404000
 
-    centers = load_centers()
+    centers = load_centers(checkpoint_path)
     emb_norm = normalize(embeddings)
     preds = np.argmax(emb_norm @ centers.T, axis=1)
 
@@ -114,9 +126,9 @@ def main() -> None:
         "overlap_matrix_4x4": _overlap(true_global, pred_global),
     }
 
-    with open(OUT, "w") as f:
+    with open(out_path, "w") as f:
         json.dump(report, f, indent=2)
-    print(f"\nSaved: {OUT}\n[COMPLETE] ({time.time()-t0:.0f}s)")
+    print(f"\nSaved: {out_path}\n[COMPLETE] ({time.time()-t0:.0f}s)")
 
 
 def _overlap(a: np.ndarray, b: np.ndarray) -> list[list[int]]:
