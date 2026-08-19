@@ -29,10 +29,12 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from arcefn.utils.paths import DATA_DIR, EXPERIMENTS, CHECKPOINT
+from pathlib import Path
+
+from arcefn.utils.paths import DATA_DIR, EXPERIMENTS
 from arcefn.utils.device import get_device, empty_cache
+from arcefn.utils.model_loading import load_model_from_dir
 from arcefn.data.loader import load_awkward, JetTaggingDataset
-from arcefn.models.efn_arcface import TopTaggingModel
 
 N_EVENTS = 404000
 BATCH_SIZE = 2048
@@ -42,28 +44,26 @@ ROT_ANGLES = [0.0, 0.1, 0.5, 1.0, 2.0]
 DROPOUT_RATES = [0.0, 0.1, 0.2, 0.5, 0.8]
 
 
-def load_model(device):
+def load_model(device, model_dir):
     """
-    Load the trained ArcFace model from the canonical checkpoint path.
+    Load a trained model (any embedding dimension) from a checkpoint directory.
 
     Parameters
     ----------
     device : torch.device
         Device to place the model on.
+    model_dir : str or Path
+        Directory containing ``config.json`` and ``checkpoint.pt``.
 
     Returns
     -------
     torch.nn.Module
         Model in evaluation mode.
     """
-    model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128).to(device)
-    sd = torch.load(CHECKPOINT, map_location=device, weights_only=False)
-    model.load_state_dict(sd, strict=True)
-    model.eval()
-    return model
+    return load_model_from_dir(model_dir, device)
 
 
-def load_test_data():
+def load_test_data(max_events=N_EVENTS):
     """
     Load a subset of the test set as raw (non-lazy) awkward arrays.
 
@@ -77,9 +77,9 @@ def load_test_data():
         Event weights (all ones).
     """
     test_h5 = str(DATA_DIR / 'test.h5')
-    print(f"Loading {N_EVENTS:,} test events from {test_h5} ...")
+    print(f"Loading {max_events:,} test events from {test_h5} ...")
     events, labels, weights = load_awkward(
-        test_h5, max_events=N_EVENTS, lazy=False
+        test_h5, max_events=max_events, lazy=False
     )
     print(f"  Loaded {len(labels):,} events")
     return events, labels, weights
@@ -252,16 +252,29 @@ def main():
     Run all three robustness tests and save results + figure.
 
     Results are saved to:
-        * ``EXPERIMENTS / robustness_tests_results.json``
-        * ``EXPERIMENTS / robustness_tests.png``
+        * ``<out_dir> / robustness_tests_results.json``
+        * ``<out_dir> / robustness_tests.png``
+    where ``<out_dir>`` is ``--model_dir`` if given, else ``EXPERIMENTS``.
     """
+    import argparse
+    parser = argparse.ArgumentParser(description="Robustness tests (rescaling, rotation, dropout)")
+    parser.add_argument("--model_dir", type=str, default=None,
+                        help="Model directory (config.json + checkpoint.pt). "
+                             "Default: canonical MODEL_DIR.")
+    parser.add_argument("--max_events", type=int, default=N_EVENTS,
+                        help="Number of test events (default %(default)s).")
+    args = parser.parse_args()
+
+    model_dir = Path(args.model_dir) if args.model_dir else None
+    out_dir = model_dir if model_dir else EXPERIMENTS
+
     print("=" * 60)
     print("Robustness Tests")
     print("=" * 60)
 
     device, backend_type = get_device()
-    model = load_model(device)
-    events, labels, _ = load_test_data()
+    model = load_model(device, model_dir)
+    events, labels, _ = load_test_data(args.max_events)
 
     results = {}
 
@@ -321,7 +334,7 @@ def main():
     }
 
     # ── Save JSON ────────────────────────────────────────────────
-    out_json = EXPERIMENTS / 'robustness_tests_results.json'
+    out_json = out_dir / 'robustness_tests_results.json'
     with open(out_json, 'w') as f:
         json.dump(results, f, indent=2)
     print(f"\nResults saved to {out_json}")
@@ -355,7 +368,7 @@ def main():
     ax2.legend()
 
     plt.tight_layout()
-    out_fig = EXPERIMENTS / 'robustness_tests.png'
+    out_fig = out_dir / 'robustness_tests.png'
     plt.savefig(out_fig, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"Figure saved to {out_fig}")
