@@ -13,7 +13,7 @@ Uses stratified sampling: 50 k events for UMAP, ~15 k for FastJet.
 
 Output
 ------
-All figures are saved under ``MODEL_DIR`` (``experiments/robustness_s16_m05/``):
+All figures are saved under ``MODEL_DIR`` (default: ``experiments/robustness_s16_m05/``):
 
 * ``umap_prediction_status.png``
 * ``umap_subclasses.png``
@@ -22,9 +22,11 @@ All figures are saved under ``MODEL_DIR`` (``experiments/robustness_s16_m05/``):
 * ``lund_planes/status_tp.png``, ``…tn.png``, ``…fp.png``, ``…fn.png``
 """
 
+import argparse
 import os
 import time
 import gc
+import json
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -34,7 +36,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from arcefn.utils.paths import DATA_DIR, MODEL_DIR
+from arcefn.utils.paths import DATA_DIR
 from arcefn.models.efn_arcface import TopTaggingModel
 from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.utils.device import get_device
@@ -52,6 +54,23 @@ MAX_EVENTS = 100000
 UMAP_SAMPLE = 50000
 PHYS_SAMPLE = 15000
 BATCH_SIZE = 1024
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Generate paper figures from trained model")
+    parser.add_argument("--model_dir", type=str, default="experiments/robustness_s16_m05",
+                        help="Directory containing model checkpoint and config")
+    parser.add_argument("--embedding_dim", type=int, default=None,
+                        help="Embedding dimension (overrides config.json if provided)")
+    parser.add_argument("--max_events", type=int, default=MAX_EVENTS,
+                        help="Number of test events to use")
+    parser.add_argument("--umap_sample", type=int, default=UMAP_SAMPLE,
+                        help="Number of events for UMAP")
+    parser.add_argument("--phys_sample", type=int, default=PHYS_SAMPLE,
+                        help="Number of events for physics/Lund plots")
+    parser.add_argument("--batch_size", type=int, default=BATCH_SIZE,
+                        help="Batch size for inference")
+    return parser.parse_args()
 
 
 def compute_embeddings_and_labels(model, events, labels, weights, device):
@@ -135,15 +154,39 @@ def main():
     performs stratified 50 k sampling for UMAP + spectral clustering,
     then ~15 k sampling for FastJet physics and Lund-plane visualisation.
     """
+    args = parse_args()
+
     # ------------------------------------------------------------------
     # 1. Setup
     # ------------------------------------------------------------------
     device, _ = get_device()
     print(f"Device: {device}\n")
 
-    MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    lund_dir = MODEL_DIR / 'lund_planes'
-    lund_dir.mkdir(parents=True, exist_ok=True)
+    # Load model configuration
+    model_dir = args.model_dir
+    os.makedirs(model_dir, exist_ok=True)
+    lund_dir = os.path.join(model_dir, 'lund_planes')
+    os.makedirs(lund_dir, exist_ok=True)
+
+    # Load config from model_dir if exists
+    config_path = os.path.join(model_dir, 'config.json')
+    if os.path.exists(config_path):
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        scale = config.get('scale', 16.0)
+        margin = config.get('margin', 0.5)
+        particle_dim = config.get('particle_dim', 128)
+        if args.embedding_dim is None:
+            embedding_dim = config.get('embedding_dim', 64)
+        else:
+            embedding_dim = args.embedding_dim
+    else:
+        scale = 16.0
+        margin = 0.5
+        particle_dim = 128
+        embedding_dim = args.embedding_dim if args.embedding_dim is not None else 64
+
+    print(f"Model config: scale={scale}, margin={margin}, embedding_dim={embedding_dim}, particle_dim={particle_dim}")
 
     # ------------------------------------------------------------------
     # 2. Load model
@@ -152,12 +195,13 @@ def main():
     print("Loading model")
     print("=" * 60)
 
-    checkpoint_path = str(MODEL_DIR / 'checkpoint.pt')
-    model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128)
+    checkpoint_path = os.path.join(model_dir, 'checkpoint.pt')
+    model = TopTaggingModel(s=scale, m=0.0, embedding_dim=embedding_dim, particle_dim=particle_dim)
     sd = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     model.load_state_dict(sd, strict=True)
     model.to(device)
     model.eval()
+    model.arcface_head.set_margin(margin)
 
     # Extract class centres
     if 'arcface_head.class_centers' in sd:
@@ -171,11 +215,11 @@ def main():
     # 3. Load all events & compute embeddings
     # ------------------------------------------------------------------
     print(f"\n{'='*60}")
-    print(f"Loading {MAX_EVENTS:,} events & computing embeddings")
+    print(f"Loading {args.max_events:,} events & computing embeddings")
     print("=" * 60)
 
     t0 = time.time()
-    events, labels, weights = load_awkward(TEST_H5, max_events=MAX_EVENTS, lazy=False)
+    events, labels, weights = load_awkward(TEST_H5, max_events=args.max_events, lazy=False)
     labels = labels.numpy() if hasattr(labels, 'numpy') else np.array(labels)
     print(f"  Loaded {len(labels)} events in {time.time()-t0:.0f}s")
 
@@ -511,14 +555,14 @@ def main():
         mask = phys_status == cat
         if mask.sum() > 5:
             plot_lund_plane(phys_events[mask], label=f"{cat} Jets",
-                            save_path=str(lund_dir / fname))
+                            save_path=os.path.join(lund_dir, fname))
             print(f"  Saved: lund_planes/{fname}")
 
     # ------------------------------------------------------------------
     # Done
     # ------------------------------------------------------------------
     print(f"\n{'='*60}")
-    print(f"[COMPLETE] Paper figures saved to '{MODEL_DIR}'")
+    print(f"[COMPLETE] Paper figures saved to '{model_dir}'")
     print("=" * 60)
 
 

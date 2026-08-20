@@ -14,10 +14,10 @@ Output
 * ``experiments/final_analysis_results.json`` — All numeric results
 """
 
+import argparse
 import json
 import time
 import gc
-import argparse
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -28,6 +28,7 @@ from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 from arcefn.utils.paths import EXPERIMENTS, DATA_DIR
 from arcefn.utils.figure_style import (
@@ -59,15 +60,27 @@ def load_model(path, device):
     torch.nn.Module
         Loaded model in evaluation mode.
     """
+    import os
+    import json
     sd = torch.load(str(path), map_location='cpu', weights_only=False)
+    
+    # Try to infer embedding_dim from checkpoint
     if 'arcface_head.class_centers' in sd:
-        model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128).to(device)
+        embedding_dim = sd['arcface_head.class_centers'].shape[1]
+    elif 'classifier.weight' in sd:
+        embedding_dim = sd['classifier.weight'].shape[1]
+    else:
+        embedding_dim = 64  # fallback
+    
+    if 'arcface_head.class_centers' in sd:
+        model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=embedding_dim, particle_dim=128).to(device)
     elif 'classifier.weight' in sd:
         from arcefn.models.efn_linear import TopTaggingLinear
-        model = TopTaggingLinear(embedding_dim=64, particle_dim=128).to(device)
+        model = TopTaggingLinear(embedding_dim=embedding_dim, particle_dim=128).to(device)
     else:
         from arcefn.models.efn_coslinear import TopTaggingCosLinear
-        model = TopTaggingCosLinear(embedding_dim=64, particle_dim=128, s=16.0).to(device)
+        from arcefn.models.efn_coslinear import TopTaggingCosLinear
+        model = TopTaggingCosLinear(embedding_dim=embedding_dim, particle_dim=128, s=16.0).to(device)
     model.load_state_dict(sd, strict=True)
     model.eval()
     return model
@@ -313,11 +326,13 @@ def main():
                         help='Number of test events (seeded random subsample if < total; default 100000).')
     parser.add_argument('--seed', type=int, default=42,
                         help='Random seed for the subsample (default 42).')
+    parser.add_argument('--model_dir', type=str, default="experiments/robustness_s16_m05",
+                        help='Directory containing model checkpoint (for single model eval).')
     args = parser.parse_args()
 
     device, _ = get_device()
     print(f"Device: {device}\n")
-    print(f"max_events={args.max_events}, seed={args.seed}\n")
+    print(f"max_events={args.max_events}, seed={args.seed}, model_dir={args.model_dir}\n")
 
     # Part 1: Bootstrap CI + Rejection Rates
     print("=" * 60)
@@ -329,6 +344,10 @@ def main():
         "linear_seed42": EXPERIMENTS / "baselines_linear_seed_42" / "checkpoint.pt",
         "coslinear_seed42": EXPERIMENTS / "baselines_coslinear_seed_42" / "checkpoint.pt",
     }
+
+    # If model_dir is provided and different from default, add it
+    if args.model_dir != "experiments/robustness_s16_m05":
+        model_configs["d2_arcface"] = Path(args.model_dir) / "checkpoint.pt"
 
     all_probs, all_preds, all_labels_map = {}, {}, {}
     all_embeddings = {}

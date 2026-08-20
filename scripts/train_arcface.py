@@ -259,7 +259,7 @@ def main():
         total_train_batches = int(np.ceil(train_len / args.batch_size))
 
     steps_per_epoch = int(np.ceil(total_train_batches / args.accumulation_steps))
-    total_scheduler_steps = steps_per_epoch * args.epochs
+    total_scheduler_steps = steps_per_epoch * args.epochs + 1  # +1 prevents off-by-one ValueError at last step
 
     print("Dataset configuration:")
     print(f"  Train events: {train_len:,}")

@@ -94,3 +94,9 @@ outputs/
 
 # training run error logs
 experiments/*.log.err
+
+# ===== MANIM SLIDES (source .py is tracked; renders are regenerable) =====
+manim_slides/media/
+manim_slides/slides/
+manim_slides/deck.html
+manim_slides/deck_assets/

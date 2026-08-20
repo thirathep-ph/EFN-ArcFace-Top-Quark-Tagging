@@ -3,12 +3,19 @@ Generate Angular Collimation Figure: ΔR ≈ 2M/pT scaling per subclass
 ====================================================================
 Uses the full 404k test set (N_EVENTS=404000) for physics features + clustering.
 """
-import os, gc, time, numpy as np, torch, matplotlib
+import argparse
+import gc
+import json
+import time
+import numpy as np
+import torch
+import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
+import os
 
-from arcefn.utils.paths import DATA_DIR, MODEL_DIR
+from arcefn.utils.paths import DATA_DIR
 from arcefn.models.efn_arcface import TopTaggingModel
 from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.utils.device import get_device
@@ -16,19 +23,59 @@ from arcefn.utils.physics import compute_features
 from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.figure_style import apply_style, panel_label, add_grid, save_fig, SUBCLASS_COLORS, LEGEND_KWARGS
 
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Generate angular collimation figure")
+    parser.add_argument("--model_dir", type=str, default="experiments/robustness_s16_m05",
+                        help="Directory containing model checkpoint")
+    parser.add_argument("--embedding_dim", type=int, default=None,
+                        help="Embedding dimension (overrides config.json if provided)")
+    parser.add_argument("--max_events", type=int, default=404000,
+                        help="Number of test events to use")
+    parser.add_argument("--batch_size", type=int, default=1024,
+                        help="Batch size for inference")
+    return parser.parse_args()
+
+
 TEST_H5 = str(DATA_DIR / 'test.h5')
-N_EVENTS = 404000  # full test set
-BATCH_SIZE = 1024
+
 
 def main():
+    args = parse_args()
+    
+    model_dir = args.model_dir
+    embedding_dim = args.embedding_dim
+    max_events = args.max_events
+    batch_size = args.batch_size
+    
     device = get_device()[0]
     print(f"Device: {device}")
 
-    model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128)
-    ckpt = str(MODEL_DIR / 'checkpoint.pt')
+    # Load config from model_dir if exists
+    config_path = os.path.join(model_dir, 'config.json')
+    if os.path.exists(config_path):
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        scale = config.get('scale', 16.0)
+        margin = config.get('margin', 0.5)
+        particle_dim = config.get('particle_dim', 128)
+        if embedding_dim is None:
+            embedding_dim = config.get('embedding_dim', 64)
+    else:
+        scale = 16.0
+        margin = 0.5
+        particle_dim = 128
+        if embedding_dim is None:
+            embedding_dim = 64
+
+    print(f"Model config: scale={scale}, margin={margin}, embedding_dim={embedding_dim}, particle_dim={particle_dim}")
+
+    model = TopTaggingModel(s=scale, m=0.0, embedding_dim=embedding_dim, particle_dim=particle_dim)
+    ckpt = os.path.join(model_dir, 'checkpoint.pt')
     sd = torch.load(ckpt, map_location="cpu", weights_only=False)
     model.load_state_dict(sd, strict=True)
     model.to(device)
+    model.arcface_head.set_margin(margin)
     model.eval()
     print(f"Model loaded: {sum(p.numel() for p in model.parameters()):,} params")
 
@@ -36,8 +83,8 @@ def main():
     centers_norm = centers / (np.linalg.norm(centers, axis=1, keepdims=True) + 1e-10)
     del sd; gc.collect()
 
-    print(f"Loading {N_EVENTS} test events...")
-    events, labels, weights = load_awkward(TEST_H5, max_events=N_EVENTS, lazy=False)
+    print(f"Loading {max_events} test events...")
+    events, labels, weights = load_awkward(TEST_H5, max_events=max_events, lazy=False)
     labels = labels.numpy() if hasattr(labels, 'numpy') else np.array(labels)
     print(f"  Loaded {len(events)} events")
 
@@ -53,7 +100,7 @@ def main():
     two_m_pt = 2.0 * mass / np.clip(pt, 1.0, None)
 
     ds = JetTaggingDataset(events, labels, weights)
-    loader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+    loader = DataLoader(ds, batch_size=batch_size, shuffle=False, num_workers=0)
 
     all_emb, all_preds = [], []
     with torch.no_grad():
@@ -70,6 +117,8 @@ def main():
     print("Spectral clustering per predicted class...")
     subclass_labels = np.full(len(predictions), -1, dtype=int)
     top_mask = predictions == 1
+    active_top = np.array([], dtype=int)
+    active_qcd = np.array([], dtype=int)
     if top_mask.sum() > 0:
         top_sc, k_top = spectral_clustering_subclass(emb_norm[top_mask], max_k=10)
         active_top, counts_top = np.unique(top_sc, return_counts=True)
@@ -125,8 +174,19 @@ def main():
         panel_label(ax, chr(ord('a') + idx_ax))
 
     plt.tight_layout()
-    out = MODEL_DIR / 'angular_collimation.png'
     save_fig(fig, 'angular_collimation.png')
 
 if __name__ == '__main__':
+    import json
+    parser = argparse.ArgumentParser(description="Generate angular collimation figure")
+    parser.add_argument("--model_dir", type=str, default="experiments/robustness_s16_m05",
+                        help="Directory containing model checkpoint")
+    parser.add_argument("--embedding_dim", type=int, default=None,
+                        help="Embedding dimension (overrides config.json if provided)")
+    parser.add_argument("--max_events", type=int, default=404000,
+                        help="Number of test events to use")
+    parser.add_argument("--batch_size", type=int, default=1024,
+                        help="Batch size for inference")
+    args = parse_args()
+    
     main()

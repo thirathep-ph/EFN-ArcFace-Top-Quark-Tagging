@@ -73,11 +73,18 @@ def ensure_dir(path: Path) -> Path:
 # ── Convenience constants ───────────────────────────────────────────
 # These are computed once on import so every script that imports from
 # this module gets correct paths without extra function calls.
+# MODEL_DIR can be overridden via the ARCEFN_MODEL_DIR environment variable.
 
 _PROJECT_ROOT = get_project_root()
 
 DATA_DIR      = _PROJECT_ROOT / 'data' / 'top_tagging'
 EXPERIMENTS   = _PROJECT_ROOT / 'experiments'
 SCRIPTS_DIR   = _PROJECT_ROOT / 'scripts'
-MODEL_DIR     = EXPERIMENTS / 'robustness_s16_m05'
+
+# Allow MODEL_DIR override via environment variable
+_model_dir_env = os.environ.get('ARCEFN_MODEL_DIR')
+if _model_dir_env:
+    MODEL_DIR = Path(_model_dir_env).resolve()
+else:
+    MODEL_DIR = EXPERIMENTS / 'robustness_s16_m05'
 CHECKPOINT    = MODEL_DIR / 'checkpoint.pt'

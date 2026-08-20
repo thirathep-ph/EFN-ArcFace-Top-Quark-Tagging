@@ -69,15 +69,26 @@ def load_model(path, device):
     torch.nn.Module
         Loaded model in evaluation mode.
     """
+    import os
+    import json
     sd = torch.load(str(path), map_location='cpu', weights_only=False)
+    
+    # Try to infer embedding_dim from checkpoint
     if 'arcface_head.class_centers' in sd:
-        model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128).to(device)
+        embedding_dim = sd['arcface_head.class_centers'].shape[1]
+    elif 'classifier.weight' in sd:
+        embedding_dim = sd['classifier.weight'].shape[1]
+    else:
+        embedding_dim = 64  # fallback
+    
+    if 'arcface_head.class_centers' in sd:
+        model = TopTaggingModel(s=16.0, m=0.5, embedding_dim=embedding_dim, particle_dim=128).to(device)
     elif 'classifier.weight' in sd:
         from arcefn.models.efn_linear import TopTaggingLinear
-        model = TopTaggingLinear(embedding_dim=64, particle_dim=128).to(device)
+        model = TopTaggingLinear(embedding_dim=embedding_dim, particle_dim=128).to(device)
     else:
         from arcefn.models.efn_coslinear import TopTaggingCosLinear
-        model = TopTaggingCosLinear(embedding_dim=64, particle_dim=128, s=16.0).to(device)
+        model = TopTaggingCosLinear(embedding_dim=embedding_dim, particle_dim=128, s=16.0).to(device)
     model.load_state_dict(sd, strict=True)
     model.eval()
     return model
@@ -360,13 +371,14 @@ def main():
     print("Step 6: PCA analysis (full dataset)")
     print("=" * 60)
 
-    pca = PCA(n_components=10)
+    n_components = min(10, emb_norm.shape[1])
+    pca = PCA(n_components=n_components)
     pca.fit(emb_norm)
     var_exp = pca.explained_variance_ratio_
-    n_90 = int(np.argmax(np.cumsum(var_exp) >= 0.9) + 1)
-    n_99 = int(np.argmax(np.cumsum(var_exp) >= 0.99) + 1)
+    n_90 = int(np.argmax(np.cumsum(var_exp) >= 0.9) + 1) if len(var_exp) > 0 else 0
+    n_99 = int(np.argmax(np.cumsum(var_exp) >= 0.99) + 1) if len(var_exp) > 0 else 0
 
-    print(f"  PC1: {var_exp[0]:.4f}, PC2: {var_exp[1]:.4f}, PC3: {var_exp[2]:.4f}")
+    print(f"  PC1: {var_exp[0]:.4f}, PC2: {var_exp[1]:.4f}" + (f", PC3: {var_exp[2]:.4f}" if len(var_exp) > 2 else ""))
     print(f"  Components for 90% variance: {n_90}")
     print(f"  Components for 99% variance: {n_99}")
 

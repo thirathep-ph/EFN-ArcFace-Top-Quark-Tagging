@@ -29,7 +29,7 @@ command, artifact, and expected value needed to reproduce it.
 | Paper claim | Command | Artifact | Expected |
 |---|---|---|---|
 | Accuracy 91.84% [91.76, 91.92] | `compute_paired_stats.py` | `experiments/paired_model_stats.json` | acc=0.9184; 95% binomial CI [0.9176, 0.9192] |
-| Table 1 AUC / Rejection@50%TPR (0.974/0.974/0.975; 124/122/132) | `compute_bootstrap_ci.py --max-events 404000` | `experiments/final_analysis_results.json` | arcface AUC 0.9739, rej50 123.6; linear 0.9743/121.6; coslinear 0.9748/131.7 |
+| Table 1 AUC / Rejection@50%TPR (0.974/0.974/0.975; 124/122/132) | `compute_bootstrap_ci.py --max-events 404000` | `experiments/archive/final_analysis_results.json` | arcface AUC 0.9739, rej50 123.6; linear 0.9743/121.6; coslinear 0.9748/131.7 (the archived copy holds the paper numbers; the script rewrites the top-level path on re-run) |
 | Table 1 RF baseline (92.37% / 0.977 / 150) | `compute_rf_baseline.py --max-train-events 403000 --max-events 404000 --n-estimators 500` | `experiments/rf_baseline_results.json` | acc 0.92368, AUC 0.97655, rej50 150.01 (train val.h5 -> test.h5, seed 42; features cached in `experiments/rf_cache_{val,test}.npz`) |
 | McNemar p-values (4.3e-05 / 1.3e-08 / 0.16) | `compute_paired_stats.py` | `experiments/paired_model_stats.json` | pairwise discordants + continuity-corrected chi2 |
 | ArcFace seed variability (91.84 / 91.88 / 91.83% for seeds 42/123/7) | `compute_arcface_seed_metrics.py` | `experiments/arcface_seed_metrics.json` | test acc + confusion matrix + best/final val_acc per seed (full 404k forward pass) |
@@ -38,10 +38,11 @@ command, artifact, and expected value needed to reproduce it.
 | Robustness dropout 91.84/91.04/88.95/79.23/55.91% | same | same | at 0/10/20/50/80% |
 | Table 4 TwoNN 2.17, PR 1.38, center angle 0.76 rad | `compute_dimensionality.py` (N_EVENTS=50000) | `experiments/dimensionality_results.json` | twonn 2.1749; PR 1.3776; angle 0.7611 rad |
 | Table 4 PCA 2 comps > 99.9% (83.7/16.3) | `compute_interpretation.py` | `experiments/interpretation_full_results.json` | pca_variance [0.837078, 0.162916, ...] |
+| Dim-ablation: 2D training parity (91.89% vs 91.84%, Δ=+0.05pp, p=0.125) | `compute_dim_ablation_eval.py` | `experiments/dim_ablation_results.json` | d=2 acc 0.918948 AUC 0.9741 rej50 124.79; d=64 acc 0.918403 AUC 0.9739 rej50 123.65; McNemar chi2=2.359 p=0.125; gate passed (|Δacc|<0.2pp, |ΔAUC|<0.003, |Δrej50|<30) |
 | Table 2 DGLAP exponents (Table 2) | `compute_dglap_fit.py` (MAX_EVENTS=404000) | `experiments/dglap_fit_params.json` | QCD_Core -1.267/-1.275/0.999; QCD_Edge -0.859/-0.264/0.995; Top_Core -0.543/0.118/0.967; Top_Edge 1.106/6.600/0.988 |
 | Subclass counts 123,322/78,592/101,260/100,826 | `compute_interpretation.py` | same | n_qcd_core/n_qcd_edge/n_top_core/n_top_edge (canonical spectral partition; an earlier version of the interpretation analysis used KMeans labels, giving 126,514/75,400/100,421/101,665 on the same embeddings — replaced 2026-08-10 so all subclass analyses share the spectral partition of Table 2; the 2026-08-10 spectral rerun of `compute_interpretation.py` reports 123,320/78,594/101,263/100,823, within +/-2-3 events per class of these counts due to float-level differences between fresh inference and the saved embeddings (k=2, both sum to 404,000)) |
 | MI top-5 dims > 0.92 with Mass; effect sizes (d=1.73 QCD, 1.11 Top tau32) | `compute_interpretation.py` | same | top_mi_pairs; effect_sizes |
-| Saliency top-1 ~15%, top-3 ~40%, 12 -> 50%, 28 -> 80% | `compute_saliency.py` (N_EVENTS=5000) | `experiments/saliency_fixed_results.json` | n_for_50pct=12, n_for_80pct=28 |
+| Saliency (padding-masked): top-1 captures >90% of gradient norm | `compute_saliency.py` (N_EVENTS=5000) | `experiments/saliency_results.json` | n_for_50pct=1, n_for_80pct=1, n_for_90pct=1 (top-1 constituent dominates); the paper's earlier 12/28 numbers were from an unmasked-padding run, never committed. Updated 2026-08-19 to match current fixed script. |
 | Mass-decorrelation AUC 0.89 [140,170), 90.2% [150,200) | `poc_mass_decoupled_accuracy.py` (50000) | `experiments/poc_mass_decoupled_results.json` | 0.8873 / 0.9024 |
 | ~8% of jets > 160 GeV misclassified as QCD | `compute_mass_vs_score.py` (50000) | printed diagnostic | 7.6% QCD-like |
 | Injection scan 0.416+-0.004 / -0.516+-0.006 / CE 0.046 | `poc_injection_scan.py` | `experiments/poc_injection_scan_results.json` | margins per 5% step, 20k/step |
@@ -53,14 +54,22 @@ command, artifact, and expected value needed to reproduce it.
 | Conformal coverage 90.1% | deleted script; see `git show 61120f0^:scripts/explore/conformal_final.py` | `experiments/conformal_results.json` | empirical_coverage 0.90066 |
 | Adversarial FGSM / PGD drop 0.7% / 0.7% (eps=0.01, n=20k, seed 42) | `compute_adversarial_tests.py` | `experiments/adversarial_results.json` | clean 0.9218; FGSM 0.9146 (0.72% drop); PGD 0.91435 (0.745% drop) |
 | Mass-cut 83.8% @ 160 GeV / 88.9% @ 140 GeV (optimal) | `compute_mass_cut.py` (reads `experiments/rf_cache_test.npz`) | `experiments/mass_cut_results.json` | acc per cut: 100->0.8165, 120->0.8682, 140->0.8891, 150->0.8775, 160->0.8379, 172->0.7283 |
+| Mass-only null comparison (fig:poc right: mass-only AUC 0.70 [140,170), 0.55 [150,200) vs model 0.89/0.88) | `compute_mass_window_null.py` | `experiments/mass_window_null.json` | mass_only_auc 0.6963 [140,170) / 0.5484 [150,200) (mass-only ranker + prevalence baseline) |
 | IRC injection (200 jets): mean cos > 0.999 at all levels | `compute_irc_injection.py` (N_EVENTS=200) | `experiments/irc_injection_results.json` | soft e0.01 mean 0.99988 / min 0.99523; e0.001 mean 0.999999; collinear mean 0.9999999; masking 1.0 |
 | Figures (ROC, rejection rates, NMI/ARI) | `compute_bootstrap_ci.py --max-events 404000` | `experiments/final_roc_curves.png`, `final_rejection_rates.png`, `final_nmi_ari.png` | copied into `paper/figures/`; NMI/ARI from jet embeddings (out[-1]), not logits |
 | Lund planes, UMAP, composition, physics distributions | `generate_paper_figures.py` (MAX_EVENTS=100000) | `experiments/robustness_s16_m05/*.png` | figures (100k events — captions say 100k) |
+| Subclass-resolved Lund planes (fig:lund-subclass) | `compute_subclass_lund_planes.py` | `experiments/subclass_lund_planes.json` + `experiments/robustness_s16_m05/lund_planes/subclass_*.png` + `paper/figures/lund_subclass_*.png` | 6 panels with counts qcd_core 123,322 / qcd_edge_tn 57,695 / qcd_edge_fp 20,897 / top_core_tp 89,192 / top_core_fn 12,068 / top_edge 100,826 + per-panel stats (mean ln k_T, ln(1/Δ), mass, tau32); canonical spectral partition, saved 404k embeddings, no forward pass |
 | Angular collimation | `generate_angular_collimation.py` (404000) | `experiments/robustness_s16_m05/angular_collimation.png` | scaling exponents |
 | Clustering robustness: k=2 robust (SC vs SKM vs vMF); SKM ARI 0.94 QCD / 0.99 Top | `compute_subclass_clustering.py` | `experiments/subclass_clustering_comparison.json` | QCD SC sil 0.838 vs SKM 0.844; Top all 0.736; vMF degenerate (kappa cap) |
 | Subclass angular concentration (12.6/24.5 deg QCD Core/Edge; 14.8/13.5 deg Top) | `compute_subclass_concentration.py` | `experiments/subclass_concentration_results.json` | rbar + kappa_hat + theta_mean per subclass |
 | Mass-matched DGLAP control (Top 178/174 GeV tau32 0.63/0.46; QCD 64/145 GeV, [95,133) GeV bin Core -1.89 vs Edge -1.38) | `compute_mass_matched_dglap.py` | `experiments/mass_matched_dglap.json` | per-subclass mean mass/tau32 + per-mass-bin alpha/beta/R2/delta_alpha |
 | Subclass composition by prediction status (FP = 100% QCD-Edge; FN = 100% Top-Core; Top-Edge 100% TP) | `compute_subclass_composition.py` | `experiments/subclass_composition.json` | per-subclass % in TP/FP/TN/FN (canonical partition, full 404k) |
+| Table 5 symbolic distillation (c=6 89.44/0.950/33; c=21 90.07/0.964/74/0.969; Eq. score corr 0.969) | `fit_esr.py`/`compute_esr_validate.py` (see `scripts/analysis/fit_symbolic.py`) | `experiments/physics_sr/symbolic_eval.json`, `fit_full.json` | c=6 acc 0.8944 AUC 0.9496 rej50 32.85; c=21 acc 0.9007 AUC 0.9637 rej50 73.56 corr 0.9688; Eq. matches `fit_full.json` best_equation |
+| Symbolic univariate AUCs (m/pT 0.906, mSD/pT 0.896, theta_g 0.876, tau32 0.147) | `compute_feature_probe.py` | `experiments/physics_sr/probe_features.json` | Mass_over_pT 0.9059; mSD_over_pT 0.8963; theta_g 0.8764; Tau32 0.1471 |
+| alpha_SR rediscovery (-1.23/-0.96/-0.54/+0.66 vs -1.27/-0.86/-0.54/+1.11; top-Edge +0.66..+0.69 bracket) | `compute_symbolic_rediscovery.py` | `experiments/physics_sr/subclass_rediscovery.json` | alpha_sr/-fitzg/-lr per subclass; gate found_all_subclasses=true (Top-Edge delta vs fitzg 0.443 explained as beta-spread) |
+| Seed stability of subclass partition (Top ARI cross-seed only 0.68, QCD 0.92) | `compute_seed_stability.py` | `experiments/seed_stability_analysis.json` | per-seed counts + alphas + ARI vs seed 42 (uncited in paper; relevant to model-selection argument) |
+| Embedding axes correlation (PC1 vs mass pearson -0.887, r2 0.79) | `compute_embedding_axes.py` | `experiments/embedding_axes.json` | pca_variance_ratio + per-feature pearson/r2 (uncited; restored on dev per user decision) |
+| tau32-ablation (paper: 'disabling tau32 reduces to tanh(m/pT) alone: 88.2% acc, AUC 0.906; +1.2 pp gain') | `compute_symbolic_ablation.py` | `experiments/physics_sr/symbolic_ablation.json` | ablated (Tau32 input zeroed in c=6, the only place it enters) acc 0.8824, AUC 0.9059, rej50 11.31; zeroing tau32 reproduces c=2 exactly (max_abs_diff 0.0). **RESOLVED 2026-08-18**: the paper's earlier 86.6%/+2.8 pp was never committed; corrected to 88.2%/+1.2 pp in paper line 569 |
 
 ## Statistical claims (Section "Statistical Considerations")
 
@@ -72,16 +81,20 @@ command, artifact, and expected value needed to reproduce it.
 
 The following artifacts predate the final analysis and contain outdated or
 incorrect numbers. They are tracked for completeness only and must not be
-cited:
+cited. Superseded/exploratory result files have been **moved to
+`experiments/archive/`** (2026-08-18 cleanup); a handful are still listed at the
+top level because the paper or this document references them:
 
-- `comprehensive_analysis_results.json` — orphaned producer script (never in repo); l4 dropout/rotation numbers WRONG
-- `full_analysis_results.json` — old pre-audit numbers
-- `ap_splitting_results.json` — superseded by `dglap_fit_params.json` (bounds change)
-- `robustness_results.json`, `robustness_results_table.md` — old s x m sweep, different n and method
-- `bayesian_results*.json`, `decision_tree_results.json`, `dt_rules_results.json`, `grooming_sweep_results.json`, `onnx_results.json`, `emd_validation_results.json`, `interpretation_results.json` — exploratory, not in paper
-- `alignment_uniformity_results.json` — superseded by `embedding_geometry_results.json`
-- `arcface_100ep/metrics.json` — final-epoch checkpoint metrics differ from best-val checkpoint used for all paper numbers
-- `baselines_coslinear_seed_*` `metrics.json` roc_auc — final-epoch anomaly; paper uses best-val checkpoints via `compute_bootstrap_ci.py`
+- `experiments/archive/comprehensive_analysis_results.json` — orphaned producer script (never in repo); l4 dropout/rotation numbers WRONG
+- `experiments/archive/full_analysis_results.json` — old pre-audit numbers
+- `experiments/archive/ap_splitting_results.json` — superseded by `dglap_fit_params.json` (bounds change)
+- `experiments/archive/robustness_results.json`, `robustness_results_table.md` — old s x m sweep, different n and method
+- `experiments/archive/bayesian_results*.json`, `decision_tree_results.json`, `dt_rules_results.json`, `grooming_sweep_results.json`, `onnx_results.json`, `emd_validation_results.json`, `interpretation_results.json` — exploratory, not in paper
+- `experiments/archive/alignment_uniformity_results.json` — superseded by `embedding_geometry_results.json`
+- `experiments/archive/pgd_attack_results.json` — superseded by `adversarial_results.json` (n=20000)
+- `experiments/archive/arcface_100ep/metrics.json` — final-epoch checkpoint metrics differ from best-val checkpoint used for all paper numbers
+- `experiments/archive/baselines_coslinear_seed_*_metrics.json` — final-epoch roc_auc anomaly; paper uses best-val checkpoints via `compute_bootstrap_ci.py`
+- `experiments/archive/jetnet_poc/*`, `lorentznet_subclasses*.json` — POCs, not in the paper
 
 ## Generative-AI disclosure
 
