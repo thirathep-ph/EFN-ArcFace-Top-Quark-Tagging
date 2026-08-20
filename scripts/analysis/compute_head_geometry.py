@@ -138,7 +138,10 @@ def main():
 
     all_results = {}
     apply_style()
-    fig, axes = plt.subplots(2, 4, figsize=(14, 6))
+    n_rows = len(model_dirs)
+    fig, axes = plt.subplots(n_rows, 4, figsize=(14, 3 * n_rows))
+    if n_rows == 1:
+        axes = axes[None, :]  # type: ignore[assignment]
     sc_colors = [SUBCLASS_COLORS['QCD core'], SUBCLASS_COLORS['QCD edge'],
                  SUBCLASS_COLORS['Top core'], SUBCLASS_COLORS['Top edge']]
 

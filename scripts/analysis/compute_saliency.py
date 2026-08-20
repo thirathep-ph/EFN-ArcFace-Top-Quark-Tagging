@@ -149,10 +149,11 @@ def analyze_saliency(saliencies, labels, preds):
 
     mean_by_position = saliencies.mean(axis=0)
 
-    total_sal = saliencies.sum(axis=1, keepdims=True) + 1e-10
-    sorted_sal_matrix = np.sort(saliencies, axis=1)[:, ::-1]
+    saliencies_clean = np.nan_to_num(saliencies, nan=0.0, posinf=0.0, neginf=0.0)
+    total_sal = saliencies_clean.sum(axis=1, keepdims=True) + 1e-10
+    sorted_sal_matrix = np.sort(saliencies_clean, axis=1)[:, ::-1]
     cumsum_sal = np.cumsum(sorted_sal_matrix, axis=1) / total_sal
-    mean_cumsum = cumsum_sal.mean(axis=0)
+    mean_cumsum = np.nan_to_num(cumsum_sal, nan=0.0).mean(axis=0)
 
     return {
         "mean_rank_saliency": mean_rank_saliency,
@@ -197,13 +198,21 @@ def plot_saliency(results, save_path):
     panel_label(ax, 'a')
 
     ax = axes[1]
-    n_show_cum = 100
-    ax.plot(np.arange(n_show_cum), results["mean_cumulative_fraction"][:n_show_cum], 'o-', color=COLORS['orange'], markersize=2, lw=0.8)
+    n_show_cum = 50
+    ax.plot(np.arange(1, n_show_cum + 1), results["mean_cumulative_fraction"][:n_show_cum], 'o-', color=COLORS['orange'], markersize=2, lw=0.8)
     ax.axhline(0.5, color='0.5', linestyle='--', lw=0.7, label='50%')
     ax.axhline(0.8, color='0.5', linestyle=':', lw=0.7, label='80%')
     ax.axhline(0.9, color=COLORS['top'], linestyle='--', lw=0.7, label='90%')
     ax.set_xlabel("Number of top constituents")
     ax.set_ylabel("Cumulative fraction of total saliency")
+    ax.set_xlim(1, n_show_cum)
+    ax.set_ylim(0, 1.02)
+    # annotate 50/80/90% reach
+    cum = results["mean_cumulative_fraction"]
+    for thr in (0.5, 0.8, 0.9):
+        n_thr = int(np.argmax(cum >= thr) + 1) if np.any(cum >= thr) else n_show_cum
+        if 1 <= n_thr <= n_show_cum:
+            ax.axvline(n_thr, color='0.7', linestyle=':', lw=0.5)
     ax.legend(**LEGEND_KWARGS)
     add_grid(ax)
     panel_label(ax, 'b')
