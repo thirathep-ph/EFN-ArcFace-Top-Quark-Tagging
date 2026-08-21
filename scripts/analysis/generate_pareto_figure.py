@@ -54,37 +54,37 @@ def main():
     nested = np.array([has_nested(e["equation"]) for e in eqs])
     nfeat = np.array([count_features(e["equation"]) for e in eqs])
 
-    # --- SciPost-compliant styling ---
+    # --- Publication styling (SciPost) ---
     plt.rcParams.update({
         "font.family": "serif", "font.size": 11,
         "mathtext.fontset": "cm",
-        "axes.linewidth": 0.8, "xtick.major.width": 0.8,
-        "ytick.major.width": 0.8,
+        "axes.linewidth": 0.9, "xtick.major.width": 0.9,
+        "ytick.major.width": 0.9, "xtick.minor.width": 0.6, "ytick.minor.width": 0.6,
     })
 
-    fig, ax = plt.subplots(figsize=(6.5, 4.5))
+    fig, ax = plt.subplots(figsize=(7.2, 4.6), constrained_layout=True)
 
     # Clean points (circle) and nested points (cross)
     clean_mask = ~nested
     dirty_mask = nested
 
-    ms_clean = np.where(nfeat[clean_mask] <= 2, 32, 48)
-    ms_nested = np.where(nfeat[dirty_mask] <= 2, 32, 48)
+    ms_clean = np.where(nfeat[clean_mask] <= 2, 52, 68)
+    ms_nested = np.where(nfeat[dirty_mask] <= 2, 52, 68)
 
     ax.scatter(C[clean_mask], L[clean_mask], marker='o', s=ms_clean,
-               facecolors='none', edgecolors='#2c3e50', linewidths=0.7,
+               facecolors='none', edgecolors='#1f4a5e', linewidths=1.1,
                zorder=3, label='No nested functions')
     ax.scatter(C[dirty_mask], L[dirty_mask], marker='x', s=ms_nested,
-               color='#922b21', linewidths=1.0,
+               color='#922b21', linewidths=1.4,
                zorder=3, label='Contains nested')
 
     sel_idx = np.where(C == SELECTED_C)[0][0]
-    ax.scatter([C[sel_idx]], [L[sel_idx]], marker='D', s=55,
-               facecolors='#d4ac0d', edgecolors='black', linewidths=0.8,
+    ax.scatter([C[sel_idx]], [L[sel_idx]], marker='D', s=85,
+               facecolors='#d4ac0d', edgecolors='black', linewidths=1.0,
                zorder=5, label=f'Selected ($C={SELECTED_C}$)')
 
-    # Light connecting line
-    ax.plot(C, L, color='#7f8c8d', alpha=0.35, linewidth=0.8, zorder=1, linestyle='-')
+    # Connecting line — slightly stronger for print
+    ax.plot(C, L, color='#7f8c8d', alpha=0.55, linewidth=1.0, zorder=1, linestyle='-')
 
     # Annotations: only key equations, placed with care
     annotations = {
@@ -101,27 +101,27 @@ def main():
         ax.annotate(
             ann["label"],
             xy=(x, y), xytext=(x + ann["dx"], y + ann["dy"]),
-            fontsize=8.5, ha=ann["ha"], va=ann["va"],
-            color="#2c3e50",
-            bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
-                      edgecolor="#bdc3c7", alpha=0.9, linewidth=0.5),
-            arrowprops=dict(arrowstyle="-", color="#bdc3c7", lw=0.6),
+            fontsize=9.0, ha=ann["ha"], va=ann["va"],
+            color="#1f2e3a",
+            bbox=dict(boxstyle="round,pad=0.32", facecolor="white",
+                      edgecolor="#9aa4ad", alpha=0.96, linewidth=0.7),
+            arrowprops=dict(arrowstyle="-", color="#9aa4ad", lw=0.8),
             zorder=6,
         )
 
-    ax.set_xlabel("Expression complexity $C$", fontsize=12)
-    ax.set_ylabel("MSE loss (z-scored logit)", fontsize=12)
+    ax.set_xlabel("Expression complexity $C$", fontsize=11.5)
+    ax.set_ylabel("MSE loss (z-scored logit)", fontsize=11.5)
     ax.set_xlim(0, 24)
     ax.set_ylim(0.0, 0.30)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(4))
     ax.xaxis.set_minor_locator(ticker.MultipleLocator(2))
-    ax.grid(True, alpha=0.12, which='major')
-    ax.grid(True, alpha=0.06, which='minor', linestyle=':')
+    ax.yaxis.set_minor_locator(ticker.MultipleLocator(0.05))
+    ax.grid(True, alpha=0.28, which='major', linestyle='-', linewidth=0.6)
+    ax.grid(True, alpha=0.14, which='minor', linestyle=':', linewidth=0.5)
+    ax.set_axisbelow(True)
 
-    ax.legend(loc='upper right', **LEGEND_KWARGS,
-              handlelength=1.5, handletextpad=0.5)
-
-    fig.tight_layout(pad=0.5)
+    ax.legend(loc='upper right', **{**LEGEND_KWARGS, "fontsize": 9, "framealpha": 0.97, "edgecolor": "#7f8c8d"},
+              handlelength=1.6, handletextpad=0.6)
     save_fig(fig, 'pareto_front_sr.png')
     print(f"Saved: pareto_front_sr.png")
 
