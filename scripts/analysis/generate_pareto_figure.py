@@ -102,7 +102,7 @@ def main():
     # Elbow marker — short gold dash distinct from grey minor grid (was both dotted)
     sel_y = float(L[np.where(C == SELECTED_C)[0][0]])
     ax.plot([SELECTED_C, SELECTED_C], [0.0, sel_y], color="#CCB000", alpha=0.75, linewidth=1.25, linestyle=(0, (3, 2.5)), zorder=1)
-    ax.text(SELECTED_C, 0.306, r"$C=6$", fontsize=7.5, color="#8a7000", ha="center", va="bottom",
+    ax.text(SELECTED_C, 0.316, r"$C=6$", fontsize=7.5, color="#8a7000", ha="center", va="bottom",
             bbox=dict(boxstyle="round,pad=0.18", facecolor="white", edgecolor="#CCB000", alpha=0.95, linewidth=0.6),
             clip_on=False)
 
@@ -130,7 +130,7 @@ def main():
     ax.set_xlabel("Expression complexity $C$", fontsize=11)
     ax.set_ylabel("MSE loss (z-scored logit)", fontsize=11)
     ax.set_xlim(0, 24)
-    ax.set_ylim(0.0, 0.30)
+    ax.set_ylim(0.0, 0.325)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(4))
     ax.xaxis.set_minor_locator(ticker.MultipleLocator(2))
     ax.yaxis.set_major_locator(ticker.MultipleLocator(0.05))
