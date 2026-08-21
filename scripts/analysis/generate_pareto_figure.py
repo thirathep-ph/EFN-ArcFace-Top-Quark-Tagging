@@ -107,7 +107,7 @@ def main():
     import matplotlib.patheffects as pe
     annotations = {
         2:  {"label": r"$\tanh(m/p_T)$", "dx": 0.9, "dy": 0.026, "ha": "left", "va": "bottom"},
-        6:  {"label": r"$\tanh(m/p_T)-0.35\,\tau_{32}$", "dx": 2.6, "dy": 0.014, "ha": "left", "va": "bottom"},
+        6:  {"label": r"$\tanh(m/p_T)-0.35\,\tau_{32}$", "dx": 2.6, "dy": 0.022, "ha": "left", "va": "bottom"},
     }
     for c, ann in annotations.items():
         idx = np.where(C == c)[0]
