@@ -351,7 +351,7 @@ def main():
     ax.set_xlabel("UMAP 1")
     ax.set_ylabel("UMAP 2")
     panel_label(ax, "(a)", loc="left")
-    ax.legend(loc='upper left', **{k: v for k, v in LEGEND_KWARGS.items() if k != "ncol"})
+    ax.legend(loc='upper right', fontsize=7, **{k: v for k, v in LEGEND_KWARGS.items() if k not in ("ncol", "fontsize")})
     add_grid(ax)
     x_pad = (umap_coords[:, 0].max() - umap_coords[:, 0].min()) * 0.05
     y_pad = (umap_coords[:, 1].max() - umap_coords[:, 1].min()) * 0.05
@@ -390,7 +390,7 @@ def main():
     ax.set_xlabel("UMAP 1")
     ax.set_ylabel("UMAP 2")
     panel_label(ax, "(b)", loc="left")
-    ax.legend(loc='upper left', **{k: v for k, v in LEGEND_KWARGS.items() if k != "ncol"})
+    ax.legend(loc='upper right', fontsize=7, **{k: v for k, v in LEGEND_KWARGS.items() if k not in ("ncol", "fontsize")})
     add_grid(ax)
     ax.set_xlim(umap_coords[:, 0].min() - x_pad, umap_coords[:, 0].max() + x_pad)
     ax.set_ylim(umap_coords[:, 1].min() - y_pad, umap_coords[:, 1].max() + y_pad)

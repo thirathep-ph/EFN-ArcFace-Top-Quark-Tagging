@@ -216,7 +216,7 @@ def main():
         ax.text(0.97, 0.95, display_name, transform=ax.transAxes,
                 fontsize=9, ha='right', va='top',
                 bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8, edgecolor='0.7'))
-        ax.legend(loc="upper right", **{k: v for k, v in LEGEND_KWARGS.items() if k not in ("ncol",)})
+        ax.legend(loc="lower right", **{k: v for k, v in LEGEND_KWARGS.items() if k not in ("ncol",)})
         add_grid(ax)
         ax.set_xlim(0.08, 0.52)
 

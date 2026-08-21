@@ -190,7 +190,7 @@ def main():
             if sc_id == 0:
                 ax.set_ylabel('P($z_g$)')
             ax.set_title(f'{sc_name}')
-            ax.legend(**{**LEGEND_KWARGS, "fontsize": 6})
+            ax.legend(loc="upper right", **{**LEGEND_KWARGS, "fontsize": 6})
 
         all_results[name] = results
 

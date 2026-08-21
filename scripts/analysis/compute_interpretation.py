@@ -397,7 +397,7 @@ def main():
     ax.set_xticklabels(FEATURE_NAMES, rotation=45, ha='right', fontsize=8)
     ax.set_ylabel('Embedding dimension')
     ax.set_xlabel('Physics observable')
-    plt.colorbar(im, label='Mutual information (nats)', shrink=0.85, pad=0.02)
+    plt.colorbar(im, label='Mutual information (nats)', shrink=0.85, pad=0.08)
     save_fig(fig, "interpretation_full_mi.png")
 
     # Plot 2: Effect sizes
@@ -422,9 +422,7 @@ def main():
         ax.set_title(title)
         ax.grid(True, alpha=0.15, axis='x')
     plt.tight_layout()
-    plt.savefig(str(EXPERIMENTS / "interpretation_full_effects.png"), dpi=150, bbox_inches='tight')
-    plt.close()
-    print("  Saved: interpretation_full_effects.png")
+    save_fig(plt.gcf(), "interpretation_full_effects.png")
 
     # Plot 3: PCA
     fig, ax = plt.subplots(figsize=(6, 4))
@@ -440,9 +438,9 @@ def main():
     ax.set_ylabel('Variance explained')
     ax.set_xticks(x)
     ax.set_xticklabels([str(i+1) for i in range(n_show)])
-    ax.legend(loc="center right", **{k: v for k, v in {
+    ax.legend(loc="lower right", **{k: v for k, v in {
         "frameon": True, "fancybox": True, "framealpha": 0.92,
-        "edgecolor": "0.45", "facecolor": "white", "fontsize": 8,
+        "edgecolor": "0.45", "facecolor": "white", "fontsize": 7,
     }.items()})
     add_grid(ax, axis='y')
     ax.spines['top'].set_visible(False)

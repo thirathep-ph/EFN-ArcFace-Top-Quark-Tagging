@@ -213,7 +213,7 @@ def plot_saliency(results, save_path):
         n_thr = int(np.argmax(cum >= thr) + 1) if np.any(cum >= thr) else n_show_cum
         if 1 <= n_thr <= n_show_cum:
             ax.axvline(n_thr, color='0.7', linestyle=':', lw=0.5)
-    ax.legend(**LEGEND_KWARGS)
+    ax.legend(loc="lower right", **LEGEND_KWARGS)
     add_grid(ax)
     panel_label(ax, 'b')
 
