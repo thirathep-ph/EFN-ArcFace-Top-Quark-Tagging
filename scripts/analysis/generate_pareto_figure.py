@@ -99,8 +99,7 @@ def main():
 
     sel_y = float(L[np.where(C == SELECTED_C)[0][0]])
     ax.plot([SELECTED_C, SELECTED_C], [0.0, sel_y], color="#CCB000", alpha=0.60, linewidth=1.1, linestyle=(0, (3, 2.5)), zorder=1)
-    # C=6 right above diamond — user asked clearly visible, not at top edge
-    ax.text(SELECTED_C, sel_y + 0.018, r"$C=6$", fontsize=7.5, color="#7a6200", ha="center", va="bottom",
+    ax.text(SELECTED_C, sel_y + 0.038, r"$C=6$", fontsize=7.5, color="#7a6200", ha="center", va="bottom",
             bbox=dict(boxstyle="round,pad=0.18", facecolor="white", edgecolor="#CCB000", alpha=0.98, linewidth=0.65),
             clip_on=False, zorder=6)
 
