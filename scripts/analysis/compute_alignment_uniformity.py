@@ -112,26 +112,28 @@ def main():
         total = sum(sc_vals)
         for bar, val in zip(bars, sc_vals):
             pct = val / total * 100
-            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 500,
-                    f'{pct:.0f}%', ha='center', fontsize=7, rotation=90)
+            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 350,
+                    f'{pct:.0f}%', ha='center', fontsize=7, rotation=90, va='bottom')
 
     # Format panel 1
     axes[0].set_xlabel('$\\|\\mathbf{e}\\|_2$')
     axes[0].set_ylabel('Density')
     axes[0].set_xlim(0, 25)
-    axes[0].legend(**LEGEND_KWARGS)
+    axes[0].legend(fontsize=7, handlelength=1.2, **{k: v for k, v in LEGEND_KWARGS.items() if k not in ('fontsize',)})
     add_grid(axes[0])
     panel_label(axes[0], 'a')
 
-    # Format panel 2
+    # Format panel 2 — dynamic ylim to prevent overflow (ponytail: auto 1.18× max)
+    y_max = max((v for k, v in results.items() if k.endswith('_N')), default=22000)
+    axes[1].set_ylim(0, y_max * 1.18)
     axes[1].set_ylabel('$N$ events (50k total)')
     axes[1].set_xticks(np.arange(4) + 0.15)
     axes[1].set_xticklabels(['QCD\nCore', 'QCD\nEdge', 'Top\nCore', 'Top\nEdge'], fontsize=7)
-    axes[1].legend(**LEGEND_KWARGS)
+    axes[1].legend(fontsize=7, handlelength=1.2, **{k: v for k, v in LEGEND_KWARGS.items() if k not in ('fontsize',)})
     add_grid(axes[1], axis='y')
     panel_label(axes[1], 'b')
 
-    plt.tight_layout()
+    plt.tight_layout(pad=0.6, w_pad=1.2)
     save_fig(fig, 'embedding_geometry.png')
     print(f"\nSaved: embedding_geometry.png")
 

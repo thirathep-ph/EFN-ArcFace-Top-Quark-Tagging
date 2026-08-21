@@ -198,7 +198,7 @@ def main():
 
         fig = plt.figure(figsize=(14, 5.0))
         gs = fig.add_gridspec(1, 3, width_ratios=[1.15, 1.15, 0.7],
-                              wspace=0.04, left=0.01, right=0.99,
+                              wspace=0.28, left=0.03, right=0.97,
                               top=0.92, bottom=0.02)
         ax1 = fig.add_subplot(gs[0], projection="3d")
         ax2 = fig.add_subplot(gs[1], projection="3d")
@@ -220,11 +220,12 @@ def main():
                         c=color, rasterized=True)
         ax1.scatter(c3[:, 0], c3[:, 1], c3[:, 2], s=60, c="k", zorder=6)
         ax1.plot(arc[:, 0], arc[:, 1], arc[:, 2], color="0.25",
-                 linewidth=0.9, alpha=0.7, linestyle=(0, (4, 3)))
+                 linewidth=1.4, alpha=0.9, linestyle=(0, (4, 2)))
 
         mid = arc[150]
         ax1.text(mid[0], mid[1], mid[2] + 0.17,
-                 f"${geo_deg:.1f}^\\circ$", fontsize=9, ha="center", va="bottom")
+                 f"${geo_deg:.1f}^\\circ$", fontsize=9, ha="center", va="bottom",
+                 bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="0.7", alpha=0.9))
 
         cls_handles = [Line2D([0], [0], marker="o", color="w",
                               markerfacecolor=c, markersize=6,
@@ -244,7 +245,11 @@ def main():
                         c=SUBCLASS_COLORS[s], rasterized=True)
         ax2.scatter(c3[:, 0], c3[:, 1], c3[:, 2], s=60, c="k", zorder=6)
         ax2.plot(arc[:, 0], arc[:, 1], arc[:, 2], color="0.25",
-                 linewidth=0.9, alpha=0.7, linestyle=(0, (4, 3)))
+                 linewidth=1.4, alpha=0.9, linestyle=(0, (4, 2)))
+        # duplicate angle label for clarity (both panels show geodesic)
+        mid2 = arc[150]
+        ax2.text(mid2[0], mid2[1], mid2[2] + 0.17, f"${geo_deg:.1f}^\\circ$", fontsize=9,
+                 ha="center", va="bottom", bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="0.7", alpha=0.9))
 
         sub_handles = [Line2D([0], [0], marker="o", color="w",
                               markerfacecolor=SUBCLASS_COLORS[s], markersize=6,
@@ -265,7 +270,8 @@ def main():
                        edgecolor="white", linewidth=0.5)
         ax3.axhline(sv_ratio[1], color="0.6", ls=":", lw=0.8)
         ax3.annotate(f"{sv_ratio[1]:.2f}", xy=(2, sv_ratio[1]),
-                     xytext=(4.2, 0.62), fontsize=8, color="0.35",
+                     xytext=(2, sv_ratio[1] + 0.06), fontsize=8, color="0.35",
+                     ha="center", va="bottom",
                      arrowprops=dict(arrowstyle="-", color="0.6", lw=0.7))
         ax3.set_xlabel("Component", fontsize=9)
         ax3.set_ylabel(r"Singular value / $\sigma_1$", fontsize=9)
@@ -274,6 +280,7 @@ def main():
         ax3.spines["top"].set_visible(False)
         ax3.spines["right"].set_visible(False)
         panel_title(ax3, "c", "Singular-value spectrum")
+        # (dividers removed — wspace alone separates a/b/c clearly)
 
         out = os.path.join(model_dir, "hypersphere_3d.png")
         fig.savefig(str(out), dpi=200, bbox_inches="tight", facecolor="white")
