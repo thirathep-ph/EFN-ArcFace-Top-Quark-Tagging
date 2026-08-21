@@ -106,7 +106,7 @@ def main():
     # Annotations — offset first label off the x=2 grid line so leader does not coincide with grid/vertical
     import matplotlib.patheffects as pe
     annotations = {
-        2:  {"label": r"$\tanh(m/p_T)$", "dx": 0.9, "dy": 0.032, "ha": "left", "va": "bottom"},
+        2:  {"label": r"$\tanh(m/p_T)$", "dx": 0.9, "dy": 0.026, "ha": "left", "va": "bottom"},
         6:  {"label": r"$\tanh(m/p_T)-0.35\,\tau_{32}$", "dx": 2.6, "dy": 0.014, "ha": "left", "va": "bottom"},
     }
     for c, ann in annotations.items():
@@ -127,7 +127,7 @@ def main():
     ax.set_xlabel("Expression complexity $C$", fontsize=11)
     ax.set_ylabel("MSE loss (z-scored logit)", fontsize=11)
     ax.set_xlim(0, 24)
-    ax.set_ylim(0.0, 0.30)
+    ax.set_ylim(0.0, 0.315)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(4))
     ax.xaxis.set_minor_locator(ticker.MultipleLocator(2))
     ax.yaxis.set_major_locator(ticker.MultipleLocator(0.05))
