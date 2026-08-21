@@ -97,12 +97,12 @@ def main():
     ax.scatter([C[sel_idx]], [L[sel_idx]], marker='D', s=105,
                facecolors='none', edgecolors='#CCB000', linewidths=2.0, alpha=0.32, zorder=4)
 
-    # Elbow marker — short gold dash distinct from grey minor grid (was both dotted)
     sel_y = float(L[np.where(C == SELECTED_C)[0][0]])
-    ax.plot([SELECTED_C, SELECTED_C], [0.0, sel_y], color="#CCB000", alpha=0.75, linewidth=1.25, linestyle=(0, (3, 2.5)), zorder=1)
-    ax.text(SELECTED_C, 0.312, r"$C=6$", fontsize=7, color="#8a7000", ha="center", va="bottom",
-            bbox=dict(boxstyle="round,pad=0.16", facecolor="white", edgecolor="#CCB000", alpha=0.95, linewidth=0.6),
-            clip_on=False)
+    ax.plot([SELECTED_C, SELECTED_C], [0.0, sel_y], color="#CCB000", alpha=0.60, linewidth=1.1, linestyle=(0, (3, 2.5)), zorder=1)
+    # C=6 right above diamond — user asked clearly visible, not at top edge
+    ax.text(SELECTED_C, sel_y + 0.018, r"$C=6$", fontsize=7.5, color="#7a6200", ha="center", va="bottom",
+            bbox=dict(boxstyle="round,pad=0.18", facecolor="white", edgecolor="#CCB000", alpha=0.98, linewidth=0.65),
+            clip_on=False, zorder=6)
 
     # Annotations — offset first label off the x=2 grid line so leader does not coincide with grid/vertical
     import matplotlib.patheffects as pe
@@ -128,7 +128,7 @@ def main():
     ax.set_xlabel("Expression complexity $C$", fontsize=11)
     ax.set_ylabel("MSE loss (z-scored logit)", fontsize=11)
     ax.set_xlim(0, 24)
-    ax.set_ylim(0.0, 0.325)
+    ax.set_ylim(0.0, 0.30)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(4))
     ax.xaxis.set_minor_locator(ticker.MultipleLocator(2))
     ax.yaxis.set_major_locator(ticker.MultipleLocator(0.05))
