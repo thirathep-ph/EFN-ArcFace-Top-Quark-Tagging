@@ -52,46 +52,66 @@ def main():
     C = np.array([e["complexity"] for e in eqs])
     L = np.array([e["loss"] for e in eqs])
     nested = np.array([has_nested(e["equation"]) for e in eqs])
-    nfeat = np.array([count_features(e["equation"]) for e in eqs])
 
-    # --- Publication styling (SciPost) ---
+    # --- Publication styling (SciPost / matplotlib best practice) ---
+    # OO interface, constrained_layout, serif CM, explicit grid/ticks, colorblind palette
     plt.rcParams.update({
-        "font.family": "serif", "font.size": 11,
+        "font.family": "serif",
+        "font.size": 10,
         "mathtext.fontset": "cm",
-        "axes.linewidth": 0.9, "xtick.major.width": 0.9,
+        "axes.titlesize": 11, "axes.labelsize": 11,
+        "xtick.labelsize": 9, "ytick.labelsize": 9,
+        "legend.fontsize": 8.5,
+        "axes.linewidth": 1.0, "xtick.major.width": 0.9,
         "ytick.major.width": 0.9, "xtick.minor.width": 0.6, "ytick.minor.width": 0.6,
+        "xtick.major.size": 3.5, "ytick.major.size": 3.5,
+        "xtick.minor.size": 2.0, "ytick.minor.size": 2.0,
     })
 
-    fig, ax = plt.subplots(figsize=(7.2, 4.6), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(6.8, 4.2), constrained_layout=True)
 
-    # Clean points (circle) and nested points (cross)
+    # Pareto front as dashed baseline (academic standard: front is envelope, not data line)
+    ax.plot(C, L, color="#6e6e6e", alpha=0.9, linewidth=1.2, linestyle=(0, (4, 3)),
+            zorder=1)
+
+    # Plateu shading — where adding complexity barely helps (C>14, loss <0.09)
+    ax.axhspan(0.05, 0.095, xmin=14/24, xmax=1.0, facecolor="#f0f0f0", edgecolor="none", zorder=0)
+    ax.text(21.5, 0.073, "plateau", fontsize=7, color="#6e6e6e", ha="right", va="center", style="italic")
+
+    # Colorblind Wong palette: blue #0072B2, vermillion #D55E00, gold #CCB000
     clean_mask = ~nested
     dirty_mask = nested
 
-    ms_clean = np.where(nfeat[clean_mask] <= 2, 52, 68)
-    ms_nested = np.where(nfeat[dirty_mask] <= 2, 52, 68)
-
-    ax.scatter(C[clean_mask], L[clean_mask], marker='o', s=ms_clean,
-               facecolors='none', edgecolors='#1f4a5e', linewidths=1.1,
+    # Uniform, print-visible sizes — nfeat not encoded in size any more (was confusing)
+    ax.scatter(C[clean_mask], L[clean_mask], marker='o', s=72,
+               facecolors='none', edgecolors='#0072B2', linewidths=1.6,
                zorder=3, label='No nested functions')
-    ax.scatter(C[dirty_mask], L[dirty_mask], marker='x', s=ms_nested,
-               color='#922b21', linewidths=1.4,
+    ax.scatter(C[dirty_mask], L[dirty_mask], marker='x', s=68,
+               color='#D55E00', linewidths=1.7,
                zorder=3, label='Contains nested')
 
     sel_idx = np.where(C == SELECTED_C)[0][0]
-    ax.scatter([C[sel_idx]], [L[sel_idx]], marker='D', s=85,
-               facecolors='#d4ac0d', edgecolors='black', linewidths=1.0,
+    # Selected: larger, solid gold with thick black stroke — stands out in B/W too (shape D)
+    ax.scatter([C[sel_idx]], [L[sel_idx]], marker='D', s=110,
+               facecolors='#CCB000', edgecolors='black', linewidths=1.2,
                zorder=5, label=f'Selected ($C={SELECTED_C}$)')
+    # Thin halo for visibility when printed small
+    ax.scatter([C[sel_idx]], [L[sel_idx]], marker='D', s=145,
+               facecolors='none', edgecolors='#CCB000', linewidths=2.5, alpha=0.35, zorder=4)
 
-    # Connecting line — slightly stronger for print
-    ax.plot(C, L, color='#7f8c8d', alpha=0.55, linewidth=1.0, zorder=1, linestyle='-')
+    # Elbow marker — short gold dash distinct from grey minor grid (was both dotted)
+    sel_y = float(L[np.where(C == SELECTED_C)[0][0]])
+    ax.plot([SELECTED_C, SELECTED_C], [0.0, sel_y], color="#CCB000", alpha=0.75, linewidth=1.25, linestyle=(0, (3, 2.5)), zorder=1)
+    ax.text(SELECTED_C, 0.306, r"$C=6$", fontsize=7.5, color="#8a7000", ha="center", va="bottom",
+            bbox=dict(boxstyle="round,pad=0.18", facecolor="white", edgecolor="#CCB000", alpha=0.95, linewidth=0.6),
+            clip_on=False)
 
-    # Annotations: only key equations, placed with care
+    # Annotations — offset first label off the x=2 grid line so leader does not coincide with grid/vertical
+    import matplotlib.patheffects as pe
     annotations = {
-        2:  {"label": "$\\tanh(m/p_T)$", "dx": 0, "dy": 0.022, "ha": "center", "va": "bottom"},
-        6:  {"label": "$\\tanh(m/p_T) - 0.35\\,\\tau_{32}$", "dx": 2.0, "dy": 0.008, "ha": "left", "va": "bottom"},
+        2:  {"label": r"$\tanh(m/p_T)$", "dx": 0.9, "dy": 0.032, "ha": "left", "va": "bottom"},
+        6:  {"label": r"$\tanh(m/p_T)-0.35\,\tau_{32}$", "dx": 2.6, "dy": 0.014, "ha": "left", "va": "bottom"},
     }
-
     for c, ann in annotations.items():
         idx = np.where(C == c)[0]
         if len(idx) == 0:
@@ -101,28 +121,31 @@ def main():
         ax.annotate(
             ann["label"],
             xy=(x, y), xytext=(x + ann["dx"], y + ann["dy"]),
-            fontsize=9.0, ha=ann["ha"], va=ann["va"],
-            color="#1f2e3a",
-            bbox=dict(boxstyle="round,pad=0.32", facecolor="white",
-                      edgecolor="#9aa4ad", alpha=0.96, linewidth=0.7),
-            arrowprops=dict(arrowstyle="-", color="#9aa4ad", lw=0.8),
+            fontsize=9.5, ha=ann["ha"], va=ann["va"], color="#1a1a1a",
+            arrowprops=dict(arrowstyle="-", color="#333333", lw=0.9, shrinkB=3),
+            path_effects=[pe.withStroke(linewidth=3.5, foreground="white")],
             zorder=6,
         )
 
-    ax.set_xlabel("Expression complexity $C$", fontsize=11.5)
-    ax.set_ylabel("MSE loss (z-scored logit)", fontsize=11.5)
+    ax.set_xlabel("Expression complexity $C$", fontsize=11)
+    ax.set_ylabel("MSE loss (z-scored logit)", fontsize=11)
     ax.set_xlim(0, 24)
     ax.set_ylim(0.0, 0.30)
     ax.xaxis.set_major_locator(ticker.MultipleLocator(4))
     ax.xaxis.set_minor_locator(ticker.MultipleLocator(2))
-    ax.yaxis.set_minor_locator(ticker.MultipleLocator(0.05))
-    ax.grid(True, alpha=0.28, which='major', linestyle='-', linewidth=0.6)
-    ax.grid(True, alpha=0.14, which='minor', linestyle=':', linewidth=0.5)
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(0.05))
+    ax.yaxis.set_minor_locator(ticker.MultipleLocator(0.025))
+    ax.tick_params(which="both", direction="in", top=True, right=True)
+    ax.grid(True, which="major", linestyle="-", linewidth=0.7, alpha=0.32, color="#222222")
+    ax.grid(True, which="minor", linestyle=":", linewidth=0.5, alpha=0.18, color="#555555")
     ax.set_axisbelow(True)
 
-    ax.legend(loc='upper right', **{**LEGEND_KWARGS, "fontsize": 9, "framealpha": 0.97, "edgecolor": "#7f8c8d"},
-              handlelength=1.6, handletextpad=0.6)
-    save_fig(fig, 'pareto_front_sr.png')
+    # Legend outside data, thin border — SciPost single-col friendly
+    leg = ax.legend(loc='upper right', **{**LEGEND_KWARGS, "fontsize": 8.5, "framealpha": 1.0, "edgecolor": "#333333"},
+                    handlelength=1.7, handletextpad=0.5, borderpad=0.45, labelspacing=0.35)
+    leg.get_frame().set_linewidth(0.8)
+
+    save_fig(fig, 'pareto_front_sr.png', dpi=300)
     print(f"Saved: pareto_front_sr.png")
 
 
