@@ -171,7 +171,7 @@ def main():
         ax.set_xlim(0, 1.2); ax.set_ylim(0, 1.5)
         ax.legend(loc='lower right', **{**LEGEND_KWARGS, "fontsize": 7})
         add_grid(ax)
-        panel_label(ax, chr(ord('a') + idx_ax))
+        panel_label(ax, f"({chr(ord('a') + idx_ax)})")
 
     plt.tight_layout()
     save_fig(fig, 'angular_collimation.png')

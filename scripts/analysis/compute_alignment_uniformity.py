@@ -121,7 +121,7 @@ def main():
     axes[0].set_xlim(0, 25)
     axes[0].legend(fontsize=7, handlelength=1.2, **{k: v for k, v in LEGEND_KWARGS.items() if k not in ('fontsize',)})
     add_grid(axes[0])
-    panel_label(axes[0], 'a')
+    panel_label(axes[0], '(a)')
 
     # Format panel 2 — dynamic ylim to prevent overflow (ponytail: auto 1.18× max)
     y_max = max((v for k, v in results.items() if k.endswith('_N')), default=22000)
@@ -131,7 +131,7 @@ def main():
     axes[1].set_xticklabels(['QCD\nCore', 'QCD\nEdge', 'Top\nCore', 'Top\nEdge'], fontsize=7)
     axes[1].legend(fontsize=7, handlelength=1.2, **{k: v for k, v in LEGEND_KWARGS.items() if k not in ('fontsize',)})
     add_grid(axes[1], axis='y')
-    panel_label(axes[1], 'b')
+    panel_label(axes[1], '(b)')
 
     plt.tight_layout(pad=0.6, w_pad=1.2)
     save_fig(fig, 'embedding_geometry.png')

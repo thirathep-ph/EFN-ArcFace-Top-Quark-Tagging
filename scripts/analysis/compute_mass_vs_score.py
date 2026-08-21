@@ -100,7 +100,7 @@ def main():
     ax.set_ylabel('$P(\\mathrm{top} \\mid \\mathrm{jet})$')
     ax.legend(markerscale=5, **LEGEND_KWARGS)
     add_grid(ax)
-    panel_label(ax, 'a')
+    panel_label(ax, '(a)')
 
     # Right: 2D density all events (same x-range as left for consistency)
     ax = axes[1]
@@ -112,7 +112,7 @@ def main():
     ax.set_ylabel('$P(\\mathrm{top} \\mid \\mathrm{jet})$')
     ax.legend(**LEGEND_KWARGS)
     add_grid(ax)
-    panel_label(ax, 'b')
+    panel_label(ax, '(b)')
 
     plt.tight_layout()
     save_path = os.path.join(str(EXPERIMENTS), 'mass_vs_score_scatter.png')

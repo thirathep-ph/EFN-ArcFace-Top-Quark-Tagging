@@ -110,7 +110,7 @@ def main():
         ax.legend(loc='lower right', **LEGEND_KWARGS)
         add_grid(ax)
         ax.set_xlim(0.5, n_show + 0.5)
-        panel_label(ax, chr(ord('a') + idx))
+        panel_label(ax, f"({chr(ord('a') + idx)})")
 
         results[class_name] = {
             'optimal_k': int(k_opt),

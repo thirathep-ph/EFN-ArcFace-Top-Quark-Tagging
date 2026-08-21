@@ -195,7 +195,7 @@ def plot_saliency(results, save_path):
     ax.set_ylabel("Mean saliency ($|\\partial \\ell / \\partial x|$)")
     ax.set_yscale('log')
     add_grid(ax)
-    panel_label(ax, 'a')
+    panel_label(ax, '(a)')
 
     ax = axes[1]
     n_show_cum = 50
@@ -215,7 +215,7 @@ def plot_saliency(results, save_path):
             ax.axvline(n_thr, color='0.7', linestyle=':', lw=0.5)
     ax.legend(loc="lower right", **LEGEND_KWARGS)
     add_grid(ax)
-    panel_label(ax, 'b')
+    panel_label(ax, '(b)')
 
     ax = axes[2]
     top_10_mean = results["top_10_mean"]
@@ -225,7 +225,7 @@ def plot_saliency(results, save_path):
     ax.set_xlabel("Constituent rank")
     ax.set_ylabel("Mean saliency")
     add_grid(ax, axis='y')
-    panel_label(ax, 'c')
+    panel_label(ax, '(c)')
     for i, (v, s) in enumerate(zip(top_10_mean, top_10_std)):
         ax.text(i, v + s + 0.001, f'{v:.4f}', ha='center', va='bottom', fontsize=7)
 
