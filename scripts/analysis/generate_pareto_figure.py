@@ -82,28 +82,26 @@ def main():
     clean_mask = ~nested
     dirty_mask = nested
 
-    # Uniform, print-visible sizes — nfeat not encoded in size any more (was confusing)
-    ax.scatter(C[clean_mask], L[clean_mask], marker='o', s=72,
-               facecolors='none', edgecolors='#0072B2', linewidths=1.6,
+    # Smaller icons — was slightly oversized, now compact for publication
+    ax.scatter(C[clean_mask], L[clean_mask], marker='o', s=52,
+               facecolors='none', edgecolors='#0072B2', linewidths=1.4,
                zorder=3, label='No nested functions')
-    ax.scatter(C[dirty_mask], L[dirty_mask], marker='x', s=68,
-               color='#D55E00', linewidths=1.7,
+    ax.scatter(C[dirty_mask], L[dirty_mask], marker='x', s=54,
+               color='#D55E00', linewidths=1.5,
                zorder=3, label='Contains nested')
 
     sel_idx = np.where(C == SELECTED_C)[0][0]
-    # Selected: larger, solid gold with thick black stroke — stands out in B/W too (shape D)
-    ax.scatter([C[sel_idx]], [L[sel_idx]], marker='D', s=110,
-               facecolors='#CCB000', edgecolors='black', linewidths=1.2,
+    ax.scatter([C[sel_idx]], [L[sel_idx]], marker='D', s=78,
+               facecolors='#CCB000', edgecolors='black', linewidths=1.0,
                zorder=5, label=f'Selected ($C={SELECTED_C}$)')
-    # Thin halo for visibility when printed small
-    ax.scatter([C[sel_idx]], [L[sel_idx]], marker='D', s=145,
-               facecolors='none', edgecolors='#CCB000', linewidths=2.5, alpha=0.35, zorder=4)
+    ax.scatter([C[sel_idx]], [L[sel_idx]], marker='D', s=105,
+               facecolors='none', edgecolors='#CCB000', linewidths=2.0, alpha=0.32, zorder=4)
 
     # Elbow marker — short gold dash distinct from grey minor grid (was both dotted)
     sel_y = float(L[np.where(C == SELECTED_C)[0][0]])
     ax.plot([SELECTED_C, SELECTED_C], [0.0, sel_y], color="#CCB000", alpha=0.75, linewidth=1.25, linestyle=(0, (3, 2.5)), zorder=1)
-    ax.text(SELECTED_C, 0.316, r"$C=6$", fontsize=7.5, color="#8a7000", ha="center", va="bottom",
-            bbox=dict(boxstyle="round,pad=0.18", facecolor="white", edgecolor="#CCB000", alpha=0.95, linewidth=0.6),
+    ax.text(SELECTED_C, 0.312, r"$C=6$", fontsize=7, color="#8a7000", ha="center", va="bottom",
+            bbox=dict(boxstyle="round,pad=0.16", facecolor="white", edgecolor="#CCB000", alpha=0.95, linewidth=0.6),
             clip_on=False)
 
     # Annotations — offset first label off the x=2 grid line so leader does not coincide with grid/vertical
