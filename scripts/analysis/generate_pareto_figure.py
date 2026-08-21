@@ -106,8 +106,8 @@ def main():
     # Annotations — offset first label off the x=2 grid line so leader does not coincide with grid/vertical
     import matplotlib.patheffects as pe
     annotations = {
-        2:  {"label": r"$\tanh(m/p_T)$", "dx": 0.9, "dy": 0.026, "ha": "left", "va": "bottom"},
-        6:  {"label": r"$\tanh(m/p_T)-0.35\,\tau_{32}$", "dx": 2.6, "dy": 0.022, "ha": "left", "va": "bottom"},
+        2:  {"label": r"$\tanh(m/p_T)$", "dx": 0.90, "dy": 0.022, "ha": "left", "va": "bottom"},
+        6:  {"label": r"$\tanh(m/p_T)-0.35\,\tau_{32}$", "dx": 1.35, "dy": 0.032, "ha": "left", "va": "bottom"},
     }
     for c, ann in annotations.items():
         idx = np.where(C == c)[0]
