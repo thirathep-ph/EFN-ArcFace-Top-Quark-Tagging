@@ -118,13 +118,19 @@ def plot_representative_jet(event_p4, title="Representative Jet", save_path=None
     eta = np.arcsinh(pz / (pt + 1e-10))
     phi = np.arctan2(py, px)
     
+    # jet axis for Δη, Δφ
+    jet_eta = np.arcsinh(np.sum(pz) / (np.sqrt(np.sum(px)**2 + np.sum(py)**2) + 1e-10))
+    jet_phi = np.arctan2(np.sum(py), np.sum(px))
+    deta = eta - jet_eta
+    dphi = (phi - jet_phi + np.pi) % (2 * np.pi) - np.pi
+    
     plt.figure(figsize=(9, 7))
     # Size reflects pT, color reflects energy fraction
     z = e / (np.sum(e) + 1e-10)
-    scatter = plt.scatter(eta, phi, s=pt*8, alpha=0.7, c=z, cmap='plasma', edgecolors='black', linewidth=0.5)
+    scatter = plt.scatter(deta, dphi, s=pt*8, alpha=0.7, c=z, cmap='plasma', edgecolors='black', linewidth=0.5)
     plt.colorbar(scatter, label='Energy Fraction (z)')
-    plt.xlabel(r'$\eta$ (Relative)')
-    plt.ylabel(r'$\phi$ (Relative)')
+    plt.xlabel(r'$\Delta\eta$')
+    plt.ylabel(r'$\Delta\phi$')
     plt.title(f"{title}\n(Constituent Pattern)", fontsize=14)
     plt.grid(True, alpha=0.2)
     
@@ -133,6 +139,45 @@ def plot_representative_jet(event_p4, title="Representative Jet", save_path=None
         plt.close()
     else:
         plt.show()
+
+
+def plot_deta_dphi_plane(events, label="Jets", save_path='results/deta_dphi.png'):
+    """Δη-Δφ plane: 2D histogram of constituents relative to jet axis."""
+    # vectorized Δη, Δφ per constituent
+    px = ak.to_numpy(ak.flatten(events.px))
+    py = ak.to_numpy(ak.flatten(events.py))
+    pz = ak.to_numpy(ak.flatten(events.pz))
+    e = ak.to_numpy(ak.flatten(events.E))
+    # jet-level axis per jet (broadcast via counts)
+    counts = ak.to_numpy(ak.num(events))
+    jet_px = np.repeat(ak.to_numpy(ak.sum(events.px, axis=1)), counts)
+    jet_py = np.repeat(ak.to_numpy(ak.sum(events.py, axis=1)), counts)
+    jet_pz = np.repeat(ak.to_numpy(ak.sum(events.pz, axis=1)), counts)
+    jet_pt = np.sqrt(jet_px**2 + jet_py**2)
+    jet_eta = np.arcsinh(jet_pz / (jet_pt + 1e-10))
+    jet_phi = np.arctan2(jet_py, jet_px)
+    pt = np.sqrt(px**2 + py**2)
+    eta = np.arcsinh(pz / (pt + 1e-10))
+    phi = np.arctan2(py, px)
+    deta = eta - jet_eta
+    dphi = (phi - jet_phi + np.pi) % (2 * np.pi) - np.pi
+    # mask padded zeros
+    mask = e > 1e-8
+    deta, dphi, e = deta[mask], dphi[mask], e[mask]
+    if len(deta) == 0:
+        print(f"Warning: No constituents for {label}")
+        return
+    z = e / (np.sum(e) + 1e-10) if False else None  # unweighted for density
+    plt.figure(figsize=(9, 7))
+    plt.hist2d(deta, dphi, bins=50, cmap='viridis', cmin=1)
+    plt.colorbar(label='Constituent density')
+    plt.xlabel(r'$\Delta\eta$')
+    plt.ylabel(r'$\Delta\phi$')
+    plt.title(f"$\\Delta\\eta$-$\\Delta\\phi$ plane ({label})")
+    plt.grid(True, alpha=0.1)
+    plt.savefig(save_path, dpi=200, bbox_inches='tight')
+    plt.close()
+    print(f"Saved deta-dphi plane to {save_path}")
 
 def plot_lund_plane(events, label="Jets", save_path='results/lund_plane.png'):
     """
