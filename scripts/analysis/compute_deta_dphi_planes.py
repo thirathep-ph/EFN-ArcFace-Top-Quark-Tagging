@@ -31,7 +31,11 @@ PANELS = [
 ]
 def normalize(x): return x / (np.linalg.norm(x, axis=1, keepdims=True) + 1e-10)
 def load_centers(p):
-    import torch, torch_directml
+    import torch
+    try:
+        import torch_directml  # noqa: F401
+    except ImportError:
+        pass
     sd = torch.load(p, map_location="cpu", weights_only=False)
     return normalize(sd["arcface_head.class_centers"].detach().cpu().numpy())
 def stratified_sample(idx, n, rng):

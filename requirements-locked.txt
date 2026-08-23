@@ -1,6 +1,7 @@
 # ============================================================
-# requirements-locked.txt — Jet Tagging Project
+# requirements-locked-amd-win.txt — Jet Tagging Project (renamed note: keep as requirements-locked.txt for CI)
 # Pinned to the verified venv (Python 3.10.11, Windows, AMD GPU).
+# For NVIDIA/Linux/Mac use requirements.txt + CUDA wheel (see arcefn/utils/device.py + REPRODUCING.md).
 #
 # IMPORTANT — AMD GPU / torch-directml constraints (verified 2026-08-15):
 #   * This machine uses an AMD Radeon RX 5700 XT. The ONLY supported backend

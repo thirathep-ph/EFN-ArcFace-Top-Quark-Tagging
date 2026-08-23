@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from pathlib import Path
 
-exp = Path(r"D:\research\jet_tagging\experiments\poc_injection_scan.png")
-mass = Path(r"D:\research\jet_tagging\experiments\poc_mass_decoupled.png")
+_root = Path(__file__).resolve().parents[2]
+exp = _root / "experiments" / "poc_injection_scan.png"
+mass = _root / "experiments" / "poc_mass_decoupled.png"
 
 img_exp = mpimg.imread(str(exp))
 img_mass = mpimg.imread(str(mass))
@@ -34,7 +35,7 @@ ax_top.text(-0.02, 1.02, '(a)', transform=ax_top.transAxes,
 ax_bot.text(-0.02, 1.02, '(b)', transform=ax_bot.transAxes,
             fontsize=14, fontweight='bold', va='bottom')
 
-out = Path(r"D:\research\jet_tagging\paper\figures\poc_combined.png")
+out = _root / "paper" / "figures" / "poc_combined.png"
 fig.savefig(str(out), dpi=200, bbox_inches='tight', pad_inches=0.05)
 plt.close()
 print(f"Saved: {out}")

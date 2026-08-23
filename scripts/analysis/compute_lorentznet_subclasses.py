@@ -22,7 +22,10 @@ from pathlib import Path
 
 import numpy as np
 import torch
-import torch_directml  # noqa: F401  (registers PrivateUse1 so checkpoint loads)
+try:
+    import torch_directml  # noqa: F401  (registers PrivateUse1 so checkpoint loads)
+except ImportError:
+    pass
 from sklearn.metrics import adjusted_rand_score
 from torch.utils.data import DataLoader
 

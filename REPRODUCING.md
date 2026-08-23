@@ -6,7 +6,7 @@ command, artifact, and expected value needed to reproduce it.
 ## Environment
 
 - Python 3.12 venv: `.\\.venv\\Scripts\\python.exe` (Windows; equivalent on Linux/macOS).
-- Install: `pip install -r requirements-locked.txt` (if present) or the repo's dependency list.
+- Install: `pip install -r requirements-locked.txt` on AMD/Windows (verified) or `pip install -r requirements.txt` + CUDA wheel on NVIDIA/Linux/Mac (`pip install torch --index-url https://download.pytorch.org/whl/cu121`; see `arcefn/utils/device.py` `ARCEFN_DEVICE` override).
 - All analysis scripts are run **from the repository root** as modules:
   ```
   .\\.venv\\Scripts\\python.exe -m scripts.analysis.<name> [args]

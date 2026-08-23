@@ -14,7 +14,7 @@ WORKDIR /app
 
 # Editable install of core library
 COPY setup.py README.md ./
-COPY arcjet/ ./arcjet/
+COPY arcefn/ ./arcefn/
 RUN pip install --no-cache-dir -e .
 
 # Scripts for training and analysis

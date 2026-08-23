@@ -35,7 +35,22 @@ def get_device() -> tuple[torch.device, str]:
     backend_type : str
         One of ``'dml'``, ``'cuda'``, or ``'cpu'`` — used to gate
         backend-specific operations (AMP, cache clearing, etc.).
+
+    Env override: ``ARCEFN_DEVICE=cuda|dml|cpu`` forces a backend (case-insensitive).
     """
+    import os as _os
+    _forced = _os.environ.get("ARCEFN_DEVICE", "").strip().lower()
+    if _forced in ("cuda", "dml", "cpu"):
+        if _forced == "cuda" and torch.cuda.is_available():
+            return torch.device("cuda"), "cuda"
+        if _forced == "dml":
+            try:
+                import torch_directml  # noqa: F401
+                return torch_directml.device(), "dml"
+            except Exception:
+                pass
+        if _forced == "cpu":
+            return torch.device("cpu"), "cpu"
     # Priority 1: DirectML (AMD GPU on Windows)
     # Requires: pip install torch-directml — and numpy<2, because the DML
     # plugin is compiled against NumPy 1.x and its import fails under

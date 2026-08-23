@@ -37,7 +37,10 @@ def normalize(x: np.ndarray) -> np.ndarray:
 
 def load_centers(checkpoint: Path) -> np.ndarray:
     import torch
-    import torch_directml  # noqa: F401  (registers PrivateUse1 so the checkpoint loads)
+    try:
+        import torch_directml  # noqa: F401  (registers PrivateUse1 so the checkpoint loads)
+    except ImportError:
+        pass
     sd = torch.load(str(checkpoint), map_location="cpu", weights_only=False)
     return normalize(sd["arcface_head.class_centers"].detach().cpu().numpy())
 
