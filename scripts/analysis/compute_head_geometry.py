@@ -37,6 +37,17 @@ BATCH_SIZE = 1024
 
 NAME_MAP = {0: 'QCD_Core', 1: 'QCD_Edge', 2: 'Top_Core', 3: 'Top_Edge'}
 
+def arch_name(model_dir):
+    import torch
+    ckpt = torch.load(str(Path(model_dir) / 'checkpoint.pt'), map_location='cpu', weights_only=False)
+    if 'arcface_head.class_centers' in ckpt:
+        return 'ArcFace'
+    if 'classifer.weight' in ckpt or 'classifier.weight' in ckpt:
+        return 'Linear'
+    if 'class_centers' in ckpt:
+        return 'CosLinear'
+    return 'Model'
+
 def dglap_power_law(z, A, alpha, beta):
     z = np.clip(z, 1e-10, 1 - 1e-10)
     return A * z**alpha * (1 - z)**beta
@@ -109,6 +120,9 @@ def main():
                         help="Second model dir to compare against (only used with --model_dir).")
     parser.add_argument("--max_events", type=int, default=N_EVENTS,
                         help="Number of test events (default %(default)s).")
+    parser.add_argument("--out_tag", type=str, default="",
+                        help="Suffix for output filenames, e.g. '_coslinear' "
+                             "(default: plain, matches canonical ArcFace-vs-Linear).")
     args = parser.parse_args()
 
     device, _ = get_device()
@@ -126,10 +140,10 @@ def main():
 
     if args.model_dir:
         model_dirs = [Path(args.model_dir)]
-        names = ['ArcFace']
+        names = [arch_name(model_dirs[0])]
         if args.compare_dir:
             model_dirs.append(Path(args.compare_dir))
-            names.append('Linear')
+            names.append(arch_name(model_dirs[-1]))
         out_dir = model_dirs[0]
     else:
         model_dirs = [EXPERIMENTS / 'robustness_s16_m05', EXPERIMENTS / 'baselines_linear_seed_42']
@@ -195,12 +209,15 @@ def main():
         all_results[name] = results
 
     plt.tight_layout()
-    save_fig(fig, 'head_geometry.png')
-    print(f"\nSaved: head_geometry.png")
+    tag = args.out_tag or ""
+    fig_name = f'head_geometry{tag}.png'
+    json_name = f'head_geometry_params{tag}.json'
+    save_fig(fig, fig_name)
+    print(f"\nSaved: {fig_name}")
 
-    with open(str(out_dir / 'head_geometry_params.json'), 'w') as f:
+    with open(str(out_dir / json_name), 'w') as f:
         json.dump(all_results, f, indent=2)
-    print(f"Saved: head_geometry_params.json")
+    print(f"Saved: {json_name}")
 
     # Print comparison table
     print(f"\n{'='*70}")
