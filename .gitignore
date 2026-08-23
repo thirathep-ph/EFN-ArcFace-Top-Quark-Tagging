@@ -70,6 +70,8 @@ paper/main.pdf
 paper/submission.zip
 paper/submission/
 paper/tables/
+paper/overleaf/
+paper/overleaf.zip
 
 # ===== LATEX BUILD ARTIFACTS =====
 *.aux
