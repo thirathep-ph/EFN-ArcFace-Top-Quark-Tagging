@@ -116,8 +116,9 @@ def main():
     parser.add_argument("--model_dir", type=str, default=None,
                         help="Primary model dir (config.json + checkpoint.pt). "
                              "Default: canonical 64-d ArcFace + 64-d Linear.")
-    parser.add_argument("--compare_dir", type=str, default=None,
-                        help="Second model dir to compare against (only used with --model_dir).")
+    parser.add_argument("--compare_dir", type=str, nargs='+', default=None,
+                        help="One or more model dirs to compare against (only used with --model_dir). "
+                             "Multiple dirs are stacked as additional rows.")
     parser.add_argument("--max_events", type=int, default=N_EVENTS,
                         help="Number of test events (default %(default)s).")
     parser.add_argument("--out_tag", type=str, default="",
@@ -142,8 +143,9 @@ def main():
         model_dirs = [Path(args.model_dir)]
         names = [arch_name(model_dirs[0])]
         if args.compare_dir:
-            model_dirs.append(Path(args.compare_dir))
-            names.append(arch_name(model_dirs[-1]))
+            for d in args.compare_dir:
+                model_dirs.append(Path(d))
+                names.append(arch_name(Path(d)))
         out_dir = model_dirs[0]
     else:
         model_dirs = [EXPERIMENTS / 'robustness_s16_m05', EXPERIMENTS / 'baselines_linear_seed_42']
@@ -202,7 +204,7 @@ def main():
                        label=f'$\\alpha$={fit["alpha"]:.2f}, $R^2$={fit["R2"]:.3f}')
             ax.set_xlabel('$z_g$')
             if sc_id == 0:
-                ax.set_ylabel('P($z_g$)')
+                ax.set_ylabel(f'{name}\nP($z_g$)', fontsize=9)
             ax.set_title(f'{sc_name}')
             ax.legend(loc="upper right", **{**LEGEND_KWARGS, "fontsize": 6})
 
@@ -221,16 +223,19 @@ def main():
 
     # Print comparison table
     print(f"\n{'='*70}")
-    print(f"{'Subclass':<12} {'ArcFace a':<12} {'ArcFace R2':<12} {'Linear a':<12} {'Linear R2':<12}")
+    header = f"{'Subclass':<12}"
+    for nm in names:
+        header += f" {nm+' a':<11} {nm+' R2':<11}"
+    print(header)
     print(f"{'-'*60}")
     for sc_name in NAME_MAP.values():
-        af = all_results.get('ArcFace', {}).get(sc_name, {})
-        ln = all_results.get('Linear', {}).get(sc_name, {})
-        a_af = f"{af.get('alpha', -1):.3f}" if af else 'N/A'
-        r_af = f"{af.get('R2', 0):.4f}" if af else 'N/A'
-        a_ln = f"{ln.get('alpha', -1):.3f}" if ln else 'N/A'
-        r_ln = f"{ln.get('R2', 0):.4f}" if ln else 'N/A'
-        print(f"{sc_name:<12} {a_af:<12} {r_af:<12} {a_ln:<12} {r_ln:<12}")
+        row = f"{sc_name:<12}"
+        for nm in names:
+            res = all_results.get(nm, {}).get(sc_name, {})
+            a = f"{res.get('alpha', -1):.3f}" if res else 'N/A'
+            r = f"{res.get('R2', 0):.4f}" if res else 'N/A'
+            row += f" {a:<11} {r:<11}"
+        print(row)
     print(f"{'='*70}")
 
     print("\n[DONE]")

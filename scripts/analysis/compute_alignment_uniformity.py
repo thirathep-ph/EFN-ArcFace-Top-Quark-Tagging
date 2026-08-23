@@ -12,6 +12,7 @@ Output
 """
 
 import json, gc, time
+from pathlib import Path
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -20,8 +21,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from arcefn.utils.paths import EXPERIMENTS, DATA_DIR
-from arcefn.models.efn_arcface import TopTaggingModel
-from arcefn.models.efn_linear import TopTaggingLinear
+from arcefn.utils.model_loading import load_model_from_dir, read_model_config
 from arcefn.data.loader import load_awkward, JetTaggingDataset
 from arcefn.utils.device import get_device
 from arcefn.utils.clustering import spectral_clustering_subclass
@@ -47,32 +47,50 @@ def get_raw_embeddings(model, loader, device):
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Embedding geometry comparison across model dirs (Auto detect ArcFace/CosLinear/Linear).")
+    parser.add_argument("--model_dir", type=str, nargs='+',
+                        default=[str(EXPERIMENTS / 'robustness_s16_m05'),
+                                 str(EXPERIMENTS / 'baselines_coslinear_seed_42'),
+                                 str(EXPERIMENTS / 'baselines_linear_seed_42')],
+                        help="One or more experiment dirs (config + checkpoint.pt).")
+    parser.add_argument("--out_tag", type=str, default="",
+                        help="Suffix for output filenames, e.g. '_3way'.")
+    parser.add_argument("--max_events", type=int, default=N_EVENTS,
+                        help="Number of test events (default %(default)s).")
+    args = parser.parse_args()
+
     device, _ = get_device()
     print(f"Device: {device}")
-    print(f"Loading {N_EVENTS:,} events...")
-    events, labels, weights = load_awkward(TEST_H5, max_events=N_EVENTS)
+    print(f"Loading {args.max_events:,} events...")
+    events, labels, weights = load_awkward(TEST_H5, max_events=args.max_events)
     ds = JetTaggingDataset(events, labels, weights)
     loader = DataLoader(ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
-    models = [
-        ('ArcFace\n(s=16, m=0.5)', TopTaggingModel(s=16.0, m=0.5, embedding_dim=64, particle_dim=128).to(device),
-         EXPERIMENTS / 'robustness_s16_m05' / 'checkpoint.pt'),
-        ('Linear\n(cross-entropy)', TopTaggingLinear(embedding_dim=64, particle_dim=128).to(device),
-         EXPERIMENTS / 'baselines_linear_seed_42' / 'checkpoint.pt'),
-    ]
+    model_dirs = [Path(d) for d in args.model_dir]
+    models = []
+    for d in model_dirs:
+        info = read_model_config(d)
+        arch = info['architecture']
+        if arch == 'arcface':
+            short = 'ArcFace (s=16, m=0.5)'
+        elif arch == 'linear':
+            short = 'Linear (cross-entropy)'
+        else:
+            short = 'CosLinear (m=0)'
+        models.append((short, d))
 
     results = {}
     apply_style()
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 
-    colors = [COLORS['top'], COLORS['qcd']]
+    colors = [COLORS['top'], COLORS['qcd'], '#7f7f7f']
 
-    for idx, (name, model, ckpt_path) in enumerate(models):
+    for idx, (name, ckpt_dir) in enumerate(models):
         print(f"\n--- {name} ---")
         t0 = time.time()
-        sd = torch.load(str(ckpt_path), map_location='cpu', weights_only=False)
-        model.load_state_dict(sd, strict=True)
-        model.eval()
+        model = load_model_from_dir(ckpt_dir, device)
         emb_raw, y = get_raw_embeddings(model, loader, device)
         del model; gc.collect()
         norms = np.linalg.norm(emb_raw, axis=1)
@@ -80,8 +98,7 @@ def main():
 
         # Pane 1: Norm histogram (raw embeddings for all models)
         ax = axes[0]
-        label_clean = name.replace('\n', ' ')
-        ax.hist(norms, bins=80, color=colors[idx], alpha=0.6, density=True, label=label_clean)
+        ax.hist(norms, bins=80, color=colors[idx], alpha=0.6, density=True, label=name)
 
         # Pane 2: Subclass balance via spectral clustering
         # Normalize for spectral clustering (standard practice)
@@ -107,7 +124,7 @@ def main():
         sc_vals = [counts['QCD_Core'], counts['QCD_Edge'],
                    counts['Top_Core'], counts['Top_Edge']]
         offset = idx * 0.3
-        bars = ax.bar(sc_pos + offset, sc_vals, 0.3, color=colors[idx], alpha=0.8, label=label_clean)
+        bars = ax.bar(sc_pos + offset, sc_vals, 0.3, color=colors[idx], alpha=0.8, label=name)
         # Annotate percentages
         total = sum(sc_vals)
         for bar, val in zip(bars, sc_vals):
@@ -133,17 +150,20 @@ def main():
     add_grid(axes[1], axis='y')
     panel_label(axes[1], '(b)')
 
+    tag = args.out_tag or ""
+    fig_name = f'embedding_geometry{tag}.png'
+    json_name = f'embedding_geometry_results{tag}.json'
     plt.tight_layout(pad=0.6, w_pad=1.2)
-    save_fig(fig, 'embedding_geometry.png')
-    print(f"\nSaved: embedding_geometry.png")
+    save_fig(fig, fig_name)
+    print(f"\nSaved: {fig_name}")
 
-    results_json = str(EXPERIMENTS / 'embedding_geometry_results.json')
+    results_json = str(EXPERIMENTS / json_name)
     with open(results_json, 'w') as f:
         json.dump(results, f, indent=2)
     print(f"Saved: {results_json}")
 
     print("\n=== Key findings ===")
-    for name_key in ['ArcFace (s=16, m=0.5)', 'Linear (cross-entropy)']:
+    for name_key in [nm for nm, _ in models]:
         mn = results.get(f'{name_key}_norms_median', '?')
         sd = results.get(f'{name_key}_norms_std', '?')
         print(f"  {name_key}: norm median={mn}, std={sd}")
