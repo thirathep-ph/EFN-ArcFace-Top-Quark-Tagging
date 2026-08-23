@@ -173,7 +173,23 @@ def main():
     del model, embeddings
     import gc; gc.collect()
 
-    print("\nStep 5: Fitting AP splitting functions per subclass...")
+    def bootstrap_ci(zg_vals, n_boot=1000, seed=42):
+        rng = np.random.default_rng(seed)
+        alphas, betas = [], []
+        valid_base = zg_vals[(zg_vals > 0.1) & (zg_vals < 0.5)]
+        if len(valid_base) < 50:
+            return None, None
+        for _ in range(n_boot):
+            sample = rng.choice(valid_base, size=len(valid_base), replace=True)
+            f = fit_zg(sample)
+            if f:
+                alphas.append(f["alpha"]); betas.append(f["beta"])
+        if len(alphas) < 100:
+            return None, None
+        return (float(np.percentile(alphas, 2.5)), float(np.percentile(alphas, 97.5))), \
+               (float(np.percentile(betas, 2.5)), float(np.percentile(betas, 97.5)))
+
+    print("\nStep 5: Fitting AP splitting functions per subclass (bootstrap 1000)...")
     results = {}
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
     panel_labels = ["(a)", "(b)", "(c)", "(d)"]
@@ -191,11 +207,14 @@ def main():
         name = SUBCLASS_NAMES[sc]
 
         if fit:
+            a_ci, b_ci = bootstrap_ci(zg_sub, n_boot=1000, seed=42+sc)
+            fit["alpha_ci95"] = list(a_ci) if a_ci else None
+            fit["beta_ci95"] = list(b_ci) if b_ci else None
             results[name] = fit
             delta = fit['alpha'] - REFERENCE_ALPHA[sc]
             print(f"\n  {name}:")
-            print(f"    alpha_fit = {fit['alpha']:.3f}  |  alpha_ref = {REFERENCE_ALPHA[sc]:+.1f}  |  Delta = {delta:+.3f}")
-            print(f"    beta = {fit['beta']:.3f}  |  R^2 = {fit['r2']:.4f}  |  N = {fit['n']:,}")
+            print(f"    alpha_fit = {fit['alpha']:.3f} [{a_ci[0]:.3f},{a_ci[1]:.3f}]  |  alpha_ref = {REFERENCE_ALPHA[sc]:+.1f}  |  Delta = {delta:+.3f}" if a_ci else f"    alpha_fit = {fit['alpha']:.3f}")
+            print(f"    beta = {fit['beta']:.3f} [{b_ci[0]:.3f},{b_ci[1]:.3f}]  |  R^2 = {fit['r2']:.4f}  |  N = {fit['n']:,}" if b_ci else f"    beta = {fit['beta']:.3f}  |  R^2 = {fit['r2']:.4f}  |  N = {fit['n']:,}")
             print(f"    Reference: {REFERENCE_DESC[sc]}")
         else:
             print(f"\n  {name}: Fit failed (N={mask.sum():,})")
