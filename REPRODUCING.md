@@ -16,6 +16,8 @@ command, artifact, and expected value needed to reproduce it.
 - Unless stated otherwise: **seed 42**, **no replacement**, and **full 404k test set**.
 - Checkpoints live in `experiments/*/checkpoint.pt` (not tracked in git; regenerate with
   `scripts/train_arcface.py`, `scripts/train_baselines.py`). All result JSONs ARE tracked.
+- Hyperparameters (what was tuned vs fixed): $s=16.0$, $m=0.5$ from face literature (tested 0.3/0.5/0.7 on val, $m=0.5$ stable); $\Phi$ 128-d, $\rho$ 64-d fixed (Komiske et al.); embedding 64-d primary + 2-d ablation ($\Delta+0.05$~pp $p=0.125$)---no 4/8/16-d sweep (resource ceiling, $\sim$18h/train); Adam $10^{-3}$, OneCycleLR, 50 epochs, batch 128$\to$1024 accum, seed 42 (123/7 stability). No extensive swapping: keeps G4 falsifiable without conflating tuning; full config in each `config.json`.
+- Two-sided view: primary = predicted partition (what model sees) 117786/75299/111029/99886 $\alpha=-1.242/-1.022/-0.493/+1.105$; GT check 123322/78592/101260/100826 $\alpha=-1.267/-0.859/-0.543/+1.106$ ARI 0.79 in `subclass_label_comparison.json` (Figs. predicted in `paper/figures/`, GT archived `HEAD~1:paper/figures/supplementary_true/`). See App.~\ref{app:gt-vs-pred}.
 - Main-run provenance (`experiments/robustness_s16_m05/`): `checkpoint.pt` (2026-06-24) and
   `embeddings.npz` (2026-07-03) are the authoritative model + embedding artifacts behind every
   test-set number. `history.json` (2026-08-15) is the training/validation curve (regenerable);
