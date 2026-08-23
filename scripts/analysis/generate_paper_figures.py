@@ -70,6 +70,8 @@ def parse_args():
                         help="Number of events for physics/Lund plots")
     parser.add_argument("--batch_size", type=int, default=BATCH_SIZE,
                         help="Batch size for inference")
+    parser.add_argument("--partition", type=str, choices=["predicted", "true"], default="predicted",
+                        help="partition for subclass discovery: predicted (model view) or true (GT check)")
     return parser.parse_args()
 
 
@@ -283,12 +285,13 @@ def main():
     print(f"  Done in {time.time()-t0:.1f}s")
 
     # ------------------------------------------------------------------
-    # 6. Spectral clustering per true class
+    # 6. Spectral clustering per class (predicted primary: what model sees)
     # ------------------------------------------------------------------
-    print("\nSpectral clustering on true classes...")
+    part_labels = sub_preds if args.partition == "predicted" else sub_labels
+    print(f"\nSpectral clustering on {args.partition} classes (partition={args.partition})...")
     subclass_labels = np.full(len(sub_emb), -1, dtype=int)
 
-    top_mask = sub_labels == 1
+    top_mask = part_labels == 1
     if top_mask.sum() > 0:
         top_subclasses, k_top = spectral_clustering_subclass(sub_emb[top_mask], max_k=5)
         active_top, counts_top = np.unique(top_subclasses, return_counts=True)
@@ -297,7 +300,7 @@ def main():
     else:
         active_top = np.array([], dtype=int)
 
-    qcd_mask = sub_labels == 0
+    qcd_mask = part_labels == 0
     if qcd_mask.sum() > 0:
         qcd_subclasses, k_qcd = spectral_clustering_subclass(sub_emb[qcd_mask], max_k=5)
         active_qcd, counts_qcd = np.unique(qcd_subclasses, return_counts=True)

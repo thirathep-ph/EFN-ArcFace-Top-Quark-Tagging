@@ -10,9 +10,9 @@ physically interesting panels are
   * Top-Core   true positive  vs  false negative
   * Top-Edge   (all, essentially all true positive)
 
-The subclass partition is the canonical one (spectral clustering on TRUE
-labels over the full 404k test set, largest cluster -> Core), identical to
-compute_subclass_composition.py, and prediction status is argmax of the
+The subclass partition is the primary PREDICTED-label one (spectral
+clustering per predicted class over 404k, what the model sees); ground-truth
+partition is available via --partition true. Prediction status is argmax
 cosine similarity against the cached ArcFace class centers (no forward pass).
 
 Artifacts read:
@@ -103,6 +103,8 @@ def main() -> None:
                         help="Directory containing model checkpoint and embeddings")
     parser.add_argument("--embedding_dim", type=int, default=None,
                         help="Embedding dimension (unused, kept for consistency)")
+    parser.add_argument("--partition", type=str, default="predicted", choices=["predicted", "true"],
+                        help="Cluster per predicted (model-seen, primary) or true labels")
     args = parser.parse_args()
 
     # Set paths based on model_dir
@@ -121,9 +123,10 @@ def main() -> None:
     emb_norm = normalize(embeddings)
     preds = np.argmax(emb_norm @ centers.T, axis=1)
 
+    partition_labels = preds if args.partition == "predicted" else labels
     true_global = np.full(len(labels), -1, dtype=int)
     for cls in (0, 1):
-        mask = labels == cls
+        mask = partition_labels == cls
         sub, _ = spectral_clustering_subclass(emb_norm[mask], max_k=MAX_K)
         counts = Counter(sub)
         order = sorted(counts, key=lambda c: -counts[c])

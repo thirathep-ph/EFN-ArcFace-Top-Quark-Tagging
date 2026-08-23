@@ -114,6 +114,9 @@ def main():
                         help="Embedding dimension (overrides config.json if provided)")
     parser.add_argument("--max_events", type=int, default=MAX_EVENTS,
                         help="Number of test events (default %(default)s).")
+    parser.add_argument("--partition", type=str, default="predicted",
+                        choices=["predicted", "true"],
+                        help="Cluster per predicted (model view, primary) or true labels")
     args = parser.parse_args()
 
     model_dir = Path(args.model_dir) if args.model_dir else None
@@ -146,10 +149,21 @@ def main():
     embeddings = np.vstack(all_emb)
     print(f"  Done in {time.time()-t0:.0f}s")
 
-    print("\nStep 3: Subclass discovery via Spectral Clustering...")
+    print(f"\nStep 3: Subclass discovery via Spectral Clustering ({args.partition}, what model sees)...")
+    # predicted partition: use model's own predictions (argmax cos to centers)
+    if args.partition == "predicted":
+        try:
+            centers = model.arcface_head.class_centers.detach().cpu().numpy()  # type: ignore
+            centers = centers / (np.linalg.norm(centers, axis=1, keepdims=True) + 1e-10)
+            emb_norm_tmp = embeddings / (np.linalg.norm(embeddings, axis=1, keepdims=True) + 1e-10)
+            preds_for_part = np.argmax(emb_norm_tmp @ centers.T, axis=1)
+        except Exception:
+            preds_for_part = np.array(labels)  # fallback
+    else:
+        preds_for_part = None  # type: ignore
     subclass_labels = np.full(len(labels), -1)
     for cls in [0, 1]:
-        mask = labels == cls
+        mask = (preds_for_part == cls) if args.partition == "predicted" else (labels == cls)
         if mask.sum() > 10:
             sc_labels, n_clusters = spectral_clustering_subclass(embeddings[mask], max_k=5)
             if n_clusters >= 2:

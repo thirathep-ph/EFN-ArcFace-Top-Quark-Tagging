@@ -5,62 +5,54 @@
     "subclass_qcd_core": {
       "subclass": "QCD-Core",
       "status": null,
-      "n_total": 121570,
-      "n_plotted": 3159,
-      "ln_inv_delta_mean": 2.3880014377127226,
-      "ln_kt_mean": -0.0712426546412549,
-      "mass_mean": 63.28439712524414,
-      "tau32_mean": 0.7417667508125305
+      "n_total": 117786,
+      "n_plotted": 3143,
+      "ln_inv_delta_mean": 2.3884279972885443,
+      "ln_kt_mean": -0.07735001957385886,
+      "mass_mean": 62.46371841430664,
+      "tau32_mean": 0.7445085048675537
     },
     "subclass_qcd_edge_tn": {
       "subclass": "QCD-Edge",
       "status": "True Negative",
-      "n_total": 59481,
-      "n_plotted": 2005,
-      "ln_inv_delta_mean": 2.2802168641891316,
-      "ln_kt_mean": 0.2627676912629046,
-      "mass_mean": 131.4317626953125,
-      "tau32_mean": 0.7350267767906189
+      "n_total": 63359,
+      "n_plotted": 2239,
+      "ln_inv_delta_mean": 2.279543293389106,
+      "ln_kt_mean": 0.2700116006708303,
+      "mass_mean": 128.4737548828125,
+      "tau32_mean": 0.7401049733161926
     },
     "subclass_qcd_edge_fp": {
       "subclass": "QCD-Edge",
       "status": "False Positive",
-      "n_total": 20863,
-      "n_plotted": 2351,
-      "ln_inv_delta_mean": 2.260932142672811,
-      "ln_kt_mean": 0.42603102770185547,
-      "mass_mean": 178.96249389648438,
-      "tau32_mean": 0.6715231537818909
+      "n_total": 0,
+      "n_plotted": 0
     },
     "subclass_top_core_tp": {
       "subclass": "Top-Core",
       "status": "True Positive",
-      "n_total": 90315,
-      "n_plotted": 2544,
-      "ln_inv_delta_mean": 2.2378498194729515,
-      "ln_kt_mean": 0.45113577776552977,
-      "mass_mean": 181.15196228027344,
-      "tau32_mean": 0.6211987137794495
+      "n_total": 91650,
+      "n_plotted": 2447,
+      "ln_inv_delta_mean": 2.239742202712441,
+      "ln_kt_mean": 0.4515879996655214,
+      "mass_mean": 180.13259887695312,
+      "tau32_mean": 0.6258605122566223
     },
     "subclass_top_core_fn": {
       "subclass": "Top-Core",
       "status": "False Negative",
-      "n_total": 11882,
-      "n_plotted": 2059,
-      "ln_inv_delta_mean": 2.265174614620639,
-      "ln_kt_mean": 0.33554058938584086,
-      "mass_mean": 156.03829956054688,
-      "tau32_mean": 0.7060902118682861
+      "n_total": 0,
+      "n_plotted": 0
     },
     "subclass_top_edge": {
       "subclass": "Top-Edge",
       "status": null,
-      "n_total": 99889,
-      "n_plotted": 2882,
-      "ln_inv_delta_mean": 2.2923492280197175,
-      "ln_kt_mean": 0.3782779416962806,
-      "mass_mean": 173.42286682128906,
-      "tau32_mean": 0.46402230858802795
+      "n_total": 99886,
+      "n_plotted": 2988,
+      "ln_inv_delta_mean": 2.2876253953105707,
+      "ln_kt_mean": 0.365337009988827,
+      "mass_mean": 173.88343811035156,
+      "tau32_mean": 0.46405330300331116
     }
   }
 }

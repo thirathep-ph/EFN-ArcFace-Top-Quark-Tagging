@@ -43,6 +43,8 @@ def stratified_sample(idx, n, rng):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_dir", type=str, default="experiments/robustness_s16_m05")
+    parser.add_argument("--partition", type=str, default="predicted", choices=["predicted","true"],
+                        help="Cluster per predicted (model-seen, primary) or true labels")
     args = parser.parse_args()
     model_dir = args.model_dir
     EMBEDDINGS = os.path.join(model_dir, "embeddings.npz")
@@ -54,11 +56,13 @@ def main():
     assert len(embeddings)==404000
     centers=load_centers(CHECKPOINT)
     emb_norm=normalize(embeddings)
-    # per-class clustering to get 4-way
+    preds = np.argmax(emb_norm @ centers.T, axis=1)
+    partition_labels = preds if args.partition == "predicted" else labels
+    # per-class clustering to get 4-way (predicted primary: what model sees)
     true_global=np.full(len(labels), -1, dtype=int)
     centroids={}
     for cls in (0,1):
-        mask=labels==cls
+        mask=partition_labels==cls
         sub,_=spectral_clustering_subclass(emb_norm[mask], max_k=MAX_K)
         cnt=Counter(sub)
         order=sorted(cnt, key=lambda c: -cnt[c])
@@ -70,14 +74,14 @@ def main():
             centroids[g]=normalize(sel.mean(axis=0, keepdims=True))[0]
     # also class centroids
     for cls in (0,1):
-        centroids[f"cls{cls}"]=normalize(emb_norm[labels==cls].mean(axis=0, keepdims=True))[0]
+        centroids[f"cls{cls}"]=normalize(emb_norm[partition_labels==cls].mean(axis=0, keepdims=True))[0]
     # stratified sample for average planes
     rng=np.random.RandomState(42)
     parts=[]
     for sc in range(4):
         parts.append(stratified_sample(np.where(true_global==sc)[0], PHYS_PER_GROUP, rng))
     for cls in (0,1):
-        parts.append(stratified_sample(np.where(labels==cls)[0], PHYS_PER_GROUP, rng))
+        parts.append(stratified_sample(np.where(partition_labels==cls)[0], PHYS_PER_GROUP, rng))
     phys_idx=np.unique(np.concatenate(parts))
     rng.shuffle(phys_idx)
     phys_idx=phys_idx[:PHYS_CAP]
@@ -92,7 +96,7 @@ def main():
         if subclass is not None:
             cond=true_global==subclass
         else:
-            cond=labels==cls
+            cond=partition_labels==cls
         n_total=int(cond.sum())
         panel_mask=cond[phys_idx]
         n_plot=int(panel_mask.sum())
@@ -114,7 +118,7 @@ def main():
             rep_idx=idx[np.argmax(sims)]
         else:
             centroid=centroids[f"cls{cls}"]
-            idx=np.where(labels==cls)[0]
+            idx=np.where(partition_labels==cls)[0]
             rep_idx=idx[np.argmax(emb_norm[idx] @ centroid)]
         # load single event
         rep_event=load_events_by_indices(TEST_H5, np.array([rep_idx]))

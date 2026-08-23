@@ -1,11 +1,12 @@
 """Regenerate the subclass composition heatmap with canonical Core/Edge labels.
 
-The paper's headline subclass partition (Table 5) clusters on TRUE labels over
-the full 404k test set and maps the largest cluster to Core, the second to
-Edge.  The composition heatmap must use the SAME partition and naming so its
-caption is consistent with the rest of the paper.  This script recomputes the
-per-subclass breakdown by prediction status from the saved embeddings and
-cached class centers (no forward pass, no UMAP).
+The paper's headline subclass partition clusters on PREDICTED labels over
+the full 404k test set (what the model sees) and maps the largest cluster to
+Core, the second to Edge.  Use --partition true to reproduce the GT check.
+The composition heatmap must use the SAME partition and naming so its caption
+is consistent with Table 2.  This script recomputes the per-subclass breakdown
+by prediction status from the saved embeddings and cached class centers
+(no forward pass, no UMAP).
 
 Artifacts read:
   * experiments/robustness_s16_m05/embeddings.npz  -> 404k embeddings + labels
@@ -55,16 +56,22 @@ def load_centers() -> np.ndarray:
 
 
 def main() -> None:
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--partition", choices=["predicted", "true"], default="predicted",
+                        help="predicted (model view) or true (GT consistency check)")
+    args = parser.parse_args()
     t0 = time.time()
     emb_np = np.load(EMBEDDINGS)
     embeddings, labels = emb_np["embeddings"], emb_np["labels"]
     centers = load_centers()
     emb_norm = normalize(embeddings)
     preds = np.argmax(emb_norm @ centers.T, axis=1)
+    partition_labels = preds if args.partition == "predicted" else labels
 
     true_global = np.full(len(labels), -1, dtype=int)
     for cls in (0, 1):
-        mask = labels == cls
+        mask = partition_labels == cls
         sub, _ = spectral_clustering_subclass(emb_norm[mask], max_k=MAX_K)
         counts = Counter(sub)
         order = sorted(counts, key=lambda c: -counts[c])  # largest -> Core (0)
@@ -103,7 +110,7 @@ def main() -> None:
                 cmap="YlGnBu", cbar_kws={"label": "Percentage (%)", "shrink": 0.8},
                 annot_kws={"fontsize": 8})
     ax.set_xlabel("Prediction status")
-    ax.set_ylabel("Discovered subclass (true-label partition)")
+    ax.set_ylabel(f"Discovered subclass ({args.partition}-label partition)")
     ax.tick_params(axis="y", rotation=0)
     plt.tight_layout()
     save_fig(fig, "subclass_composition_heatmap.png", to_paper=True)
