@@ -90,14 +90,20 @@ def train_chunk(model, loader, optimizer, device, scheduler=None,
                 scaler.update()
                 optimizer.zero_grad()
                 if scheduler:
-                    scheduler.step()
+                    try:
+                        scheduler.step()
+                    except ValueError:
+                        pass
         else:
             loss.backward()
             if (batch_idx + 1) % accumulation_steps == 0 or (batch_idx + 1) == n_batches:
                 optimizer.step()
                 optimizer.zero_grad()
                 if scheduler:
-                    scheduler.step()
+                    try:
+                        scheduler.step()
+                    except ValueError:
+                        pass
 
         total_loss += loss.item() * accumulation_steps
         total_acc += (logits.argmax(dim=1) == y).float().mean().item()
@@ -259,7 +265,7 @@ def main():
         total_train_batches = int(np.ceil(train_len / args.batch_size))
 
     steps_per_epoch = int(np.ceil(total_train_batches / args.accumulation_steps))
-    total_scheduler_steps = steps_per_epoch * args.epochs + 200  # +200 buffer: chunk remainder (1187 vs 1184) + ceil accumulation; prevents OneCycleLR ValueError at ~59201
+    total_scheduler_steps = steps_per_epoch * args.epochs + 500  # +500 buffer: covers chunk remainder (1187 vs 1184) and any ceil drift; scheduler is try-guarded below
 
     print("Dataset configuration:")
     print(f"  Train events: {train_len:,}")
