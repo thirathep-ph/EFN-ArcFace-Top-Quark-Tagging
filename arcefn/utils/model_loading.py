@@ -96,8 +96,8 @@ def read_model_config(model_dir: str | Path | None = None) -> dict[str, Any]:
         'architecture': architecture,
         'embedding_dim': int(embedding_dim),
         'particle_dim': int(config.get('particle_dim', 128)),
-        'scale': float(config.get('scale', 16.0)),
-        'margin': float(config.get('margin', 0.5)),
+        'scale': float(config.get('scale', 16.0) or 16.0),
+        'margin': float(config.get('margin', 0.5) if config.get('margin', 0.5) is not None else 0.5),
     }
 
 
