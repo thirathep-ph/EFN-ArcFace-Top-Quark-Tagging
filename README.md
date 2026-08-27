@@ -6,18 +6,7 @@
 
 **EFN (Energy Flow Network) + ArcFace hyperspherical prototypes** for jet classification — a geometrically transparent decision rule on the unit hypersphere $S^{63}$.
 
-> Paper: *Hyperspherical Prototype Classification for Interpretable Top Quark Tagging with Energy Flow Networks* — Thirathep N. Phiankham. `paper/main.tex` builds to 33 pages; `paper/overleaf.zip` is ready to upload to Overleaf.
-
-| Component | Status | Details |
-|:----------|:------:|:--------|
-| **Model Architecture** | ✅ Complete | EFN backbone + ArcFace head (1 prototype per class) |
-| **Training Pipeline** | ✅ Complete | 50-epoch on 1.2M events, chunk-based loading (200 constituents) |
-| **Classification** | ✅ Complete | Binary: Top (signal) vs QCD (background), 404k test |
-| **Baseline Comparison** | ✅ Complete | EFN+Linear & EFN+CosLinear × 3 seeds (mean±std) |
-| **Scale Robustness** | ✅ Complete | $s=16$ vs $s=22$: 91.84% vs 91.81% mean (3 seeds, within 95% CI ±0.08pp) |
-| **Subclass Discovery** | ✅ Complete | 2 Top (Core/Edge) + 2 QCD (Core/Edge) via spectral clustering on $S^{63}$ |
-| **Physics Validation** | ✅ Complete | $z_g$ DGLAP fits, angular collimation, Lund planes |
-| **Dimensionality** | ✅ Complete | TwoNN ≈ 2.17, participation ratio 1.38 — effective dim ≈ 2 |
+Paper: *Hyperspherical Prototype Classification for Interpretable Top Quark Tagging with Energy Flow Networks* — Thirathep N. Phiankham ([`paper/main.pdf`](paper/main.pdf)).
 
 ---
 
@@ -46,7 +35,7 @@ Complementing post-hoc explanations, the decision rule is **geometrically transp
 
 - $W_{\text{QCD}}, W_{\text{Top}} \in S^{63}$ are learned prototypes
 - Classification = nearest prototype by geodesic distance $d = \arccos(\hat e \cdot w_j)$
-- Physical meaning of prototypes is **validated post-hoc** ($z_g$, Lund, $\Delta R$) — geometry is intrinsic, physics is checked (see `paper/main.tex` Sec. 4)
+ - Physical meaning of prototypes is **validated post-hoc** ($z_g$, Lund, $\Delta R$) — geometry is intrinsic, physics is checked (see paper Sec. 4)
 
 ---
 
@@ -70,10 +59,9 @@ scripts/analysis/                # paper figures (all regenerate experiments/*.j
   compute_alignment_uniformity.py# embedding norms + subclass balance (3-way)
   compute_dglap_fit.py, compute_bootstrap_ci.py, ...
 
-paper/
-  main.tex                       # 33pp SciPost manuscript
-  refs.bib, SciPost.cls, figures/*.png
-  overleaf/ + overleaf.zip       # upload-ready (builds standalone)
+paper/                           # SciPost manuscript (33pp)
+  main.tex, refs.bib, SciPost.cls, figures/*.png
+  overleaf.zip                   # upload-ready for Overleaf
 
 data/top_tagging/                # Top Tagging Reference Dataset (H5, not tracked)
 experiments/                     # results (*.json tracked, *.pt ignored)
@@ -143,7 +131,7 @@ pdflatex main; bibtex main; pdflatex main; pdflatex main  # -> main.pdf (33pp)
 | EFN + CosLinear (3-seed mean) | 92.00% ±0.03% | 0.975 | 132× |
 | RF (10 substructure features) | 92.37% | 0.977 | 150× |
 
-Scale check (3 seeds, full test): **s=22 → 91.81% mean (91.82/91.80/91.82)** vs s=16 91.84% — within 95% binomial ±0.08pp, retained s=16 for training stability (`paper/main.tex` Sec. 2.3).
+Scale check (3 seeds, full test): **s=22 → 91.81% mean (91.82/91.80/91.82)** vs s=16 91.84% — within 95% binomial ±0.08pp, retained s=16 for training stability (paper Sec. 2.3).
 
 ### Subclass Discovery
 
@@ -183,7 +171,7 @@ docker-compose up --build
 docker build -t jet-tagging .; docker run --gpus all -it jet-tagging
 ```
 
-All paper numbers are traceable to `experiments/*.json` (tracked) — see `paper/main.tex` Sec. 8 (statistical considerations) and each figure caption for sample sizes.
+All paper numbers are traceable to `experiments/*.json` (tracked) — see paper Sec. 8 (statistical considerations) and each figure caption for sample sizes.
 
 ---
 
@@ -205,7 +193,7 @@ See `requirements.txt` for full list.
   title = {Hyperspherical Prototype Classification for Interpretable Top Quark Tagging with Energy Flow Networks},
   year = {2026},
   howpublished = {\url{https://github.com/thirathep-ph/ArcEFN}},
-  note = {paper/main.tex, SciPost submission}
+   note = {SciPost submission}
 }
 ```
 
