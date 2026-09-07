@@ -50,10 +50,13 @@ for i, cls in enumerate([0,1]):
 
 plt.tight_layout()
 out_png = Path('experiments/hc_dendrogram.png')
-save_fig(fig, out_png.name)
-# also raw save
-plt.savefig(out_png, dpi=180, bbox_inches='tight')
-print('saved dendrogram', out_png)
+# single save only, avoid double-save blank
+plt.savefig(out_png, dpi=300, bbox_inches='tight', facecolor='white')
+# also copy to paper/figures
+import shutil
+shutil.copy(out_png, Path('paper/figures/hc_dendrogram.png'))
+shutil.copy(out_png, Path('paper/overleaf/figures/hc_dendrogram.png'))
+print('saved dendrogram', out_png, 'size', out_png.stat().st_size)
 # power note
 from math import ceil
 # required n for Cohen d=0.2 power 0.8 alpha 0.05 approx 393 per group
