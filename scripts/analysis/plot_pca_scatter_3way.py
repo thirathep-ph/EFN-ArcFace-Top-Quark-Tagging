@@ -51,8 +51,7 @@ for col, (name, mdir) in enumerate(MODEL_DIRS.items()):
     ax.scatter(proj[m_qcd, 0], proj[m_qcd, 1], s=7, alpha=0.45, c=COLORS["qcd"], edgecolors="none", rasterized=True)
     ax.scatter(proj[m_top, 0], proj[m_top, 1], s=7, alpha=0.45, c=COLORS["top"], edgecolors="none", rasterized=True)
     ax.set_xlabel("PC1")
-    if col == 0:
-        ax.set_ylabel("PC2")
+    ax.set_ylabel("PC2")
     add_grid(ax)
     ax.tick_params(labelsize=7)
     ax.set_aspect("equal", adjustable="datalim")
