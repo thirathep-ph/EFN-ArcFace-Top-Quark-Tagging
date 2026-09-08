@@ -196,13 +196,12 @@ def main():
                              "font.size": 10,
                              "axes.linewidth": 0.6})
 
-        fig = plt.figure(figsize=(14, 5.0))
-        gs = fig.add_gridspec(1, 3, width_ratios=[1.15, 1.15, 0.7],
-                              wspace=0.28, left=0.03, right=0.97,
+        fig = plt.figure(figsize=(9.5, 4.8))
+        gs = fig.add_gridspec(1, 2, width_ratios=[1, 1],
+                              wspace=0.18, left=0.02, right=0.98,
                               top=0.92, bottom=0.02)
         ax1 = fig.add_subplot(gs[0], projection="3d")
         ax2 = fig.add_subplot(gs[1], projection="3d")
-        ax3 = fig.add_subplot(gs[2])
 
         for ax in (ax1, ax2):
             draw_sphere(ax)
@@ -262,25 +261,6 @@ def main():
                    borderpad=0.4, loc="upper right",
                    borderaxespad=0)
         panel_title(ax2, "b", "Spectral subclasses")
-
-        comps = np.arange(1, 7)
-        bars = ax3.bar(comps, sv_ratio[:6], width=0.6,
-                       color=["#377eb8", "#377eb8", "#b0b0b0", "#b0b0b0",
-                              "#cccccc", "#cccccc"],
-                       edgecolor="white", linewidth=0.5)
-        ax3.axhline(sv_ratio[1], color="0.6", ls=":", lw=0.8)
-        ax3.annotate(f"{sv_ratio[1]:.2f}", xy=(2, sv_ratio[1]),
-                     xytext=(2, sv_ratio[1] + 0.06), fontsize=8, color="0.35",
-                     ha="center", va="bottom",
-                     arrowprops=dict(arrowstyle="-", color="0.6", lw=0.7))
-        ax3.set_xlabel("Component", fontsize=9)
-        ax3.set_ylabel(r"Singular value / $\sigma_1$", fontsize=9)
-        ax3.set_xticks(comps)
-        ax3.set_ylim(0, 1.1)
-        ax3.spines["top"].set_visible(False)
-        ax3.spines["right"].set_visible(False)
-        panel_title(ax3, "c", "Singular-value spectrum")
-        # (dividers removed — wspace alone separates a/b/c clearly)
 
         out = os.path.join(model_dir, "hypersphere_3d.png")
         fig.savefig(str(out), dpi=200, bbox_inches="tight", facecolor="white")
