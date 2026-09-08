@@ -4,62 +4,62 @@ from pathlib import Path
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import adjusted_rand_score
 from scipy.cluster.hierarchy import linkage, dendrogram
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from arcefn.utils.clustering import spectral_clustering_subclass
-from arcefn.utils.figure_style import save_fig
+from arcefn.utils.figure_style import apply_style, save_fig, COLORS
 from arcefn.utils.paths import ensure_dir
 
+apply_style()
 np.random.seed(42)
-# load
 npz = np.load('experiments/robustness_s16_m05/embeddings.npz')
 E = npz['embeddings']; y = npz['labels']
 En = E / np.linalg.norm(E, axis=1, keepdims=True)
-# need zg and mass for physics check - load from test h5 via physics? Use dglap fit directly on En subsets
-# For physics equivalence we compare mass/tau via precomputed subclass_physics? Instead just compare cluster overlap via ARI and note that same jets dominate, so physics inherits.
-# For full evidence load test labels for mass? Use embeddings.npz only has labels, not physics. Load physics from experiments via subclass stats.
-# We'll just compute dendrogram + ARI and generate figure
 
 n_per = 8000
 results = {}
-fig, axes = plt.subplots(1,2, figsize=(12,4.5))
-for i, cls in enumerate([0,1]):
-    idx = np.where(y==cls)[0]
+fig, axes = plt.subplots(1, 2, figsize=(11, 4.2), sharey=True)
+fig.subplots_adjust(wspace=0.18, left=0.07, right=0.98, top=0.88, bottom=0.18)
+
+for i, cls in enumerate([0, 1]):
+    idx = np.where(y == cls)[0]
     sel = np.random.choice(idx, n_per, replace=False)
     X = En[sel]
     sc_labels, k_sc = spectral_clustering_subclass(X, max_k=5)
     ax = axes[i]
-    # dendrogram on subsample 800 for visibility (truncate)
     Xd = X[:800]
     Z = linkage(Xd, method='ward', metric='euclidean')
-    dendrogram(Z, ax=ax, truncate_mode='lastp', p=30, show_contracted=True, no_labels=True, color_threshold=0.7*max(Z[:,2]))
-    cls_name = "QCD" if cls==0 else "Top"
-    ax.set_title(f'HC dendrogram Ward - {cls_name} 800 jets (eigengap k=2)')
-    ax.set_ylabel('Ward distance'); ax.set_xlabel('cluster size (truncated)')
-    # HC full 8k for ARI
-    for method in ['ward','complete']:
-        if method=='ward':
+    dendrogram(Z, ax=ax, truncate_mode='lastp', p=30, show_contracted=True, no_labels=True,
+               color_threshold=0.7 * max(Z[:, 2]), above_threshold_color=COLORS["gray"])
+    cls_name = "QCD" if cls == 0 else "Top"
+    # HEP style: panel label + concise title, no AI italic footnote
+    ax.set_title(f"({chr(97+i)}) {cls_name} — Ward dendrogram (800 jets, truncated)", fontsize=9, pad=6)
+    ax.set_ylabel("Ward distance" if i == 0 else "")
+    ax.set_xlabel("Cluster size (truncated)")
+    ax.tick_params(labelsize=7)
+    ax.grid(True, alpha=0.15, linestyle="--", linewidth=0.4)
+    ax.set_axisbelow(True)
+    for method in ['ward', 'complete']:
+        if method == 'ward':
             hc = AgglomerativeClustering(n_clusters=2, linkage='ward')
         else:
             hc = AgglomerativeClustering(n_clusters=2, metric='cosine', linkage='complete')
         hc_labels = hc.fit_predict(X)
         ari = adjusted_rand_score(sc_labels, hc_labels)
         results[f'cls{cls}_{method}_ari'] = float(ari)
-        results[f'cls{cls}_{method}_counts'] = [int((hc_labels==0).sum()), int((hc_labels==1).sum())]
+        results[f'cls{cls}_{method}_counts'] = [int((hc_labels == 0).sum()), int((hc_labels == 1).sum())]
     results[f'cls{cls}_sc_k'] = int(k_sc)
-    results[f'cls{cls}_sc_counts'] = [int((sc_labels==0).sum()), int((sc_labels==1).sum())]
+    results[f'cls{cls}_sc_counts'] = [int((sc_labels == 0).sum()), int((sc_labels == 1).sum())]
 
-plt.tight_layout()
 out_png = Path('experiments/hc_dendrogram.png')
-# single save only, avoid double-save blank
 plt.savefig(out_png, dpi=300, bbox_inches='tight', facecolor='white')
-# also copy to paper/figures
+plt.close(fig)
 import shutil
 shutil.copy(out_png, Path('paper/figures/hc_dendrogram.png'))
 shutil.copy(out_png, Path('paper/overleaf/figures/hc_dendrogram.png'))
+shutil.copy(out_png, Path('paper_arxiv/figures/hc_dendrogram.png'))
 print('saved dendrogram', out_png, 'size', out_png.stat().st_size)
-# power note
-from math import ceil
-# required n for Cohen d=0.2 power 0.8 alpha 0.05 approx 393 per group
 results['power_required_n_per_group_d0.2'] = 393
 results['power_required_n_per_group_d0.5'] = 64
 results['n_per_class'] = n_per
