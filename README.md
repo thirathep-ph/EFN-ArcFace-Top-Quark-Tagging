@@ -59,9 +59,12 @@ scripts/analysis/                # paper figures (all regenerate experiments/*.j
   compute_alignment_uniformity.py# embedding norms + subclass balance (3-way)
   compute_dglap_fit.py, compute_bootstrap_ci.py, ...
 
-paper/                           # SciPost manuscript (33pp)
-  main.tex, refs.bib, SciPost.cls, figures/*.png
-  overleaf.zip                   # upload-ready for Overleaf
+paper/                           # SciPost manuscript (35pp, humanized, 35 cites verified)
+  main.tex, refs.bib, SciPost.cls, arxiv.sty, figures/*.png
+  overleaf.zip                   # upload-ready for Overleaf (SciPost)
+paper_arxiv/                     # arXiv manuscript (29pp, article+arxiv.sty)
+  main.tex, refs.bib, arxiv.sty, figures/*.png
+  paper_arxiv.tar.gz             # upload-ready for arXiv (texlive 2025)
 
 data/top_tagging/                # Top Tagging Reference Dataset (H5, not tracked)
 experiments/                     # results (*.json tracked, *.pt ignored)
@@ -110,12 +113,18 @@ python scripts/analysis/compute_head_geometry.py --model_dir experiments/robustn
 python scripts/analysis/compute_alignment_uniformity.py --out_tag _3way --max_events 50000
 ```
 
-### Paper → PDF / Overleaf
+### Paper → PDF / Overleaf / arXiv
 
 ```bash
+# SciPost (35pp, humanized, 0 undefined)
 cd paper
-pdflatex main; bibtex main; pdflatex main; pdflatex main  # -> main.pdf (33pp)
-# or just upload paper/overleaf.zip to Overleaf — it builds standalone
+pdflatex main; bibtex main; pdflatex main; pdflatex main  # -> main.pdf (35pp)
+# or upload paper/overleaf.zip to Overleaf — builds standalone (TeX Live 2025)
+
+# arXiv (29pp, same content, article+arxiv.sty)
+cd ../paper_arxiv
+pdflatex main; bibtex main; pdflatex main; pdflatex main  # -> main.pdf (29pp)
+# or upload paper_arxiv.tar.gz to arXiv — TeX Live 2025 pdflatex
 ```
 
 ---

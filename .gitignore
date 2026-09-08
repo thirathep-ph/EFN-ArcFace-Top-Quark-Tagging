@@ -29,6 +29,7 @@ checkpoints/
 *.pdf
 *.svg
 !paper/figures/*.png
+!paper_arxiv/figures/*.png
 
 # ===== PYTHON =====
 __pycache__/
@@ -96,6 +97,19 @@ outputs/
 
 # training run error logs
 experiments/*.log.err
+
+# ===== AGENTS / SKILLS (local) =====
+.agents/
+skills-lock.json
+paper/arxiv_template.tex
+paper_arxiv/*.pdf
+paper_arxiv/*.aux
+paper_arxiv/*.bbl
+paper_arxiv/*.blg
+paper_arxiv/*.out
+paper_arxiv/*.log
+paper_arxiv.tar.gz
+paper_arxiv.pdf
 
 # ===== MANIM SLIDES (source .py is tracked; renders are regenerable) =====
 manim_slides/media/
