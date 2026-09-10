@@ -1,13 +1,23 @@
+<<<<<<< HEAD
 """
+=======
+﻿"""
+>>>>>>> fcb51eb (feat(paper): checklist 14 - App F symbolic seeds clarified, dim 3-way stable (CosLinear 4.98/5.06/5.03 Linear 5.19/5.18/5.20), Table dglap predicted CI, Ward ladder in main, contribution continuous ordering (5007002B 32pp 0 undef))
 Model Loading Helper
 ====================
 Single source of truth for loading trained models from an experiment
 directory, with automatic architecture and dimension inference.
 
 Supports all three EFN heads:
+<<<<<<< HEAD
     - ``TopTaggingModel``      (ArcFace head)          — key ``arcface_head.class_centers``
     - ``TopTaggingLinear``     (linear head)           — key ``classifier.weight``
     - ``TopTaggingCosLinear``  (cosine head, no margin)— key ``class_centers``
+=======
+    - ``TopTaggingModel``      (ArcFace head)          ΓÇö key ``arcface_head.class_centers``
+    - ``TopTaggingLinear``     (linear head)           ΓÇö key ``classifier.weight``
+    - ``TopTaggingCosLinear``  (cosine head, no margin)ΓÇö key ``class_centers``
+>>>>>>> fcb51eb (feat(paper): checklist 14 - App F symbolic seeds clarified, dim 3-way stable (CosLinear 4.98/5.06/5.03 Linear 5.19/5.18/5.20), Table dglap predicted CI, Ward ladder in main, contribution continuous ordering (5007002B 32pp 0 undef))
 
 Hyperparameters are read from ``config.json`` when present; when it is
 absent, the embedding dimension is inferred from the checkpoint shape.
@@ -155,4 +165,8 @@ def load_model_from_dir(
         arcface_head = getattr(model, 'arcface_head')
         arcface_head.set_margin(info['margin'])
 
+<<<<<<< HEAD
     return model
+=======
+    return model
+>>>>>>> fcb51eb (feat(paper): checklist 14 - App F symbolic seeds clarified, dim 3-way stable (CosLinear 4.98/5.06/5.03 Linear 5.19/5.18/5.20), Table dglap predicted CI, Ward ladder in main, contribution continuous ordering (5007002B 32pp 0 undef))
