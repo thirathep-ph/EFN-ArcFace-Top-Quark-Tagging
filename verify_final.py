@@ -1,0 +1,12 @@
+import re, json
+t = open('paper/main.tex', encoding='utf-8').read()
+cites = sorted(set(re.findall(r'\\cite\{([^}]+)\}', t)))
+keys = sorted(set(k.strip() for c in cites for k in c.split(',')))
+bib = open('paper/refs.bib', encoding='utf-8').read()
+entries = sorted(set(re.findall(r'@\w+\{([^,]+),', bib)))
+print('cited:', len(keys), 'bib:', len(entries))
+print('MISSING:', [k for k in keys if k not in entries])
+print('UNCITED:', [e for e in entries if e not in keys])
+d = json.load(open('experiments/arcface_seed_metrics.json'))
+print('seed file type:', type(d).__name__)
+print(json.dumps(d, indent=1)[:800])
