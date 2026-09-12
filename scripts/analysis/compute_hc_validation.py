@@ -10,20 +10,23 @@ import matplotlib.pyplot as plt
 from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.figure_style import apply_style, save_fig, COLORS
 from arcefn.utils.paths import ensure_dir
+from arcefn.utils.pred_labels import arcface_preds_from_centers, check_cm
 
 apply_style()
 np.random.seed(42)
 npz = np.load('experiments/robustness_s16_m05/embeddings.npz')
 E = npz['embeddings']; y = npz['labels']
 En = E / np.linalg.norm(E, axis=1, keepdims=True)
+preds = arcface_preds_from_centers(E, 'experiments/robustness_s16_m05/checkpoint.pt')
+check_cm(preds, y, "hc_validation")
 
 n_per = 8000
-results = {}
+results = {"partition": "predicted_labels_primary"}
 fig, axes = plt.subplots(1, 2, figsize=(11, 4.2), sharey=True)
 fig.subplots_adjust(wspace=0.18, left=0.07, right=0.98, top=0.88, bottom=0.18)
 
 for i, cls in enumerate([0, 1]):
-    idx = np.where(y == cls)[0]
+    idx = np.where(preds == cls)[0]
     sel = np.random.choice(idx, n_per, replace=False)
     X = En[sel]
     sc_labels, k_sc = spectral_clustering_subclass(X, max_k=5)

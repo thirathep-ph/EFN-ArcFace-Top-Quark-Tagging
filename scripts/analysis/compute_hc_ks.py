@@ -16,17 +16,21 @@ np.random.seed(42)
 E=np.load('experiments/robustness_s16_m05/embeddings.npz')
 En=E['embeddings']; y=E['labels']
 En=En/np.linalg.norm(En,axis=1,keepdims=True)
+from arcefn.utils.pred_labels import arcface_preds_from_centers, check_cm
+preds_all=arcface_preds_from_centers(E['embeddings'], 'experiments/robustness_s16_m05/checkpoint.pt')
+check_cm(preds_all, y, "hc_ks")
 NEED=50000
 events,_,_=load_awkward(str(DATA_DIR/'test.h5'), max_events=NEED, lazy=False)
 N=min(len(En), len(events))
 En=En[:N]; y=y[:N]; events=events[:N]
+preds=preds_all[:N]
 feat=compute_features(events)
 names=["Mass","mSD","Mult","nSD","d12","d23","Tau21","Tau32","zg","theta_g"]
 
 res={}
 for cls in [0,1]:
     cls_name="QCD" if cls==0 else "Top"
-    idx=np.where(y==cls)[0]
+    idx=np.where(preds==cls)[0]
     sel=np.random.choice(idx, 12000, replace=False)
     X=En[sel]; fs=feat[sel]
     for k in [3,4,5,6]:

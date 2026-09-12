@@ -33,9 +33,9 @@ BATCH_SIZE = 1024
 
 
 def get_raw_embeddings(model, loader, device):
-    """Get embeddings WITHOUT L2 normalization."""
+    """Get embeddings WITHOUT L2 normalization (plus logits for predicted labels)."""
     model.eval()
-    all_emb, all_labels = [], []
+    all_emb, all_labels, all_logits = [], [], []
     with torch.no_grad():
         for x, y, w, m, _ in loader:
             x, m = x.to(device), m.to(device)
@@ -43,7 +43,8 @@ def get_raw_embeddings(model, loader, device):
             emb = out[-1]
             all_emb.append(emb.cpu().numpy())
             all_labels.append(y.numpy())
-    return np.vstack(all_emb), np.concatenate(all_labels)
+            all_logits.append(out[0].cpu().numpy())
+    return np.vstack(all_emb), np.concatenate(all_labels), np.vstack(all_logits)
 
 
 def main():
@@ -91,8 +92,12 @@ def main():
         print(f"\n--- {name} ---")
         t0 = time.time()
         model = load_model_from_dir(ckpt_dir, device)
-        emb_raw, y = get_raw_embeddings(model, loader, device)
+        emb_raw, y, logits = get_raw_embeddings(model, loader, device)
         del model; gc.collect()
+        from arcefn.utils.pred_labels import check_cm
+        preds = np.argmax(logits, axis=1)
+        check_cm(preds, y, name)
+        y = preds  # cluster per PREDICTED class (what the model sees)
         norms = np.linalg.norm(emb_raw, axis=1)
         print(f"  Emb: {emb_raw.shape}, norms: min={norms.min():.4f}, median={np.median(norms):.4f}, max={norms.max():.4f}")
 

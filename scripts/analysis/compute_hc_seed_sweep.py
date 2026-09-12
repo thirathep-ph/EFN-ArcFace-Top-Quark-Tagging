@@ -26,9 +26,13 @@ NEED=50000
 E=np.load('experiments/robustness_s16_m05/embeddings.npz')
 En=E['embeddings']; y=E['labels']
 En=En/np.linalg.norm(En,axis=1,keepdims=True)
+from arcefn.utils.pred_labels import arcface_preds_from_centers, check_cm
+preds_all=arcface_preds_from_centers(E['embeddings'], 'experiments/robustness_s16_m05/checkpoint.pt')
+check_cm(preds_all, y, "hc_seed_sweep")
 events,_,_=load_awkward(str(DATA_DIR/'test.h5'), max_events=NEED, lazy=False)
 N=min(len(En),len(events))
 En=En[:N]; y=y[:N]; events=events[:N]
+preds=preds_all[:N]
 print("compute features once...")
 feat=compute_features(events)
 
@@ -38,7 +42,7 @@ for seed in [42,123,7]:
     print(f"\n== seed {seed} ==")
     for cls in [0,1]:
         cls_name="QCD" if cls==0 else "Top"
-        idx=np.where(y==cls)[0]
+        idx=np.where(preds==cls)[0]
         sel=np.random.choice(idx, 12000, replace=False)
         X=En[sel]; fs=feat[sel]
         for k in [2,3,4,5,6]:

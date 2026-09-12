@@ -27,8 +27,10 @@ from sklearn.cluster import KMeans
 
 from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.paths import EXPERIMENTS
+from arcefn.utils.pred_labels import arcface_preds_from_centers, check_cm
 
 EMBEDDINGS = EXPERIMENTS / "robustness_s16_m05" / "embeddings.npz"
+CHECKPOINT = EXPERIMENTS / "robustness_s16_m05" / "checkpoint.pt"
 OUT = EXPERIMENTS / "subclass_concentration_results.json"
 KAPPA_CAP = 600.0
 
@@ -86,14 +88,18 @@ def main() -> None:
     embeddings, labels = emb_np["embeddings"], emb_np["labels"]
     assert len(embeddings) == len(labels) == 404000
 
+    preds = arcface_preds_from_centers(embeddings, CHECKPOINT)
+    check_cm(preds, labels, "concentration")
+
     report: dict = {
         "n_events": int(len(embeddings)),
         "embedding_dim": int(embeddings.shape[1]),
         "kappa_cap": KAPPA_CAP,
+        "partition": "predicted_labels_primary",
         "classes": {},
     }
     for cls in [0, 1]:
-        mask = labels == cls
+        mask = preds == cls
         x = normalize(embeddings[mask])
         cls_name = "QCD" if cls == 0 else "Top"
         entry: dict = {"n": int(mask.sum()), "partitions": {}}

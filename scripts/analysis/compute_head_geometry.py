@@ -54,7 +54,7 @@ def dglap_power_law(z, A, alpha, beta):
 
 def get_embeddings(model, loader, device):
     model.eval()
-    all_emb, all_labels = [], []
+    all_emb, all_labels, all_logits = [], [], []
     with torch.no_grad():
         for x, y, w, m, _ in loader:
             x, m = x.to(device), m.to(device)
@@ -62,9 +62,11 @@ def get_embeddings(model, loader, device):
             emb = out[-1]
             all_emb.append(emb.cpu().numpy())
             all_labels.append(y.numpy())
-    return np.vstack(all_emb), np.concatenate(all_labels)
+            all_logits.append(out[0].cpu().numpy())
+    return np.vstack(all_emb), np.concatenate(all_labels), np.vstack(all_logits)
 
 def assign_subclasses(emb, labels):
+    # labels here are PREDICTED classes (what the model sees), not ground truth
     sub = np.full(len(labels), -1, dtype=int)
     for cls, offset in [(0, 0), (1, 2)]:
         mask = labels == cls
@@ -165,11 +167,14 @@ def main():
         print(f"\n--- {name} ---")
         t0 = time.time()
         model = load_model_from_dir(ckpt_dir, device)
-        emb, y = get_embeddings(model, loader, device)
+        emb, y, logits = get_embeddings(model, loader, device)
         del model; gc.collect()
         print(f"  Emb: {emb.shape} in {time.time()-t0:.0f}s")
+        from arcefn.utils.pred_labels import check_cm
+        preds = np.argmax(logits, axis=1)
+        check_cm(preds, y, name)
 
-        sub = assign_subclasses(emb, y)
+        sub = assign_subclasses(emb, preds)
         n_sc = len(set(sub[sub >= 0]))
         print(f"  Subclasses: {n_sc}")
 

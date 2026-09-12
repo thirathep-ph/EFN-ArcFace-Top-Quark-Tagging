@@ -47,11 +47,15 @@ np.random.seed(42)
 E=np.load('experiments/robustness_s16_m05/embeddings.npz')
 En=E['embeddings']; y=E['labels']
 En=En/np.linalg.norm(En,axis=1,keepdims=True)
+from arcefn.utils.pred_labels import arcface_preds_from_centers, check_cm
+preds_all=arcface_preds_from_centers(E['embeddings'], 'experiments/robustness_s16_m05/checkpoint.pt')
+check_cm(preds_all, y, "hc_deep_full")
 NEED=50000
 print(f"load {NEED} test...")
 events,labels,_=load_awkward(str(DATA_DIR/'test.h5'), max_events=NEED, lazy=False)
 N=min(len(En), len(events), NEED)
 En=En[:N]; y=y[:N]
+preds=preds_all[:N]
 events=events[:N]
 print("compute 10 features...")
 feat=compute_features(events) # (N,10) [Mass,mSD,Mult,nSD,d12,d23,Tau21,Tau32,zg,theta_g]
@@ -63,7 +67,7 @@ from arcefn.utils.physics import get_lund_coordinates
 results={}
 for cls in [0,1]:
     cls_name="QCD" if cls==0 else "Top"
-    idx=np.where(y==cls)[0]
+    idx=np.where(preds==cls)[0]
     n_per=min(12000, len(idx))
     sel=np.random.choice(idx, n_per, replace=False)
     X=En[sel]

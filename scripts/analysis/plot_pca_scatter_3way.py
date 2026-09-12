@@ -55,7 +55,7 @@ for col, (name, mdir) in enumerate(MODEL_DIRS.items()):
     add_grid(ax)
     ax.tick_params(labelsize=7)
     ax.set_aspect("equal", adjustable="datalim")
-    ax.set_title(f"({chr(97+col)}) {LABELS[col]}\nPC1 {var[0]*100:.1f}\\% + PC2 {var[1]*100:.1f}\\% = {var.sum()*100:.1f}\\%", fontsize=7, pad=6)
+    ax.set_title(f"({chr(97+col)}) {LABELS[col]}\nPC1 {var[0]*100:.1f}% + PC2 {var[1]*100:.1f}% = {var.sum()*100:.1f}%", fontsize=7, pad=6)
 
 # single legend outside
 from matplotlib.lines import Line2D

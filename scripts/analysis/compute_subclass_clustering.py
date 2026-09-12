@@ -1,6 +1,6 @@
 """Compare subclass clustering methods on the ArcFace embedding sphere.
 
-Methods compared per class (true labels):
+Methods compared per class (predicted labels, primary partition):
   - spectral clustering + eigengap (current paper pipeline)
   - spherical K-means (KMeans on L2-normalized embeddings), k in 2..5
   - vMF mixture via EM (soft assignments, per-cluster kappa), k in 2..5
@@ -123,9 +123,15 @@ def main() -> None:
     zg_all = feat["features"][:, 8]
     assert len(embeddings) == len(labels) == len(zg_all) == 404000
 
-    report: dict = {"n_events": len(embeddings), "methods": {}}
+    from arcefn.utils.pred_labels import arcface_preds_from_centers, check_cm
+    preds = arcface_preds_from_centers(
+        embeddings, EXPERIMENTS / "robustness_s16_m05" / "checkpoint.pt")
+    check_cm(preds, labels, "subclass_clustering")
+
+    report: dict = {"n_events": len(embeddings),
+                    "partition": "predicted_labels_primary", "methods": {}}
     for cls in [0, 1]:
-        mask = labels == cls
+        mask = preds == cls
         x = normalize(embeddings[mask])
         zg_cls = zg_all[mask]
         cls_name = "QCD" if cls == 0 else "Top"

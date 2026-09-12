@@ -1,5 +1,10 @@
 """Lund planes per discovered subclass, split by prediction status.
 
+Primary partition is PREDICTED-label (what the model sees): predicted-QCD
+subclasses contain TN+FN, predicted-Top subclasses TP+FP. Panels therefore
+split QCD-Edge into TN vs FN and Top-Core into TP vs FP (under true labels
+these pairings were TN vs FP and TP vs FN).
+
 Complements the status-only Lund planes (lund_status_*.png) with the
 subclass-resolved view that the paper's misclassification-localization claim
 needs: every FP belongs to QCD-Edge and every FN to Top-Core, so the
@@ -55,12 +60,13 @@ SUBCLASS_NAMES = {0: "QCD-Core", 1: "QCD-Edge", 2: "Top-Core", 3: "Top-Edge"}
 STATUS = ["True Positive", "False Positive", "True Negative", "False Negative"]
 
 # (subclass id, status filter or None, file stem, plot label)
+# Predicted-label partition: QCD-Edge holds TN+FN, Top-Core holds TP+FP.
 PANELS = [
     (0, None, "subclass_qcd_core", "QCD-Core (all)"),
     (1, "True Negative", "subclass_qcd_edge_tn", "QCD-Edge (true negative)"),
-    (1, "False Positive", "subclass_qcd_edge_fp", "QCD-Edge (false positive)"),
+    (1, "False Negative", "subclass_qcd_edge_fn", "QCD-Edge (false negative)"),
     (2, "True Positive", "subclass_top_core_tp", "Top-Core (true positive)"),
-    (2, "False Negative", "subclass_top_core_fn", "Top-Core (false negative)"),
+    (2, "False Positive", "subclass_top_core_fp", "Top-Core (false positive)"),
     (3, None, "subclass_top_edge", "Top-Edge (all)"),
 ]
 

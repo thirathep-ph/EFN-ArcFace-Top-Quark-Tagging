@@ -1,33 +1,34 @@
 {
-  "cls0_ward_ari": 0.8105437290689126,
+  "partition": "predicted_labels_primary",
+  "cls0_ward_ari": 0.5563375441826465,
   "cls0_ward_counts": [
-    5233,
-    2767
+    5875,
+    2125
   ],
-  "cls0_complete_ari": 0.29129327801312194,
+  "cls0_complete_ari": 0.714782317814937,
   "cls0_complete_counts": [
-    6628,
-    1372
+    3747,
+    4253
   ],
   "cls0_sc_k": 2,
   "cls0_sc_counts": [
-    4836,
-    3164
+    4871,
+    3129
   ],
-  "cls1_ward_ari": 0.7080854510891457,
+  "cls1_ward_ari": 0.49627196106814125,
   "cls1_ward_counts": [
-    4581,
-    3419
+    5467,
+    2533
   ],
-  "cls1_complete_ari": 0.8644180678122346,
+  "cls1_complete_ari": 0.14359428980048278,
   "cls1_complete_counts": [
-    3666,
-    4334
+    6759,
+    1241
   ],
   "cls1_sc_k": 2,
   "cls1_sc_counts": [
-    3947,
-    4053
+    3714,
+    4286
   ],
   "power_required_n_per_group_d0.2": 393,
   "power_required_n_per_group_d0.5": 64,

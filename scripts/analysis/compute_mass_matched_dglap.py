@@ -33,10 +33,14 @@ MIN_SUBCLASS_N = 2000
 
 
 def discover_subclasses(embeddings: np.ndarray, labels: np.ndarray) -> np.ndarray:
-    """Same canonical partition as compute_dglap_fit.py (true labels, max_k=5)."""
+    """Primary PREDICTED-label partition (what the model sees, max_k=5)."""
+    from arcefn.utils.pred_labels import arcface_preds_from_centers, check_cm
+    preds = arcface_preds_from_centers(
+        embeddings, EXPERIMENTS / "robustness_s16_m05" / "checkpoint.pt")
+    check_cm(preds, labels, "mass_matched")
     subclass_labels = np.full(len(labels), -1)
     for cls in [0, 1]:
-        mask = labels == cls
+        mask = preds == cls
         sc_labels, n_clusters = spectral_clustering_subclass(embeddings[mask], max_k=5)
         if n_clusters >= 2:
             counts = Counter(sc_labels)
@@ -60,10 +64,14 @@ def main() -> None:
     subclass_labels = discover_subclasses(embeddings, labels)
 
     report: dict = {"n_events": int(len(embeddings)), "n_mass_bins": N_MASS_BINS,
-                    "min_subclass_n": MIN_SUBCLASS_N, "classes": {}}
+                    "min_subclass_n": MIN_SUBCLASS_N,
+                    "partition": "predicted_labels_primary", "classes": {}}
 
+    from arcefn.utils.pred_labels import arcface_preds_from_centers
+    preds = arcface_preds_from_centers(
+        embeddings, EXPERIMENTS / "robustness_s16_m05" / "checkpoint.pt")
     for cls, cls_name in [(0, "QCD"), (1, "Top")]:
-        cmask = labels == cls
+        cmask = preds == cls
         mass = mass_all[cmask]
         zg = zg_all[cmask]
         sub = subclass_labels[cmask]

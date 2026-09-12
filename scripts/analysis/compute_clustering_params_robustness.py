@@ -7,6 +7,9 @@ np.random.seed(42)
 npz = np.load('experiments/robustness_s16_m05/embeddings.npz')
 E = npz['embeddings']; y = npz['labels']
 En = E / np.linalg.norm(E, axis=1, keepdims=True)
+from arcefn.utils.pred_labels import arcface_preds_from_centers, check_cm
+preds = arcface_preds_from_centers(E, 'experiments/robustness_s16_m05/checkpoint.pt')
+check_cm(preds, y, "params_robustness")
 n_per = 6000
 configs_sc = [
     ("cosine-matrixfree-primary", None),
@@ -23,10 +26,10 @@ configs_hc = [
     ("complete_euclidean", {"linkage":"complete","metric":"euclidean"}),
 ]
 from arcefn.utils.clustering import spectral_clustering_subclass
-results={}
+results={"partition": "predicted_labels_primary"}
 for cls in [0,1]:
     cls_name="QCD" if cls==0 else "Top"
-    idx=np.where(y==cls)[0]
+    idx=np.where(preds==cls)[0]
     sel=np.random.choice(idx, n_per, replace=False)
     X=En[sel]
     # primary: matrixfree cosine k=2 (reference)
