@@ -146,10 +146,10 @@ Scale check (3 seeds, full test): **s=22 → 91.81% mean (91.82/91.80/91.82)** v
 
 Unsupervised spectral clustering on $S^{63}$ **per predicted class** finds 4 subclasses:
 
-- **Top Core**: ~171 GeV, τ32 ~0.45 — clean hadronic top
-- **Top Edge**: higher τ32 ~0.68 — near decision boundary
-- **QCD Core**: ~131 GeV — hard gluon mimicking top
-- **QCD Edge**: ~62 GeV, τ32 ~0.73 — ordinary single-prong
+- **Top Core**: ~181 GeV, τ32 ~0.63 — boundary mixture (absorbs 93% of false positives)
+- **Top Edge**: ~174 GeV, τ32 ~0.46 — clean 3-prong tops (98.5% pure)
+- **QCD Core**: ~62 GeV — ordinary single-prong
+- **QCD Edge**: ~134 GeV — hard gluon mimicking top (holds 99% of false negatives)
 
 Predicted vs ground-truth partitions agree: ARI 0.79 global (0.95 Top, 0.88 QCD), same $k=2$.
 
@@ -163,8 +163,8 @@ Predicted vs ground-truth partitions agree: ARI 0.79 global (0.95 Top, 0.88 QCD)
 
 | Metric | ArcFace ($S^{63}$, $m=0.5$) | CosLinear ($S^{63}$, $m=0$) | Linear (Euclidean) |
 |:-------|:---------------------------:|:---------------------------:|:------------------:|
-| Subclass balance | **30/20/25/25%** | **26/25/29/21%** | **45/5/43/6%** (Edge 5–7%) |
-| DGLAP $R^2$ | 0.93–0.99 all 4 | QCD clean, Top $R^2=0.64$ (Edge) | 0.76–0.85, degraded |
+| Subclass balance | **29/19/28/24%** | **24/24/31/21%** | **37/12/42/10%** (Edge 10–12%) |
+| DGLAP $R^2$ | 0.92–0.99 all 4 | QCD clean, Top $R^2=0.67$ (Edge) | Top-Edge collapses ($R^2=0.30$) |
 | Raw norm median | 7.73 ±4.94 | 5.47 ±3.87 | 3.69 ±2.40 |
 | What it isolates | hypersphere + margin | **hypersphere alone** | neither |
 
