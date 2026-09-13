@@ -86,4 +86,10 @@ for r, (ylabel, vals, bins) in enumerate(rows):
 plt.tight_layout(pad=0.6, w_pad=1.0)
 save_fig(fig, "subclass_physics_distributions.png")
 print("saved subclass_physics_distributions.png")
+import shutil
+shutil.copy(Path("paper/figures/subclass_physics_distributions.png"),
+             Path("paper_arxiv/figures/subclass_physics_distributions.png"))
+shutil.copy(Path("paper/figures/subclass_physics_distributions.png"),
+             Path("paper/overleaf/figures/subclass_physics_distributions.png"))
+print("copied to arxiv/overleaf")
 plt.close(fig)
