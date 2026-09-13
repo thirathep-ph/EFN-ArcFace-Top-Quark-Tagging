@@ -118,9 +118,8 @@ def main():
     if not plot_2d:
         arc = slerp(c3[0], c3[1])
 
-    plt.rcParams.update({"font.family": "DejaVu Serif",
-                         "font.size": 10,
-                         "axes.linewidth": 0.6})
+    from arcefn.utils.figure_style import apply_style
+    apply_style()  # same rcParams as below (DejaVu Serif, 10, lw 0.6); unified theme entry point
 
     if plot_2d:
         # 2D plot: single panel with class colors

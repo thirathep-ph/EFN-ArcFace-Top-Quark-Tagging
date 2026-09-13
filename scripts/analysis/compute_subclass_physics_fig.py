@@ -14,7 +14,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from arcefn.utils.clustering import spectral_clustering_subclass
-from arcefn.utils.figure_style import apply_style, save_fig, COLORS
+from arcefn.utils.figure_style import (apply_style, save_fig, panel_label,
+                                         add_grid, SUBCLASS_COLORS, LEGEND_KWARGS)
 from arcefn.utils.paths import EXPERIMENTS
 from arcefn.utils.pred_labels import arcface_preds_from_centers, check_cm
 
@@ -55,12 +56,12 @@ fig, axes = plt.subplots(3, 3, figsize=(10, 7), sharex=False)
 rows = [("Mass [GeV]", mass, np.linspace(0, 300, 60)),
         ("Tau32", tau32, np.linspace(0.2, 1.0, 60)),
         ("sqrt(d12)", d12, np.linspace(0, 1.2, 60))]
-cols = [("Top subclasses", [(sub == 2, "Top-Core", COLORS["top"]),
-                            (sub == 3, "Top-Edge", COLORS["qcd"])]),
-        ("QCD status", [(tn, "TN (true QCD)", COLORS["qcd"]),
-                        (fp, "FP (QCD as top)", COLORS["top"])]),
-        ("Top status", [(tp, "TP (true top)", COLORS["top"]),
-                        (fn, "FN (top as QCD)", COLORS["qcd"])])]
+cols = [("Top: Core vs Edge", [(sub == 2, "Top-Core", SUBCLASS_COLORS["Top core"]),
+                               (sub == 3, "Top-Edge", SUBCLASS_COLORS["Top edge"])]),
+        ("QCD: TN vs FP", [(tn, "TN (true QCD)", SUBCLASS_COLORS["QCD core"]),
+                           (fp, "FP (QCD as top)", SUBCLASS_COLORS["Top core"])]),
+        ("Top: TP vs FN", [(tp, "TP (true top)", SUBCLASS_COLORS["Top core"]),
+                           (fn, "FN (top as QCD)", SUBCLASS_COLORS["QCD core"])])]
 
 for r, (ylabel, vals, bins) in enumerate(rows):
     for c, (ctitle, groups) in enumerate(cols):
@@ -68,15 +69,21 @@ for r, (ylabel, vals, bins) in enumerate(rows):
         for mask, lab, col in groups:
             v = vals[mask]
             ax.hist(v, bins=bins, density=True, histtype="step",
-                    linewidth=1.2, color=col, label=f"{lab} (n={mask.sum():,})")
+                    linewidth=1.4, color=col, label=f"{lab} (n={mask.sum():,})")
+        panel_label(ax, "(%s)" % chr(97 + r * 3 + c))
         if r == 0:
             ax.set_title(ctitle, fontsize=9)
         if c == 0:
             ax.set_ylabel(ylabel, fontsize=8)
+        if r == 2:
+            ax.set_xlabel(ylabel, fontsize=8)
         ax.tick_params(labelsize=7)
-        ax.legend(fontsize=6, handlelength=1.2)
+        add_grid(ax)
+        if r == 0:
+            ax.legend(loc="upper right",
+                      **{**LEGEND_KWARGS, "fontsize": 6})
 
-plt.tight_layout(pad=0.6)
+plt.tight_layout(pad=0.6, w_pad=1.0)
 save_fig(fig, "subclass_physics_distributions.png")
 print("saved subclass_physics_distributions.png")
 plt.close(fig)
