@@ -92,9 +92,9 @@ def main():
     qcd = labels[idx] == 0
     top = labels[idx] == 1
     ax.scatter(jet_mass[idx][qcd], top_scores[idx][qcd],
-               c=COLORS['qcd'], alpha=0.3, s=2, label='QCD', rasterized=True)
+               c=COLORS['qcd'], alpha=0.12, s=2, label='QCD', rasterized=True)
     ax.scatter(jet_mass[idx][top], top_scores[idx][top],
-               c=COLORS['top'], alpha=0.3, s=2, label='Top', rasterized=True)
+               c=COLORS['top'], alpha=0.12, s=2, label='Top', rasterized=True)
     ax.axhline(0.5, color='0.3', linestyle='--', lw=0.8, label='Decision boundary')
     ax.set_xlabel('Jet mass (GeV)')
     ax.set_ylabel('$P(\\mathrm{top} \\mid \\mathrm{jet})$')
@@ -104,8 +104,9 @@ def main():
 
     # Right: 2D density all events (same x-range as left for consistency)
     ax = axes[1]
+    from matplotlib.colors import LogNorm
     h = ax.hist2d(jet_mass, top_scores, bins=(80, 80), cmap='viridis',
-                  range=[[0, 350], [0, 1]])
+                  range=[[0, 350], [0, 1]], norm=LogNorm(vmin=1))
     plt.colorbar(h[3], ax=ax, label='Count')
     ax.axhline(0.5, color='white', linestyle='--', lw=0.8, label='Decision boundary')
     ax.set_xlabel('Jet mass (GeV)')

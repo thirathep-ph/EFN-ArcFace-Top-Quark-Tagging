@@ -68,17 +68,21 @@ panels = [
       (sub == 3, "Top-Edge", SUBCLASS_COLORS["Top edge"])]),
 ]
 
+legend_loc = ["upper right", "upper right", "upper left", "upper left"]
 for i, (ylabel, vals, bins, groups) in enumerate(panels):
     ax = axes[i // 2, i % 2]
+    peak = 0.0
     for mask, lab, col in groups:
         v = vals[mask]
-        ax.hist(v, bins=bins, density=True, histtype="step",
-                color=col, label=f"{lab} (n={mask.sum():,})")
+        n, _, _ = ax.hist(v, bins=bins, density=True, histtype="step",
+                          color=col, label=f"{lab} (n={mask.sum():,})")
+        peak = max(peak, float(np.max(n)))
+    ax.set_ylim(0, peak * 1.3)
     panel_label(ax, "(%s)" % chr(97 + i))
     ax.set_ylabel(ylabel)
     ax.tick_params(labelsize=8)
     add_grid(ax)
-    ax.legend(loc="upper right",
+    ax.legend(loc=legend_loc[i],
               **{k: v for k, v in LEGEND_KWARGS.items() if k != "fontsize"})
 
 plt.tight_layout(pad=0.6, w_pad=1.2)

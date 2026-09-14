@@ -105,7 +105,9 @@ def main() -> None:
 
     apply_style()
     fig, ax = plt.subplots(figsize=(8, 4.5))
-    sns.heatmap(np.array(matrix), annot=True, fmt=".1f", ax=ax,
+    mat = np.array(matrix)
+    annot_labels = np.where(mat < 0.05, "", np.char.mod("%.1f", np.round(mat, 1)))
+    sns.heatmap(mat, annot=annot_labels, fmt="", ax=ax,
                 xticklabels=STATUS, yticklabels=row_labels,
                 cmap="YlGnBu", cbar_kws={"label": "Percentage (%)", "shrink": 0.8},
                 annot_kws={"fontsize": 8})
