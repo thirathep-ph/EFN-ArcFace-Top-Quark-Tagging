@@ -62,6 +62,8 @@ Desktop.ini
 
 # ===== MISC =====
 *.log
+*.err
+*.bak*
 *_output.txt
 *_out.txt
 $null
