@@ -113,21 +113,22 @@ def plot_fig1_class_balance(stats_list: list[dict], outdir: Path):
     splits = [s['split'] for s in stats_list]
     n_events = [s['n_events'] / 1e6 for s in stats_list]
 
-    colors = ['#4C72B0', '#55A868', '#C44E52']
+    colors = [COLORS["gray"], COLORS["gray"], COLORS["gray"]]
     bars = axes[0].bar(splits, n_events, color=colors, edgecolor='white', width=0.5)
     axes[0].set_ylabel("Events (millions)")
     axes[0].set_title("Dataset Splits")
     for bar, n in zip(bars, n_events):
         axes[0].text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.02,
                      f"{n:.2f}M", ha='center', va='bottom', fontsize=10)
+    axes[0].set_ylim(0, max(n_events) * 1.15)
 
     # Class balance bar chart
     top_frac = [s['frac_top'] * 100 for s in stats_list]
     qcd_frac = [100 - tf for tf in top_frac]
     x = np.arange(len(splits))
     width = 0.35
-    axes[1].bar(x - width / 2, qcd_frac, width, label='QCD', color='#4C72B0', edgecolor='white')
-    axes[1].bar(x + width / 2, top_frac, width, label='Top', color='#C44E52', edgecolor='white')
+    axes[1].bar(x - width / 2, qcd_frac, width, label='QCD', color=COLORS["qcd"], edgecolor='white')
+    axes[1].bar(x + width / 2, top_frac, width, label='Top', color=COLORS["top"], edgecolor='white')
     axes[1].set_xticks(x)
     axes[1].set_xticklabels(splits)
     axes[1].set_ylabel("Percentage (%)")
@@ -148,7 +149,7 @@ def plot_fig2_kinematics(full: dict, outdir: Path):
     qcd_mask = labels == 0
 
     def plot_kde(ax, data_top, data_qcd, xlabel, title, bins=80, xlim=None):
-        for data, label, color in [(data_qcd, 'QCD', '#4C72B0'), (data_top, 'Top', '#C44E52')]:
+        for data, label, color in [(data_qcd, 'QCD', COLORS["qcd"]), (data_top, 'Top', COLORS["top"])]:
             ax.hist(data, bins=bins, density=True, alpha=0.5, color=color,
                     label=label, histtype='stepfilled')
         ax.set_xlabel(xlabel)
@@ -198,9 +199,9 @@ def plot_fig3_substructure(sub: dict, outdir: Path):
         hi = max(hi, hi2)
         bins = np.linspace(lo, hi, 60)
 
-        ax.hist(d_qcd, bins=bins, density=True, alpha=0.5, color='#4C72B0',
+        ax.hist(d_qcd, bins=bins, density=True, alpha=0.5, color=COLORS["qcd"],
                 label='QCD' if i == 0 else '', histtype='stepfilled')
-        ax.hist(d_top, bins=bins, density=True, alpha=0.5, color='#C44E52',
+        ax.hist(d_top, bins=bins, density=True, alpha=0.5, color=COLORS["top"],
                 label='Top' if i == 0 else '', histtype='stepfilled')
         ax.set_xlabel(names_tex[i], fontsize=11)
         ax.set_ylabel("Density", fontsize=10)
