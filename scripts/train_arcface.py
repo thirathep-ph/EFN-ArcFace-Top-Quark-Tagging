@@ -28,7 +28,7 @@ from tqdm.auto import tqdm
 from arcefn.utils.paths import DATA_DIR, EXPERIMENTS
 from arcefn.utils.device import get_device, empty_cache, amp_available, get_amp_scaler
 from arcefn.models.efn_arcface import TopTaggingModel, arcface_loss, count_parameters
-from arcefn.data.loader import load_awkward, JetTaggingDataset, get_h5_len
+from arcefn.data.loader import load_awkward, JetTaggingDataset, get_h5_len, load_all_labels
 
 
 # ============================================================================
@@ -229,6 +229,9 @@ def main():
                         help='Alias for compatibility; no effect (analysis stripped)')
     parser.add_argument('--amp', action='store_true',
                         help='Use Automatic Mixed Precision (FP16)')
+    parser.add_argument('--shuffle_labels', type=int, default=None,
+                        help='Null-control: globally permute TRAIN labels once '
+                             'with this seed (validation labels stay true).')
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -252,6 +255,16 @@ def main():
         val_len = min(val_len, max_events)
 
     use_chunking = not args.no_chunk
+
+    label_perm = None
+    full_lab = None
+    if args.shuffle_labels is not None:
+        rng = np.random.default_rng(args.shuffle_labels)
+        label_perm = rng.permutation(train_len)
+        full_lab = load_all_labels(train_path, train_len)
+        assert len(full_lab) == train_len == len(label_perm)
+        print(f"Null-control: train labels globally permuted "
+              f"(seed {args.shuffle_labels}); validation labels untouched.")
 
     if use_chunking:
         num_train_chunks = int(np.ceil(train_len / args.chunk_size))
@@ -295,6 +308,8 @@ def main():
     if not use_chunking:
         print("Pre-loading all data into memory (single-load mode)...")
         tr_ev, tr_lab, tr_w = load_awkward(train_path, max_events=train_len, lazy=True)
+        if label_perm is not None:
+            tr_lab = np.asarray(tr_lab)[label_perm]
         cached_train_data = (tr_ev, tr_lab, tr_w)
         vl_ev, vl_lab, vl_w = load_awkward(val_path, max_events=val_len, lazy=True)
         cached_val_data = (vl_ev, vl_lab, vl_w)
@@ -326,6 +341,8 @@ def main():
                 n_events = min(args.chunk_size, train_len - start)
                 tr_ev, tr_lab, tr_w = load_awkward(
                     train_path, max_events=n_events, start_event=start, lazy=True)
+                if label_perm is not None:
+                    tr_lab = full_lab[label_perm[start:start + n_events]]
             else:
                 n_events = train_len
                 tr_ev, tr_lab, tr_w = cached_train_data

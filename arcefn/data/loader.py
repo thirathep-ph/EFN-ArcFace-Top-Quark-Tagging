@@ -247,6 +247,29 @@ def get_h5_len(path: str) -> int:
         return tbl.shape[0]
 
 
+def load_all_labels(path: str, max_events: int | None = None) -> np.ndarray:
+    """Load only the label column for the first ``max_events`` events.
+
+    Mirrors the layout logic of :func:`load_awkward` without touching the
+    (heavy) 4-momentum blocks. Used by null-control retrains that need the
+    full label vector in memory while streaming events in chunks.
+    """
+    with h5py.File(path, 'r') as f:
+        if 'table' in f:
+            tbl = f['table']['table']
+        else:
+            tbl = f[list(f.keys())[0]]
+        total_len = tbl.shape[0]
+        n = min(total_len, max_events) if max_events is not None else total_len
+        if 'values_block_0' in tbl.dtype.names:
+            return tbl['values_block_1'][:n, 1].astype(np.int8)
+        raw = tbl[:n]
+        if raw.shape[1] > 800:
+            return raw[:, 800].astype(np.int8)
+        raise ValueError(
+            f"Flat H5 layout missing the label column (shape[1]={raw.shape[1]} <= 800).")
+
+
 def load_events_by_indices(path, indices, trim_padding=True):
     """
     Load specific events by their global indices from the H5 file.
