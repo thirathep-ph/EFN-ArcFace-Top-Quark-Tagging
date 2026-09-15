@@ -33,6 +33,7 @@ def parse_args():
     p.add_argument("--model_dir", default=str(MODEL_DIR))
     p.add_argument("--tag", default="shuffled")
     p.add_argument("--max_events", type=int, default=MAX_EVENTS)
+    p.add_argument("--start_event", type=int, default=0)
     return p.parse_args()
 
 
@@ -44,7 +45,7 @@ def main():
     model = load_model_from_dir(model_dir, device)
     model.eval()
 
-    events, labels, weights = load_awkward(DATA_DIR / 'test.h5', max_events=args.max_events, lazy=False)
+    events, labels, weights = load_awkward(DATA_DIR / 'test.h5', max_events=args.max_events, start_event=args.start_event, lazy=False)
     loader = DataLoader(JetTaggingDataset(events, labels, weights),
                         batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
     all_emb, all_preds = [], []
