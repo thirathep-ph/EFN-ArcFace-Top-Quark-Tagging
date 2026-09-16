@@ -59,10 +59,10 @@ scripts/analysis/                # paper figures (all regenerate experiments/*.j
   compute_alignment_uniformity.py# embedding norms + subclass balance (3-way)
   compute_dglap_fit.py, compute_bootstrap_ci.py, ...
 
-paper/                           # SciPost manuscript (35pp, humanized, 35 cites verified)
+paper/                           # SciPost manuscript (32pp, 50 cites verified)
   main.tex, refs.bib, SciPost.cls, arxiv.sty, figures/*.png
   overleaf.zip                   # upload-ready for Overleaf (SciPost)
-paper_arxiv/                     # arXiv manuscript (29pp, article+arxiv.sty)
+paper_arxiv/                     # arXiv manuscript (27pp, article+arxiv.sty, synced from paper/ via scripts/sync_arxiv.py)
   main.tex, refs.bib, arxiv.sty, figures/*.png
   paper_arxiv.tar.gz             # upload-ready for arXiv (texlive 2025)
 
@@ -116,14 +116,14 @@ python scripts/analysis/compute_alignment_uniformity.py --out_tag _3way --max_ev
 ### Paper → PDF / Overleaf / arXiv
 
 ```bash
-# SciPost (35pp, humanized, 0 undefined)
+# SciPost (32pp, 0 undefined)
 cd paper
-pdflatex main; bibtex main; pdflatex main; pdflatex main  # -> main.pdf (35pp)
+pdflatex main; bibtex main; pdflatex main; pdflatex main  # -> main.pdf (32pp)
 # or upload paper/overleaf.zip to Overleaf — builds standalone (TeX Live 2025)
 
-# arXiv (29pp, same content, article+arxiv.sty)
+# arXiv (27pp, article+arxiv.sty; regenerate with: python scripts/sync_arxiv.py)
 cd ../paper_arxiv
-pdflatex main; bibtex main; pdflatex main; pdflatex main  # -> main.pdf (29pp)
+pdflatex main; bibtex main; pdflatex main; pdflatex main  # -> main.pdf (27pp)
 # or upload paper_arxiv.tar.gz to arXiv — TeX Live 2025 pdflatex
 ```
 
