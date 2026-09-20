@@ -6,6 +6,8 @@
 
 ![Project overview](docs/infographic.png)
 
+**[🖼️ Results Gallery — all 42 experiment figures with one-line captions](docs/RESULTS.md)**
+
 ## Intro
 
 Top-quark vs QCD jet classification is a core LHC task where deep taggers are accurate but opaque. This project replaces the black-box head with geometry: an IRC-safe Energy Flow Network backbone plus an ArcFace prototype head, so the binary decision is exactly nearest-prototype on the unit hypersphere S^63. Unsupervised clustering on that manifold recovers jet subclasses, which are then checked against QCD predictions (splitting functions, angular scaling, Lund topology) instead of being trusted on faith.
