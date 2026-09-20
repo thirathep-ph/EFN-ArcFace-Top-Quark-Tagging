@@ -145,7 +145,7 @@ def main():
     add_grid(axes[0])
     panel_label(axes[0], '(a)')
 
-    # Format panel 2 — dynamic ylim to prevent overflow (ponytail: auto 1.18× max)
+    # Format panel 2 — dynamic ylim to prevent overflow
     y_max = max((v for k, v in results.items() if k.endswith('_N')), default=22000)
     axes[1].set_ylim(0, y_max * 1.18)
     axes[1].set_ylabel('$N$ events (50k total)')

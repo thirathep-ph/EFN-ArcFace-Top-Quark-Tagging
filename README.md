@@ -6,7 +6,7 @@
 
 **EFN (Energy Flow Network) + ArcFace hyperspherical prototypes** for jet classification — a geometrically transparent decision rule on the unit hypersphere $S^{63}$.
 
-Paper: *Hyperspherical Prototype Classification for Interpretable Top Quark Tagging with Energy Flow Networks* — Thirathep N. Phiankham ([`paper/main.pdf`](paper/main.pdf)).
+Paper: *EFN–ArcFace Top Quark Tagging and Jet Substructure via Hyperspherical Prototypes* — Thirathep N. Phiankham ([`paper/main.pdf`](paper/main.pdf)).
 
 ---
 
