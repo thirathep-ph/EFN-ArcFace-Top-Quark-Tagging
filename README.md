@@ -8,6 +8,8 @@
 
 Paper: *EFN–ArcFace Top Quark Tagging and Jet Substructure via Hyperspherical Prototypes* — Thirathep N. Phiankham ([`paper_arxiv/main.pdf`](paper_arxiv/main.pdf)).
 
+![EFN+ArcFace pipeline and key results](docs/infographic.png)
+
 ---
 
 ## 🧠 Architecture Overview

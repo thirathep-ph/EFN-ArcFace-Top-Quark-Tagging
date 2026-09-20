@@ -30,6 +30,7 @@ checkpoints/
 *.svg
 !paper/figures/*.png
 !paper_arxiv/figures/*.png
+!docs/infographic.png
 
 # ===== PYTHON =====
 __pycache__/
