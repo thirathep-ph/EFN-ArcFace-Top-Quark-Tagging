@@ -27,5 +27,5 @@ setup(
         ],
     },
     author="Thirathep Naowabut Phiankham",
-    description="ArcEFN: Ante-hoc Interpretable Top Quark Tagging with EFN and ArcFace Hyperspherical Prototypes",
+    description="EFN-ArcFace Top Quark Tagging and Jet Substructure via Hyperspherical Prototypes",
 )
