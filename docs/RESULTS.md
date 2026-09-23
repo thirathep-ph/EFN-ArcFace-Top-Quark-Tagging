@@ -1,8 +1,4 @@
-# EFN–ArcFace Top Tagging — the paper that isn't a paper
-
-> Order mirrors the manuscript (`paper_arxiv/main.tex`) section for section.
-> Each section shows the takeaway up front; click to expand figures and tables.
-> Every number below is machine-checked against `experiments/numbers.json` (48 entries).
+# EFN–ArcFace Top Tagging — Results
 
 ## Abstract
 
