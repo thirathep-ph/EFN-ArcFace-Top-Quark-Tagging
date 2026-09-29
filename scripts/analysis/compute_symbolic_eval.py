@@ -18,6 +18,7 @@ Artifacts:
 """
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -52,37 +53,87 @@ def _metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
 
 
 def main() -> None:
-    fit = json.loads((OUT_DIR / "fit_full.json").read_text())
-    std = fit["standardization"]
-    assert std["norm"] == "z"
-    names = std["feature_names"]
-    x_mean = np.array(std["x_mean"])
-    x_std = np.array(std["x_std"])
-    y_mean, y_std = std["y_mean"], std["y_std"]
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--fit", default="fit_full.json",
+                    help="input front file in experiments/physics_sr "
+                         "(default: fit_full.json)")
+    ap.add_argument("--out", default="symbolic_eval.json",
+                    help="output eval file (default: symbolic_eval.json)")
+    ap.add_argument("--eval", choices=["self", "full"], default="self",
+                    help="evaluate on the fit's own subsample (self) or on "
+                         "the full 404k test set (full); full cross-evaluates "
+                         "equations from a subsample fit (default: self)")
+    args = ap.parse_args()
+    fit_path = OUT_DIR / args.fit
+    fit = json.loads(fit_path.read_text())
+    own_npz = np.load(OUT_DIR / (fit_path.stem + ".npz"))
+    std = fit.get("standardization") or {}
+    norm = std.get("norm", "raw")
+    names = std.get("feature_names") or [
+        "Mass_over_pT", "mSD_over_pT", "Mult", "nSD", "sqrt_d12",
+        "sqrt_d23", "Tau21", "Tau32", "zg", "theta_g"]
+    if norm == "z":
+        x_mean = np.array(std["x_mean"])
+        x_std = np.array(std["x_std"])
+        y_mean, y_std = std["y_mean"], std["y_std"]
+    elif norm == "sigma":
+        x_mean = np.zeros(10)
+        x_std = np.array(std["x_std"])
+        y_mean, y_std = 0.0, std["y_std"]
+    elif norm == "robust":
+        x_mean = np.array(std["x_med"])
+        x_std = np.array(std["x_iqr"])
+        y_mean, y_std = std["y_med"], std["y_iqr"]
+    elif norm == "minmax":
+        x_mean = np.array(std["x_min"])
+        x_std = np.array(std["x_rng"])
+        y_mean, y_std = 0.0, std["y_std"]
+    elif norm == "raw":
+        # raw fit stores no scale: X unscaled, equation output is y/y_std
+        x_mean = np.zeros(10)
+        x_std = np.ones(10)
+        y_mean, y_std = 0.0, float(np.asarray(own_npz["y"]).std())
+    else:
+        raise ValueError(f"unknown norm {norm!r}")
 
     feats = np.load(EXPERIMENTS / "rf_cache_test.npz")["features"].astype(np.float64)
     logits = np.load(OUT_DIR / "logits.npz")
     pt = np.maximum(logits["jet_pt"].astype(np.float64), 1e-3)
     mass = np.maximum(feats[:, 0], 0.0)
     m_sd = np.maximum(feats[:, 1], 0.0)
-    X0 = np.column_stack([mass / pt, m_sd / pt, feats[:, 2], feats[:, 3],
-                          feats[:, 4], feats[:, 5], feats[:, 6], feats[:, 7],
-                          feats[:, 8], feats[:, 9]])
+    X0_full = np.column_stack([mass / pt, m_sd / pt, feats[:, 2], feats[:, 3],
+                               feats[:, 4], feats[:, 5], feats[:, 6], feats[:, 7],
+                               feats[:, 8], feats[:, 9]])
+    y_full = logits["logitdiff"].astype(np.float64)
+    labels_full = logits["labels"].astype(np.int64)
+    assert len(feats) == len(y_full) == len(labels_full) == 404000
+    sel = np.asarray(own_npz["sel"])
+    if args.eval == "self":
+        X0 = X0_full[sel]
+        y = np.asarray(own_npz["y"], dtype=np.float64)
+        labels = np.asarray(own_npz["labels"]).astype(np.int64)
+    else:
+        X0 = X0_full
+        y = y_full
+        labels = labels_full
+    assert len(X0) == len(y) == len(labels)
     Xz = (X0 - x_mean) / x_std
-    y = logits["logitdiff"].astype(np.float64)
-    labels = logits["labels"].astype(np.int64)
-    assert len(feats) == len(y) == len(labels) == 404000
 
-    npz = np.load(OUT_DIR / "fit_full.npz")
-    y_hat_best_ref = npz["y_hat"].astype(np.float64)
+    npz_path = OUT_DIR / (fit_path.stem + ".npz")
+    y_hat_best_ref = None
+    if npz_path.exists():
+        y_hat_best_ref = np.load(npz_path)["y_hat"].astype(np.float64)
 
     import sympy as sp
+
+    _op_map = {"tanh": sp.tanh, "exp": sp.exp, "log": sp.log,
+               "sqrt": sp.sqrt, "Abs": sp.Abs, "square": lambda x: x**2}
 
     syms = {n: sp.Symbol(n) for n in names}
     rows = []
     for r in fit["equations"]:
         c = int(r["complexity"])
-        expr = sp.sympify(r["equation"], locals={"tanh": sp.tanh, **syms})
+        expr = sp.sympify(r["equation"], locals={**_op_map, **syms})
         f = sp.lambdify(names, expr, "numpy")
         raw = np.asarray(f(*[Xz[:, i] for i in range(10)]), dtype=np.float64)
         if raw.ndim > 1:
@@ -97,33 +148,37 @@ def main() -> None:
         })
 
     best_row = max(rows, key=lambda r: r["metrics"]["auc"])
-    ref = dict(corr=float(pearsonr(y, y_hat_best_ref)[0]),
-               metrics=_metrics(labels, y_hat_best_ref))
+    if y_hat_best_ref is not None and len(y_hat_best_ref) == len(y):
+        ref = dict(corr=float(pearsonr(y, y_hat_best_ref)[0]),
+                   metrics=_metrics(labels, y_hat_best_ref))
+        consistent = (
+            abs(ref["corr"] - fit["corr_with_nn_logit"]) < 1e-6
+            and abs(ref["metrics"]["rej50"]
+                    - fit["metrics_thresholded"]["rej50"]) < 1e-6
+        )
+    else:
+        ref = None
+        consistent = None
     out = {
-        "source": str(OUT_DIR / "fit_full.json"),
-        "n": 404000,
+        "source": str(fit_path),
+        "eval": args.eval,
+        "n": len(y),
         "equations": rows,
         "best_auc_equation": {"complexity": best_row["complexity"],
                               "equation": best_row["equation"]},
         "reference_y_hat_metrics": ref,
-        "consistency_with_saved_npz": all(
-            abs(rows[i]["metrics"]["acc"] - out_i) < 1e-6
-            for i, out_i in enumerate([])  # filled below
-        ),
+        "consistency_with_saved_npz": consistent,
     }
-    out["consistency_with_saved_npz"] = (
-        abs(out["reference_y_hat_metrics"]["corr"] - fit["corr_with_nn_logit"]) < 1e-6
-        and abs(out["reference_y_hat_metrics"]["metrics"]["rej50"]
-                - fit["metrics_thresholded"]["rej50"]) < 1e-6
-    )
-    (OUT_DIR / "symbolic_eval.json").write_text(json.dumps(out, indent=2))
+    (OUT_DIR / args.out).write_text(json.dumps(out, indent=2))
     print(f"n={out['n']}  consistency_with_saved_npz={out['consistency_with_saved_npz']}")
     for r in rows:
         m = r["metrics"]
         print(f"c={r['complexity']:>2} corr={r['corr_with_nn_logit']:.4f} "
               f"acc={m['acc']:.4f} auc={m['auc']:.4f} rej50={m['rej50']:.2f} "
               f"| {r['equation']}")
-    print(f"reference (saved npz y_hat): corr={ref['corr']:.4f} "
+    print(f"reference (saved npz y_hat): {ref}"
+          if ref is None else
+          f"reference (saved npz y_hat): corr={ref['corr']:.4f} "
           f"met={ref['metrics']}")
 
 

@@ -74,18 +74,35 @@ def main() -> None:
     ap.add_argument("--mode", choices=["micro", "quick", "full"], default="micro")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--features", choices=["raw", "dimless"], default="dimless")
-    ap.add_argument("--norm", choices=["z", "sigma", "raw"], default="z",
+    ap.add_argument("--norm", choices=["z", "sigma", "raw", "robust", "minmax"], default="z",
                     help="input standardization: z=(x-mean)/std; sigma=x/std "
-                         "(unit variance, keeps physical zero); raw=as-is")
+                         "(unit variance, keeps physical zero); raw=as-is; "
+                         "robust=(x-median)/IQR; minmax=(x-min)/range -> [0,1]")
     ap.add_argument("--no-z", action="store_true",
                     help="deprecated alias for --norm raw")
     ap.add_argument("--clean", action="store_true",
                     help="Physics-constrained: dimensionless_constants_only, "
-                         "forbid nested tanh, higher constant complexity, "
-                         "select by parsimony score (not loss), sympy simplify")
+                         "sympy simplify of best equation")
+    ap.add_argument("--no-nest-tanh", action="store_true",
+                     help="forbid tanh nested inside tanh via "
+                          "nested_constraints={'tanh': {'tanh': 0}}")
+    ap.add_argument("--parsimony", type=float, default=1e-4,
+                    help="PySR parsimony penalty (default 1e-4 = historical value)")
+    ap.add_argument("--opset", choices=["BASE", "NOEXPLOG", "PLUSPOW", "TANHONLY"],
+                    default="BASE",
+                    help="operator set: BASE=+-*/ + square/sqrt/abs/tanh/exp/log; "
+                         "NOEXPLOG=drops exp/log; PLUSPOW=adds pow; "
+                         "TANHONLY=single nonlinearity tanh")
+    ap.add_argument("--maxsize", type=int, default=None,
+                    help="override mode default maxsize")
+    ap.add_argument("--out-tag", type=str, default=None,
+                    help="optional suffix: artifacts become "
+                         "fit_<mode>_<tag>.json/npz instead of overwriting "
+                         "fit_<mode>.json/npz")
     args = ap.parse_args()
     norm = "raw" if args.no_z else args.norm
     cfg = CONFIG[args.mode]
+    stem = f"fit_{args.mode}_{args.out_tag}" if args.out_tag else f"fit_{args.mode}"
 
     feats = np.load(EXPERIMENTS / "rf_cache_test.npz")["features"].astype(np.float64)
     logits = np.load(OUT_DIR / "logits.npz")
@@ -118,6 +135,28 @@ def main() -> None:
         std_block = None
         print(f"[physics-sr] {args.mode} ({args.features}, raw space): "
               f"fitting logitdiff ~ f({len(feature_names)} features) on n={n}", flush=True)
+    elif norm == "robust":
+        x_med = np.median(X, axis=0)
+        x_iqr = (np.quantile(X, 0.75, axis=0) - np.quantile(X, 0.25, axis=0)) + 1e-9
+        y_med = float(np.median(y_s))
+        y_iqr = float(np.quantile(y_s, 0.75) - np.quantile(y_s, 0.25)) + 1e-9
+        Xz = (X - x_med) / x_iqr
+        yz = (y_s - y_med) / y_iqr
+        std_block = {"norm": "robust", "x_med": x_med.tolist(),
+                     "x_iqr": x_iqr.tolist(), "y_med": y_med, "y_iqr": y_iqr,
+                     "feature_names": feature_names}
+        print(f"[physics-sr] {args.mode} ({args.features}, robust space): "
+              f"fitting logitdiff ~ f({len(feature_names)} features) on n={n}", flush=True)
+    elif norm == "minmax":
+        x_min = X.min(axis=0)
+        x_rng = (X.max(axis=0) - x_min) + 1e-9
+        Xz = (X - x_min) / x_rng
+        yz = y_s / y_std
+        std_block = {"norm": "minmax", "x_min": x_min.tolist(),
+                     "x_rng": x_rng.tolist(),
+                     "y_std": float(y_std), "feature_names": feature_names}
+        print(f"[physics-sr] {args.mode} ({args.features}, minmax space): "
+              f"fitting logitdiff ~ f({len(feature_names)} features) on n={n}", flush=True)
     elif norm == "sigma":
         Xz = X / x_std
         yz = y_s / y_std
@@ -136,19 +175,31 @@ def main() -> None:
 
     from pysr import PySRRegressor
 
-    extra_kwargs = {}
+    extra_kwargs: dict = {}
     if args.clean:
-        extra_kwargs = dict(dimensionless_constants_only=True)
-        print(f"[physics-sr] clean mode: dimensionless_constants_only", flush=True)
+        extra_kwargs["dimensionless_constants_only"] = True
+        print("[physics-sr] clean mode: dimensionless_constants_only", flush=True)
+    if args.no_nest_tanh:
+        extra_kwargs["nested_constraints"] = {"tanh": {"tanh": 0}}
+        print("[physics-sr] no-nest-tanh mode: nested_constraints="
+              "{'tanh': {'tanh': 0}}", flush=True)
 
     t0 = time.time()
+    unary = {"BASE": ["square", "sqrt", "abs", "tanh", "exp", "log"],
+             "NOEXPLOG": ["square", "sqrt", "abs", "tanh"],
+             "PLUSPOW": ["square", "sqrt", "abs", "tanh", "exp", "log"],
+             "TANHONLY": ["tanh"]}[args.opset]
+    binary = ["+", "-", "*", "/"] + (["pow"] if args.opset == "PLUSPOW" else [])
+    maxsize = args.maxsize or cfg["maxsize"]
+    print(f"[physics-sr] opset={args.opset} binary={binary} unary={unary} "
+          f"parsimony={args.parsimony:g} maxsize={maxsize}", flush=True)
     model = PySRRegressor(
         niterations=cfg["niterations"], populations=cfg["populations"],
         population_size=cfg["population_size"],
-        binary_operators=["+", "-", "*", "/"],
-        unary_operators=["square", "sqrt", "abs", "tanh", "exp", "log"],
-        maxsize=cfg["maxsize"], maxdepth=cfg["maxdepth"],
-        parsimony=1e-4, verbosity=0, progress=False, deterministic=False,
+        binary_operators=binary,
+        unary_operators=unary,
+        maxsize=maxsize, maxdepth=cfg["maxdepth"],
+        parsimony=args.parsimony, verbosity=0, progress=False, deterministic=False,
         parallelism="multithreading", procs=4, random_state=args.seed,
         **extra_kwargs,
     )
@@ -176,7 +227,12 @@ def main() -> None:
     y_hat_s = np.clip(model.predict(Xz, index=best_idx), -50, 50)
     if norm == "z":
         y_hat_s = y_hat_s * y_std + y_mean
-    elif norm == "sigma":
+    elif norm == "robust":
+        # robust fits yz = (y-y_med)/y_iqr
+        y_hat_s = y_hat_s * y_iqr + y_med
+    else:
+        # sigma, raw and minmax all fit yz = y/y_std: rescale to logit
+        # space so _metrics thresholds (0.5) match the z-norm convention
         y_hat_s = y_hat_s * y_std
 
     from scipy.stats import pearsonr
@@ -193,6 +249,8 @@ def main() -> None:
         })
     out = {
         "mode": args.mode, "n_samples": n, "seed": args.seed,
+        "parsimony": args.parsimony, "opset": args.opset,
+        "maxsize": maxsize, "no_nest_tanh": args.no_nest_tanh,
         "fit_seconds": time.time() - t0,
         "best_loss": float(best_row["loss"]),
         "best_equation": best,
@@ -202,14 +260,14 @@ def main() -> None:
         "nn_metrics_on_sample": met_nn,
         "n_equations": len(eqs), "equations": rows,
     }
-    (OUT_DIR / f"fit_{args.mode}.json").write_text(json.dumps(out, indent=2))
-    np.savez_compressed(OUT_DIR / f"fit_{args.mode}.npz",
+    (OUT_DIR / f"{stem}.json").write_text(json.dumps(out, indent=2))
+    np.savez_compressed(OUT_DIR / f"{stem}.npz",
                         y_hat=y_hat_s.astype(np.float32), y=y_s.astype(np.float32),
                         labels=labels_s, sel=sel)
     print(f"[physics-sr] best: {best}")
     print(f"[physics-sr] corr(logit)={corr_nn:.4f} acc={met['acc']:.4f} "
           f"auc={met['auc']:.4f} rej50={met['rej50']:.2f}")
-    print(f"[physics-sr] saved {OUT_DIR / f'fit_{args.mode}.json'}")
+    print(f"[physics-sr] saved {OUT_DIR / f'{stem}.json'}")
 
 
 if __name__ == "__main__":
