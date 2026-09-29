@@ -183,6 +183,60 @@ Pareto front: compact c=6 form (leading-physics distillate, not a replacement �
 
 </details>
 
+### 5.1 Norm-matrix findings (2026-09-28, quick scale 100k, seeds 42/123/7, --no-nest-tanh)
+
+15 cells (5 norms × 3 seeds), tagged `fit_quick_norm_*` + `eval_norm_*_{self,full}` in `experiments/physics_sr/`; published artifacts untouched. Metric = transfer-AUC of each cell's best-AUC equation evaluated on the full 404k set. Re-verified from artifacts 2026-09-28.
+
+| Norm | s42 (c / AUC) | s123 (c / AUC) | s7 (c / AUC) | Mean | Spread |
+|:-----|:---:|:---:|:---:|:---:|:---:|
+| z-score | 21 / 0.9624 | 19 / 0.9618 | 13 / 0.9591 | **0.9611** | 0.0033 |
+| robust (median/IQR) | 14 / 0.9602 | 16 / 0.9602 | 16 / 0.9609 | 0.9605 | **0.0008** |
+| minmax | 15 / 0.9582 | 20 / 0.9514 | 12 / 0.9515 | 0.9537 | 0.0068 |
+| raw (y rescaled, bug fixed) | 14 / 0.9509 | 25 / 0.9528 | 14 / 0.9537 | 0.9525 | 0.0027 |
+| sigma (x/std only) | 20 / 0.9488 | 7 / 0.9409 | 24 / 0.9603 | 0.9500 | 0.0194 |
+
+**Settled claims (evidence-backed):**
+- z ≈ robust statistically tied at top (gap 0.0006 < z's own spread 0.0033, n=3). Sayable: "z+robust clearly beat minmax/raw/sigma". NOT sayable: "z is the best".
+- Mass_over_pT present in all 15 best equations; cleanly Mass-led in 14/15 (mm-s123 mixes mSD_over_pT lead) — physics claim (mass+3-prongness) is robust to norm choice.
+- Transfer quick→full holds (self vs full agree to 3rd decimal); saturation 100k→404k ≈ +0.002 AUC (diminishing returns); 10k seed-unstable (AUC 0.906 vs 0.951 across seeds).
+- no-nest-tanh costs ~nothing at full scale (corr 0.9658 vs 0.9688 unconstrained) and recovers the paper's c=6 clean form.
+- Singularity flags: sigma-s42 `log(Mass_over_pT)`; raw-s7 `Tau32/Mass_over_pT` division; mm-s123 best-c shifts c15→c20 self-to-full. Sigma most unstable (spread 0.0194).
+- Bug found+fixed: `fit_physics_sr.py` raw path forgot y_hat rescale (all pre-fix raw numbers were in yz units, invalid).
+
+**Decisions (binding):**
+- D1: paper-wide symbolic seeds = 42/123/7 (consistency over statistics). Paper line ~568 still says 42/123/456 — MUST edit. Seed-456 artifacts are legacy.
+- D2: final norm verdict needs full-404k z-vs-robust confirm (quick-scale gap is noise). Tiebreak order: full-scale transfer-AUC → cross-seed spread → z as standard practice with robust noted as equivalent.
+- D3: condition-variation screens run on BOTH z and robust (Stage 1 seed-42 screen = 16 cells, not 8).
+
+**OPEN (do not write into paper before closing):**
+- O1: z vs robust final winner (needs 2 full-404k confirm runs).
+- O2: parsimony / operators / nesting / maxsize effects (Stage B screen).
+
+### 5.2 Stage-B condition screen (2026-09-29, quick scale 100k, seed 42, z+robust)
+
+16/16 cells done, tagged `fit_quick_stgB_*` + `eval_stgB_*_{self,full}`; summary artifact `experiments/physics_sr/stageB_summary.json` (via `scripts/analysis/summarize_sr_cells.py`). Metric = transfer-AUC on full 404k. Baseline for comparison: norm-matrix z_s42 = 0.9624 (c21).
+
+| Config | z (c / AUC) | robust (c / AUC) |
+|:---|:---:|:---:|
+| pars 1e-5 | 16 / 0.9630 | 23 / 0.9622 |
+| pars 3e-4 | 16 / 0.9623 | 18 / 0.9625 |
+| pars 1e-3 | 18 / 0.9630 | 24 / 0.9620 |
+| no-exp-log | 14 / 0.9628 | 21 / 0.9627 |
+| +pow | 16 / 0.9627 | 15 / 0.9586 |
+| tanh-only | 19 / 0.9634 | 14 / 0.9606 |
+| nesting allowed | 18 / 0.9611 | 19 / 0.9632 |
+| maxsize 35 | 27 / 0.9635 | 23 / 0.9638 |
+
+**Findings:** no variant exceeds baseline by more than 0.002 (full range 0.9586–0.9638 vs baseline 0.9624; paper full-scale c21 = 0.9637). +pow is null-to-negative (robust +pow is the worst cell, 0.9586; z +pow keeps 0.9627 with an ugly 0.267^Mass form) → pow DROPPED. Parsimony 1e-5–1e-3 immaterial → 1e-4 kept as "insensitive", not "tuned". Nesting ban costs nothing (nestok z 0.9611 ≈ baseline). Dropping exp/log costs nothing (0.9628/0.9627) and removes the log-singularity class seen in sigma-s42.
+**c=6 form recurrence:** clean `tanh(Mass_over_pT)−k·Tau32` recurs in 9 independent cells (norm matrix + Stage B); k = 0.3471–0.3477 in 5 cells, 0.3431 (tanhonly), 0.2786 (z_s123), 0.4290 (nestok). Honest statement: form recurs, k clusters 0.34–0.35 (paper refined 0.348 sits centrally), full span 0.28–0.43. NOT "k=0.347±0.001 universally".
+
+**Decisions (binding):**
+- D4 (overrides D2): O1 closed WITHOUT full-confirm runs. Rationale: quick-scale gap z−robust = 0.0007 < z's own spread 0.0033; separating it at full scale would need ≫404k events for a distinction with no physics consequence (both Mass-led, same structural forms). Paper states the tie honestly and adopts z-score as the standard-practice default, robust noted as equivalent.
+- D5: Stage-B tables stay OUT of the paper (single-seed screen, all within noise of published full-scale numbers). Paper gets null-result sentences only. C1 cut.
+- O2 closed by this section.
+- O3: final closed-form equation replacing the published one (Stage 3 full-confirm).
+- O4: parsimony 1e-4 is an unjustified magic number until B1 lands.
+
 ## 6. Discussion (paper §4)
 
 - **What the prototypes learned:** high-mass/low-τ32 (Top) vs low-mass/high-τ32 (QCD) — checked, not assumed.
