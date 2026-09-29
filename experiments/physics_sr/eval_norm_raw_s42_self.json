@@ -1,0 +1,165 @@
+{
+  "source": "D:\\research\\jet_tagging\\experiments\\physics_sr\\fit_quick_norm_raw_s42.json",
+  "eval": "self",
+  "n": 100000,
+  "equations": [
+    {
+      "complexity": 1,
+      "loss": 0.99999994,
+      "equation": "-0.09209911",
+      "corr_with_nn_logit": NaN,
+      "metrics": {
+        "acc": 0.49984,
+        "auc": 0.49943271314190985,
+        "rej50": 1.9997599519903981,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 2,
+      "loss": 0.8826305,
+      "equation": "square(theta_g)",
+      "corr_with_nn_logit": 0.6603807684305475,
+      "metrics": {
+        "acc": 0.82543,
+        "auc": 0.865622773839772,
+        "rej50": 7.8173287456990925,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 3,
+      "loss": 0.55274904,
+      "equation": "theta_g - Tau32",
+      "corr_with_nn_logit": 0.8596460626112865,
+      "metrics": {
+        "acc": 0.67894,
+        "auc": 0.9286240070910983,
+        "rej50": 22.284440481497995,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 4,
+      "loss": 0.49697945,
+      "equation": "theta_g - square(Tau32)",
+      "corr_with_nn_logit": 0.8558279447977578,
+      "metrics": {
+        "acc": 0.84207,
+        "auc": 0.9307967069135828,
+        "rej50": 25.321175278622086,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 5,
+      "loss": 0.39421052,
+      "equation": "(theta_g * 1.8843294) - Tau32",
+      "corr_with_nn_logit": 0.8440788668214366,
+      "metrics": {
+        "acc": 0.86735,
+        "auc": 0.9138942807827743,
+        "rej50": 14.064153066966798,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 6,
+      "loss": 0.26941383,
+      "equation": "(theta_g - square(Tau32)) / 0.4451487",
+      "corr_with_nn_logit": 0.8558279447977578,
+      "metrics": {
+        "acc": 0.85303,
+        "auc": 0.9307967069135828,
+        "rej50": 25.321175278622086,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 7,
+      "loss": 0.22608256,
+      "equation": "((theta_g + Mass_over_pT) - Tau32) * 2.0482805",
+      "corr_with_nn_logit": 0.8798328823299275,
+      "metrics": {
+        "acc": 0.87171,
+        "auc": 0.929669843998192,
+        "rej50": 19.077862595419848,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 8,
+      "loss": 0.18256897,
+      "equation": "tanh(((Mass_over_pT + theta_g) - Tau32) / Mass_over_pT)",
+      "corr_with_nn_logit": 0.9104551743384548,
+      "metrics": {
+        "acc": 0.87353,
+        "auc": 0.9352155217660694,
+        "rej50": 22.2546749777382,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 9,
+      "loss": 0.15132417,
+      "equation": "tanh((Mass_over_pT + (sqrt(mSD_over_pT) - Tau32)) / Mass_over_pT)",
+      "corr_with_nn_logit": 0.9348977550507608,
+      "metrics": {
+        "acc": 0.88635,
+        "auc": 0.9488437151615965,
+        "rej50": 36.29920116194626,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 11,
+      "loss": 0.14477903,
+      "equation": "tanh(((Mass_over_pT + sqrt(mSD_over_pT)) - Tau32) / Mass_over_pT) * 1.0303726",
+      "corr_with_nn_logit": 0.9348977550507611,
+      "metrics": {
+        "acc": 0.88637,
+        "auc": 0.9488437151615965,
+        "rej50": 36.29920116194626,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 14,
+      "loss": 0.1370219,
+      "equation": "(0.30644342 - Tau32) + tanh(((Mass_over_pT + (theta_g - Tau32)) + Mass_over_pT) * 3.3887727)",
+      "corr_with_nn_logit": 0.928966316286086,
+      "metrics": {
+        "acc": 0.88486,
+        "auc": 0.950214385301953,
+        "rej50": 42.794520547945204,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 17,
+      "loss": 0.12888335,
+      "equation": "(0.31644648 - Tau32) + tanh((((theta_g + (Mass_over_pT + Mass_over_pT)) - 0.7026408) * exp(zg)) * 3.4977734)",
+      "corr_with_nn_logit": 0.9333777149498989,
+      "metrics": {
+        "acc": 0.8786,
+        "auc": 0.9498894424686789,
+        "rej50": 40.30967741935484,
+        "n": 100000
+      }
+    }
+  ],
+  "best_auc_equation": {
+    "complexity": 14,
+    "equation": "(0.30644342 - Tau32) + tanh(((Mass_over_pT + (theta_g - Tau32)) + Mass_over_pT) * 3.3887727)"
+  },
+  "reference_y_hat_metrics": {
+    "corr": 0.9333777149858369,
+    "metrics": {
+      "acc": 0.8786,
+      "auc": 0.9498894420686789,
+      "rej50": 40.30967741935484,
+      "n": 100000
+    }
+  },
+  "consistency_with_saved_npz": true
+}

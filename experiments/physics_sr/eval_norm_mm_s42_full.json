@@ -1,0 +1,145 @@
+{
+  "source": "D:\\research\\jet_tagging\\experiments\\physics_sr\\fit_quick_norm_mm_s42.json",
+  "eval": "full",
+  "n": 404000,
+  "equations": [
+    {
+      "complexity": 1,
+      "loss": 0.87366205,
+      "equation": "mSD_over_pT",
+      "corr_with_nn_logit": 0.8345974434420583,
+      "metrics": {
+        "acc": 0.6415866336633663,
+        "auc": 0.8962531484336899,
+        "rej50": 11.42435215570895,
+        "n": 404000
+      }
+    },
+    {
+      "complexity": 2,
+      "loss": 0.87248874,
+      "equation": "square(mSD_over_pT)",
+      "corr_with_nn_logit": 0.7410492062613486,
+      "metrics": {
+        "acc": 0.8443910891089109,
+        "auc": 0.8962531484336899,
+        "rej50": 11.42435215570895,
+        "n": 404000
+      }
+    },
+    {
+      "complexity": 3,
+      "loss": 0.5734695,
+      "equation": "mSD_over_pT - Tau32",
+      "corr_with_nn_logit": 0.8896741709879817,
+      "metrics": {
+        "acc": 0.6638762376237624,
+        "auc": 0.9381193853134735,
+        "rej50": 28.88199113145473,
+        "n": 404000
+      }
+    },
+    {
+      "complexity": 4,
+      "loss": 0.5246723,
+      "equation": "mSD_over_pT - square(Tau32)",
+      "corr_with_nn_logit": 0.8822446878566166,
+      "metrics": {
+        "acc": 0.8487227722772277,
+        "auc": 0.9387466997591067,
+        "rej50": 31.98891001267427,
+        "n": 404000
+      }
+    },
+    {
+      "complexity": 5,
+      "loss": 0.30625993,
+      "equation": "(mSD_over_pT + -0.36063507) * 3.8962982",
+      "corr_with_nn_logit": 0.8345974434420583,
+      "metrics": {
+        "acc": 0.8556485148514852,
+        "auc": 0.8962531484336899,
+        "rej50": 11.42435215570895,
+        "n": 404000
+      }
+    },
+    {
+      "complexity": 6,
+      "loss": 0.22532246,
+      "equation": "(mSD_over_pT - square(Tau32)) / 0.38174647",
+      "corr_with_nn_logit": 0.8822446878566166,
+      "metrics": {
+        "acc": 0.8614183168316831,
+        "auc": 0.9387466997591067,
+        "rej50": 31.98891001267427,
+        "n": 404000
+      }
+    },
+    {
+      "complexity": 7,
+      "loss": 0.20351353,
+      "equation": "((Mass_over_pT - Tau32) * 3.3287425) + 0.5904788",
+      "corr_with_nn_logit": 0.8931815807848293,
+      "metrics": {
+        "acc": 0.8724480198019802,
+        "auc": 0.9442614404900895,
+        "rej50": 31.362845604224916,
+        "n": 404000
+      }
+    },
+    {
+      "complexity": 8,
+      "loss": 0.1838822,
+      "equation": "(tanh(mSD_over_pT + mSD_over_pT) - Tau32) * 2.2942772",
+      "corr_with_nn_logit": 0.9097610080399888,
+      "metrics": {
+        "acc": 0.8687425742574257,
+        "auc": 0.9436850813276851,
+        "rej50": 36.678292461398726,
+        "n": 404000
+      }
+    },
+    {
+      "complexity": 9,
+      "loss": 0.14655064,
+      "equation": "tanh((square(Mass_over_pT) * 21.406956) - 3.0609758) + -0.29212272",
+      "corr_with_nn_logit": 0.9244962143737872,
+      "metrics": {
+        "acc": 0.886549504950495,
+        "auc": 0.9058673367266646,
+        "rej50": 11.31170868347339,
+        "n": 404000
+      }
+    },
+    {
+      "complexity": 11,
+      "loss": 0.11869484,
+      "equation": "tanh((square(Mass_over_pT) * 17.07164) - 2.277467) + (Tau32 * -0.60074514)",
+      "corr_with_nn_logit": 0.9406575004351524,
+      "metrics": {
+        "acc": 0.8901188118811881,
+        "auc": 0.9518455661908101,
+        "rej50": 42.97871434653044,
+        "n": 404000
+      }
+    },
+    {
+      "complexity": 15,
+      "loss": 0.09258685,
+      "equation": "tanh((square(Mass_over_pT) * 13.780796) - 1.8124694) + ((0.5961077 - (Tau32 * 1.8161825)) + 0.16672352)",
+      "corr_with_nn_logit": 0.9531316723097968,
+      "metrics": {
+        "acc": 0.8962821782178217,
+        "auc": 0.9582281731461517,
+        "rej50": 49.695791287226186,
+        "n": 404000
+      }
+    }
+  ],
+  "best_auc_equation": {
+    "complexity": 15,
+    "equation": "tanh((square(Mass_over_pT) * 13.780796) - 1.8124694) + ((0.5961077 - (Tau32 * 1.8161825)) + 0.16672352)"
+  },
+  "reference_y_hat_metrics": null,
+  "consistency_with_saved_npz": null
+}

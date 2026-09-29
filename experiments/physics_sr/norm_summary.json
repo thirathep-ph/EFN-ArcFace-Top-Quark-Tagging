@@ -1,0 +1,124 @@
+{
+ "cells": {
+  "norm_mm_s123": {
+   "auc": 0.9514,
+   "acc": 0.8932,
+   "complexity": 20,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": true
+  },
+  "norm_mm_s42": {
+   "auc": 0.9582,
+   "acc": 0.8963,
+   "complexity": 15,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  },
+  "norm_mm_s7": {
+   "auc": 0.9515,
+   "acc": 0.894,
+   "complexity": 12,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  },
+  "norm_raw_s123": {
+   "auc": 0.9528,
+   "acc": 0.8848,
+   "complexity": 25,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  },
+  "norm_raw_s42": {
+   "auc": 0.9509,
+   "acc": 0.8846,
+   "complexity": 14,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  },
+  "norm_raw_s7": {
+   "auc": 0.9537,
+   "acc": 0.8927,
+   "complexity": 14,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": true
+  },
+  "norm_robust_s123": {
+   "auc": 0.9602,
+   "acc": 0.887,
+   "complexity": 16,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": true
+  },
+  "norm_robust_s42": {
+   "auc": 0.9602,
+   "acc": 0.8991,
+   "complexity": 14,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": true
+  },
+  "norm_robust_s7": {
+   "auc": 0.9609,
+   "acc": 0.8887,
+   "complexity": 16,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": true
+  },
+  "norm_sigma_s123": {
+   "auc": 0.9409,
+   "acc": 0.8799,
+   "complexity": 7,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  },
+  "norm_sigma_s42": {
+   "auc": 0.9488,
+   "acc": 0.8945,
+   "complexity": 20,
+   "mass_led": true,
+   "has_log": true,
+   "has_div": true
+  },
+  "norm_sigma_s7": {
+   "auc": 0.9603,
+   "acc": 0.902,
+   "complexity": 24,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  },
+  "norm_z_s123": {
+   "auc": 0.9618,
+   "acc": 0.899,
+   "complexity": 19,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  },
+  "norm_z_s42": {
+   "auc": 0.9624,
+   "acc": 0.9,
+   "complexity": 21,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  },
+  "norm_z_s7": {
+   "auc": 0.9591,
+   "acc": 0.896,
+   "complexity": 13,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": true
+  }
+ }
+}

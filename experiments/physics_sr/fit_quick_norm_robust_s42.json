@@ -1,0 +1,149 @@
+{
+  "mode": "quick",
+  "n_samples": 100000,
+  "seed": 42,
+  "fit_seconds": 336.46924662590027,
+  "best_loss": 0.01724253,
+  "best_equation": "tanh(((Tau32 * -0.23827098) + (Mass_over_pT + 0.08381732)) / exp((mSD_over_pT + abs(Mass_over_pT)) + ((Tau32 * 0.30214432) - 0.08271882)))",
+  "standardization": {
+    "norm": "robust",
+    "x_med": [
+      0.25641260754477957,
+      0.2256636147256364,
+      48.0,
+      40.0,
+      0.34514228999614716,
+      0.2898625135421753,
+      0.544396847486496,
+      0.660152792930603,
+      0.23563355207443237,
+      0.4452541619539261
+    ],
+    "x_iqr": [
+      0.15991546309478424,
+      0.2306004432268076,
+      23.000000001,
+      35.000000001,
+      0.05975234608514404,
+      0.0689193541870842,
+      0.1904056976304779,
+      0.23443235556943512,
+      0.18607787142856216,
+      0.43701846997602084
+    ],
+    "y_med": 0.7873063087463379,
+    "y_iqr": 18.749991060303284,
+    "feature_names": [
+      "Mass_over_pT",
+      "mSD_over_pT",
+      "Mult",
+      "nSD",
+      "sqrt_d12",
+      "sqrt_d23",
+      "Tau21",
+      "Tau32",
+      "zg",
+      "theta_g"
+    ]
+  },
+  "corr_with_nn_logit": 0.9594695119521673,
+  "metrics_thresholded": {
+    "acc": 0.89712,
+    "auc": 0.9587656669776045,
+    "rej50": 60.95609756097561,
+    "n": 100000
+  },
+  "nn_metrics_on_sample": {
+    "acc": 0.91775,
+    "auc": 0.9737679565138389,
+    "rej50": 115.17050691244239,
+    "n": 100000
+  },
+  "n_equations": 14,
+  "equations": [
+    {
+      "complexity": 1,
+      "loss": 0.08958238,
+      "score": 0.0,
+      "equation": "mSD_over_pT"
+    },
+    {
+      "complexity": 2,
+      "loss": 0.067505114,
+      "score": 0.28295529088509397,
+      "equation": "tanh(Mass_over_pT)"
+    },
+    {
+      "complexity": 3,
+      "loss": 0.06676758,
+      "score": 0.010985724580700323,
+      "equation": "mSD_over_pT * 0.72364867"
+    },
+    {
+      "complexity": 4,
+      "loss": 0.06011283,
+      "score": 0.10499433709536612,
+      "equation": "tanh(Mass_over_pT) * 0.8244744"
+    },
+    {
+      "complexity": 5,
+      "loss": 0.05004809,
+      "score": 0.18323895310062607,
+      "equation": "(Mass_over_pT - Tau32) * 0.38133374"
+    },
+    {
+      "complexity": 6,
+      "loss": 0.04820288,
+      "score": 0.03756557288600952,
+      "equation": "tanh((Mass_over_pT - Tau32) * 0.4016194)"
+    },
+    {
+      "complexity": 7,
+      "loss": 0.04777001,
+      "score": 0.00902073357062461,
+      "equation": "((Mass_over_pT + -0.12390131) - Tau32) * 0.3833235"
+    },
+    {
+      "complexity": 8,
+      "loss": 0.03541456,
+      "score": 0.29927500172392224,
+      "equation": "tanh(Mass_over_pT - (Tau32 * 0.46049836)) * 0.7333258"
+    },
+    {
+      "complexity": 10,
+      "loss": 0.034325052,
+      "score": 0.015623784215317127,
+      "equation": "tanh((Mass_over_pT / (2.344794 + mSD_over_pT)) + (-0.22806402 * Tau32))"
+    },
+    {
+      "complexity": 11,
+      "loss": 0.0314576,
+      "score": 0.08723485921260636,
+      "equation": "tanh((square(mSD_over_pT + -1.0817274) * Mass_over_pT) + 0.30697662) * 0.66889954"
+    },
+    {
+      "complexity": 12,
+      "loss": 0.029930124,
+      "score": 0.04977514251473002,
+      "equation": "tanh(((Tau32 * -0.3117609) + (Mass_over_pT / (mSD_over_pT + 2.0598776))) * 0.99786603)"
+    },
+    {
+      "complexity": 14,
+      "loss": 0.018853858,
+      "score": 0.23107395173452658,
+      "equation": "tanh((Tau32 * -0.26148972) + ((0.10744427 + Mass_over_pT) / exp(abs(Mass_over_pT) + mSD_over_pT)))"
+    },
+    {
+      "complexity": 18,
+      "loss": 0.018119987,
+      "score": 0.009925494553005981,
+      "equation": "tanh((((Tau32 * -0.26148972) + 0.10744427) + Mass_over_pT) / exp((Tau32 * 0.28193656) + (mSD_over_pT + abs(Mass_over_pT))))"
+    },
+    {
+      "complexity": 20,
+      "loss": 0.01724253,
+      "score": 0.024818288483289725,
+      "equation": "tanh(((Tau32 * -0.23827098) + (Mass_over_pT + 0.08381732)) / exp((mSD_over_pT + abs(Mass_over_pT)) + ((Tau32 * 0.30214432) - 0.08271882)))"
+    }
+  ]
+}

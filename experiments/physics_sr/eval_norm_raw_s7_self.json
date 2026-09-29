@@ -1,0 +1,189 @@
+{
+  "source": "D:\\research\\jet_tagging\\experiments\\physics_sr\\fit_quick_norm_raw_s7.json",
+  "eval": "self",
+  "n": 100000,
+  "equations": [
+    {
+      "complexity": 1,
+      "loss": 0.99999994,
+      "equation": "-0.09039373",
+      "corr_with_nn_logit": NaN,
+      "metrics": {
+        "acc": 0.50008,
+        "auc": 0.5026601340680994,
+        "rej50": 2.0144209466263847,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 2,
+      "loss": 0.8801577,
+      "equation": "square(theta_g)",
+      "corr_with_nn_logit": 0.6648948863166138,
+      "metrics": {
+        "acc": 0.82673,
+        "auc": 0.8664111177801247,
+        "rej50": 7.812529292298079,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 3,
+      "loss": 0.55117506,
+      "equation": "theta_g - Tau32",
+      "corr_with_nn_logit": 0.8612135283289364,
+      "metrics": {
+        "acc": 0.68286,
+        "auc": 0.9296357269986746,
+        "rej50": 23.47793427230047,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 4,
+      "loss": 0.49538448,
+      "equation": "theta_g - square(Tau32)",
+      "corr_with_nn_logit": 0.8572573059534537,
+      "metrics": {
+        "acc": 0.8438,
+        "auc": 0.9318605162556294,
+        "rej50": 26.699412706887347,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 5,
+      "loss": 0.303365,
+      "equation": "(mSD_over_pT * 6.871697) - 1.406845",
+      "corr_with_nn_logit": 0.8346466265817515,
+      "metrics": {
+        "acc": 0.85571,
+        "auc": 0.8954151133226268,
+        "rej50": 11.270678386297048,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 6,
+      "loss": 0.14539617,
+      "equation": "tanh(2.845998 - (Tau32 / Mass_over_pT))",
+      "corr_with_nn_logit": 0.9382176487176801,
+      "metrics": {
+        "acc": 0.89272,
+        "auc": 0.9482988010764493,
+        "rej50": 31.31371321227301,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 8,
+      "loss": 0.14218827,
+      "equation": "tanh(((-0.15938084 - Tau32) / Mass_over_pT) + 3.490175)",
+      "corr_with_nn_logit": 0.9374192471625586,
+      "metrics": {
+        "acc": 0.8951,
+        "auc": 0.9458826038145944,
+        "rej50": 26.871574422353575,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 10,
+      "loss": 0.12288857,
+      "equation": "tanh(2.0660248 + (Tau32 - (Tau32 / Mass_over_pT))) * 1.1950978",
+      "corr_with_nn_logit": 0.9371044505298325,
+      "metrics": {
+        "acc": 0.8932,
+        "auc": 0.9430252173414456,
+        "rej50": 23.768060836501903,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 12,
+      "loss": 0.117809445,
+      "equation": "(tanh((2.132482 - (Tau32 / Mass_over_pT)) + 0.8532473) * 1.1490947) - 0.13704328",
+      "corr_with_nn_logit": 0.9392499938799904,
+      "metrics": {
+        "acc": 0.89311,
+        "auc": 0.9482988010764493,
+        "rej50": 31.31371321227301,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 13,
+      "loss": 0.11512494,
+      "equation": "(tanh(2.8870993 - (Tau32 / Mass_over_pT)) - tanh(Mass_over_pT * Mass_over_pT)) * 1.2243948",
+      "corr_with_nn_logit": 0.9409983574765455,
+      "metrics": {
+        "acc": 0.89235,
+        "auc": 0.952282228778425,
+        "rej50": 40.8562091503268,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 14,
+      "loss": 0.11330096,
+      "equation": "(tanh((0.44035473 - (Tau32 / Mass_over_pT)) + 2.6298003) - (Tau32 * Mass_over_pT)) * 1.1866367",
+      "corr_with_nn_logit": 0.9416623040139168,
+      "metrics": {
+        "acc": 0.89208,
+        "auc": 0.9534468688082398,
+        "rej50": 46.175438596491226,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 16,
+      "loss": 0.11094535,
+      "equation": "(tanh((2.0660248 + (0.39344397 - (Tau32 / Mass_over_pT))) + Tau32) * 1.1950978) - (Tau32 * Mass_over_pT)",
+      "corr_with_nn_logit": 0.9441765977743194,
+      "metrics": {
+        "acc": 0.89356,
+        "auc": 0.9522759339782639,
+        "rej50": 41.226710634789775,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 18,
+      "loss": 0.107674114,
+      "equation": "1.1950978 * (tanh(((2.0660248 + 0.39344397) - (Tau32 / Mass_over_pT)) + sqrt(square(Tau32))) - (Tau32 * Mass_over_pT))",
+      "corr_with_nn_logit": 0.9449318531120596,
+      "metrics": {
+        "acc": 0.89405,
+        "auc": 0.9532140796022804,
+        "rej50": 43.75153105861767,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 19,
+      "loss": 0.10655937,
+      "equation": "(tanh((((Mass_over_pT - Tau32) / Mass_over_pT) + 1.3996494) + sqrt(square(Tau32))) - (Tau32 * abs(Mass_over_pT))) * 1.2166436",
+      "corr_with_nn_logit": 0.94522674670659,
+      "metrics": {
+        "acc": 0.89439,
+        "auc": 0.9526233367871575,
+        "rej50": 42.523809523809526,
+        "n": 100000
+      }
+    }
+  ],
+  "best_auc_equation": {
+    "complexity": 14,
+    "equation": "(tanh((0.44035473 - (Tau32 / Mass_over_pT)) + 2.6298003) - (Tau32 * Mass_over_pT)) * 1.1866367"
+  },
+  "reference_y_hat_metrics": {
+    "corr": 0.9452267467451146,
+    "metrics": {
+      "acc": 0.89439,
+      "auc": 0.9526233371871575,
+      "rej50": 42.523809523809526,
+      "n": 100000
+    }
+  },
+  "consistency_with_saved_npz": true
+}

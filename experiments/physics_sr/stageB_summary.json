@@ -1,0 +1,132 @@
+{
+ "cells": {
+  "stgB_ms35_robust_s42": {
+   "auc": 0.9638,
+   "acc": 0.9022,
+   "complexity": 23,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": true
+  },
+  "stgB_ms35_z_s42": {
+   "auc": 0.9635,
+   "acc": 0.8967,
+   "complexity": 27,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": true
+  },
+  "stgB_nestok_robust_s42": {
+   "auc": 0.9632,
+   "acc": 0.901,
+   "complexity": 19,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": true
+  },
+  "stgB_nestok_z_s42": {
+   "auc": 0.9611,
+   "acc": 0.8987,
+   "complexity": 18,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": true
+  },
+  "stgB_noexplog_robust_s42": {
+   "auc": 0.9627,
+   "acc": 0.8992,
+   "complexity": 21,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  },
+  "stgB_noexplog_z_s42": {
+   "auc": 0.9628,
+   "acc": 0.9023,
+   "complexity": 14,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  },
+  "stgB_pars1e-3_robust_s42": {
+   "auc": 0.962,
+   "acc": 0.899,
+   "complexity": 24,
+   "mass_led": true,
+   "has_log": true,
+   "has_div": true
+  },
+  "stgB_pars1e-3_z_s42": {
+   "auc": 0.963,
+   "acc": 0.9036,
+   "complexity": 18,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  },
+  "stgB_pars1e-5_robust_s42": {
+   "auc": 0.9622,
+   "acc": 0.8973,
+   "complexity": 23,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": true
+  },
+  "stgB_pars1e-5_z_s42": {
+   "auc": 0.963,
+   "acc": 0.9002,
+   "complexity": 16,
+   "mass_led": true,
+   "has_log": true,
+   "has_div": false
+  },
+  "stgB_pars3e-4_robust_s42": {
+   "auc": 0.9625,
+   "acc": 0.8817,
+   "complexity": 18,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": true
+  },
+  "stgB_pars3e-4_z_s42": {
+   "auc": 0.9623,
+   "acc": 0.8964,
+   "complexity": 16,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  },
+  "stgB_pluspow_robust_s42": {
+   "auc": 0.9586,
+   "acc": 0.8897,
+   "complexity": 15,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  },
+  "stgB_pluspow_z_s42": {
+   "auc": 0.9627,
+   "acc": 0.9015,
+   "complexity": 16,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  },
+  "stgB_tanhonly_robust_s42": {
+   "auc": 0.9606,
+   "acc": 0.8974,
+   "complexity": 14,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": true
+  },
+  "stgB_tanhonly_z_s42": {
+   "auc": 0.9634,
+   "acc": 0.9003,
+   "complexity": 19,
+   "mass_led": true,
+   "has_log": false,
+   "has_div": false
+  }
+ }
+}

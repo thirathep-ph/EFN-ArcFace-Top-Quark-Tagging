@@ -1,0 +1,153 @@
+{
+  "source": "D:\\research\\jet_tagging\\experiments\\physics_sr\\fit_quick_stgB_tanhonly_z_s42.json",
+  "eval": "self",
+  "n": 100000,
+  "equations": [
+    {
+      "complexity": 1,
+      "loss": 0.3336475,
+      "equation": "Mass_over_pT",
+      "corr_with_nn_logit": 0.8331762634676759,
+      "metrics": {
+        "acc": 0.88327,
+        "auc": 0.9056734511409614,
+        "rej50": 11.272891294542173,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 2,
+      "loss": 0.25572923,
+      "equation": "tanh(Mass_over_pT)",
+      "corr_with_nn_logit": 0.8913662363278929,
+      "metrics": {
+        "acc": 0.88312,
+        "auc": 0.9056734511409614,
+        "rej50": 11.272891294542173,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 4,
+      "loss": 0.17303582,
+      "equation": "tanh(Mass_over_pT * 2.5936968)",
+      "corr_with_nn_logit": 0.9171181963010452,
+      "metrics": {
+        "acc": 0.88644,
+        "auc": 0.9056734511409614,
+        "rej50": 11.272891294542173,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 6,
+      "loss": 0.13526559,
+      "equation": "(Tau32 * -0.34310094) + tanh(Mass_over_pT)",
+      "corr_with_nn_logit": 0.9313737092205393,
+      "metrics": {
+        "acc": 0.89534,
+        "auc": 0.9487319207501487,
+        "rej50": 31.20099875156055,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 8,
+      "loss": 0.11818779,
+      "equation": "tanh(Mass_over_pT / 0.59429526) + (Tau32 * -0.2616854)",
+      "corr_with_nn_logit": 0.9430758960142074,
+      "metrics": {
+        "acc": 0.89637,
+        "auc": 0.9489697639745039,
+        "rej50": 33.841570751523356,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 9,
+      "loss": 0.11782809,
+      "equation": "tanh(Tau32 * -0.27944776) + tanh(Mass_over_pT / 0.5968617)",
+      "corr_with_nn_logit": 0.9430891468678115,
+      "metrics": {
+        "acc": 0.89642,
+        "auc": 0.9492728988055449,
+        "rej50": 34.188782489740085,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 10,
+      "loss": 0.11051497,
+      "equation": "(tanh(Mass_over_pT / 0.5024818) + (Tau32 * -0.24098773)) + -0.09533981",
+      "corr_with_nn_logit": 0.9445148055018433,
+      "metrics": {
+        "acc": 0.89443,
+        "auc": 0.9499211972719307,
+        "rej50": 36.352,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 12,
+      "loss": 0.095520094,
+      "equation": "(Tau32 * -0.24804038) + (tanh((Mass_over_pT / 0.5291203) + 0.4283221) - 0.20441814)",
+      "corr_with_nn_logit": 0.9520551321010542,
+      "metrics": {
+        "acc": 0.89514,
+        "auc": 0.9570489388018113,
+        "rej50": 45.35753176043557,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 15,
+      "loss": 0.09489235,
+      "equation": "tanh(((-0.23180735 * 1.082298) * Tau32) + -0.18644826) + tanh(Mass_over_pT - (-0.36018014 - Mass_over_pT))",
+      "corr_with_nn_logit": 0.9525545423113849,
+      "metrics": {
+        "acc": 0.8948,
+        "auc": 0.9561616531109532,
+        "rej50": 45.31640979147779,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 19,
+      "loss": 0.06439062,
+      "equation": "(tanh((Mass_over_pT * -1.0691168) * (Mass_over_pT + -0.72192603)) + 0.6735908) + tanh(Mass_over_pT - ((Tau32 * 0.46141273) - -0.6574654))",
+      "corr_with_nn_logit": 0.9674283025899014,
+      "metrics": {
+        "acc": 0.90063,
+        "auc": 0.9631457526261252,
+        "rej50": 74.05037037037037,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 23,
+      "loss": 0.06328263,
+      "equation": "(tanh(Mass_over_pT - ((Tau32 * 0.46774372) - -0.5563278)) + 0.69479156) + tanh(((Mass_over_pT + -0.525237) * -0.5361351) * (Mass_over_pT + (mSD_over_pT - 0.32411018)))",
+      "corr_with_nn_logit": 0.9678767699045587,
+      "metrics": {
+        "acc": 0.89979,
+        "auc": 0.9629109150020778,
+        "rej50": 77.25502318392581,
+        "n": 100000
+      }
+    }
+  ],
+  "best_auc_equation": {
+    "complexity": 19,
+    "equation": "(tanh((Mass_over_pT * -1.0691168) * (Mass_over_pT + -0.72192603)) + 0.6735908) + tanh(Mass_over_pT - ((Tau32 * 0.46141273) - -0.6574654))"
+  },
+  "reference_y_hat_metrics": {
+    "corr": 0.9678767699042485,
+    "metrics": {
+      "acc": 0.89979,
+      "auc": 0.9629109138020777,
+      "rej50": 77.25502318392581,
+      "n": 100000
+    }
+  },
+  "consistency_with_saved_npz": true
+}

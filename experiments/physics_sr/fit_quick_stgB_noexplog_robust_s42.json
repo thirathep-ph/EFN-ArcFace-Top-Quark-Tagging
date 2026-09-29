@@ -1,0 +1,153 @@
+{
+  "mode": "quick",
+  "n_samples": 100000,
+  "seed": 42,
+  "parsimony": 0.0001,
+  "opset": "NOEXPLOG",
+  "maxsize": 25,
+  "no_nest_tanh": true,
+  "fit_seconds": 467.0596749782562,
+  "best_loss": 0.018398063,
+  "best_equation": "tanh((((Mass_over_pT * 2.5120788) - abs((Mass_over_pT * 3.0940948) + -0.46887892)) - ((Tau32 + -1.0900393) + (Mass_over_pT * 0.8732063))) * 0.22056171)",
+  "standardization": {
+    "norm": "robust",
+    "x_med": [
+      0.25641260754477957,
+      0.2256636147256364,
+      48.0,
+      40.0,
+      0.34514228999614716,
+      0.2898625135421753,
+      0.544396847486496,
+      0.660152792930603,
+      0.23563355207443237,
+      0.4452541619539261
+    ],
+    "x_iqr": [
+      0.15991546309478424,
+      0.2306004432268076,
+      23.000000001,
+      35.000000001,
+      0.05975234608514404,
+      0.0689193541870842,
+      0.1904056976304779,
+      0.23443235556943512,
+      0.18607787142856216,
+      0.43701846997602084
+    ],
+    "y_med": 0.7873063087463379,
+    "y_iqr": 18.749991060303284,
+    "feature_names": [
+      "Mass_over_pT",
+      "mSD_over_pT",
+      "Mult",
+      "nSD",
+      "sqrt_d12",
+      "sqrt_d23",
+      "Tau21",
+      "Tau32",
+      "zg",
+      "theta_g"
+    ]
+  },
+  "corr_with_nn_logit": 0.9579254449063302,
+  "metrics_thresholded": {
+    "acc": 0.89969,
+    "auc": 0.9625784765680361,
+    "rej50": 69.61559888579387,
+    "n": 100000
+  },
+  "nn_metrics_on_sample": {
+    "acc": 0.91775,
+    "auc": 0.9737679565138389,
+    "rej50": 115.17050691244239,
+    "n": 100000
+  },
+  "n_equations": 14,
+  "equations": [
+    {
+      "complexity": 1,
+      "loss": 0.21602586,
+      "score": 0.0,
+      "equation": "-0.08474443"
+    },
+    {
+      "complexity": 2,
+      "loss": 0.067505114,
+      "score": 1.1631947647686751,
+      "equation": "tanh(Mass_over_pT)"
+    },
+    {
+      "complexity": 3,
+      "loss": 0.06676758,
+      "score": 0.010985724580700323,
+      "equation": "mSD_over_pT * 0.7236471"
+    },
+    {
+      "complexity": 4,
+      "loss": 0.06011283,
+      "score": 0.10499433709536612,
+      "equation": "tanh(Mass_over_pT) * 0.8244713"
+    },
+    {
+      "complexity": 5,
+      "loss": 0.050152842,
+      "score": 0.18114811350322113,
+      "equation": "(Mass_over_pT - Tau32) * 0.39855412"
+    },
+    {
+      "complexity": 6,
+      "loss": 0.045417227,
+      "score": 0.09918370037847639,
+      "equation": "0.63697094 * tanh(Mass_over_pT - Tau32)"
+    },
+    {
+      "complexity": 7,
+      "loss": 0.041770257,
+      "score": 0.08370695118245715,
+      "equation": "((Tau32 * -0.5019038) + Mass_over_pT) * 0.5240315"
+    },
+    {
+      "complexity": 8,
+      "loss": 0.03541456,
+      "score": 0.16506149621702773,
+      "equation": "tanh(Mass_over_pT + (Tau32 * -0.46048433)) * 0.73333275"
+    },
+    {
+      "complexity": 9,
+      "loss": 0.030536128,
+      "score": 0.14821252780654268,
+      "equation": "tanh((Mass_over_pT - (square(Mass_over_pT) + Tau32)) * 0.38858357)"
+    },
+    {
+      "complexity": 11,
+      "loss": 0.026985923,
+      "score": 0.061797573767309794,
+      "equation": "tanh(0.38858357 * ((Mass_over_pT - (abs(Mass_over_pT) + Tau32)) - -0.23494832))"
+    },
+    {
+      "complexity": 13,
+      "loss": 0.024089701,
+      "score": 0.056765477456269385,
+      "equation": "tanh(Mass_over_pT - ((abs(Mass_over_pT) * 1.5630237) + (Tau32 + -0.47031474))) * 0.5975916"
+    },
+    {
+      "complexity": 15,
+      "loss": 0.020580938,
+      "score": 0.07870954858104454,
+      "equation": "tanh((Mass_over_pT * 0.50396633) - (abs(Mass_over_pT * 0.5868979) + ((Tau32 + -0.82764655) * 0.2588252)))"
+    },
+    {
+      "complexity": 16,
+      "loss": 0.020457242,
+      "score": 0.006028355770336594,
+      "equation": "tanh((2.2369423 - Tau32) * (Mass_over_pT + 0.28078905)) + (((Mass_over_pT + Mass_over_pT) + 1.3332336) * -0.28480557)"
+    },
+    {
+      "complexity": 21,
+      "loss": 0.018398063,
+      "score": 0.02121831289877047,
+      "equation": "tanh((((Mass_over_pT * 2.5120788) - abs((Mass_over_pT * 3.0940948) + -0.46887892)) - ((Tau32 + -1.0900393) + (Mass_over_pT * 0.8732063))) * 0.22056171)"
+    }
+  ]
+}

@@ -1,0 +1,153 @@
+{
+  "source": "D:\\research\\jet_tagging\\experiments\\physics_sr\\fit_quick_norm_mm_s42.json",
+  "eval": "self",
+  "n": 100000,
+  "equations": [
+    {
+      "complexity": 1,
+      "loss": 0.87366205,
+      "equation": "mSD_over_pT",
+      "corr_with_nn_logit": 0.8329106143663088,
+      "metrics": {
+        "acc": 0.64098,
+        "auc": 0.8953536560842145,
+        "rej50": 11.385876993166287,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 2,
+      "loss": 0.87248874,
+      "equation": "square(mSD_over_pT)",
+      "corr_with_nn_logit": 0.7383448546354369,
+      "metrics": {
+        "acc": 0.84273,
+        "auc": 0.8953536560842145,
+        "rej50": 11.385876993166287,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 3,
+      "loss": 0.5734695,
+      "equation": "mSD_over_pT - Tau32",
+      "corr_with_nn_logit": 0.888674382342264,
+      "metrics": {
+        "acc": 0.66159,
+        "auc": 0.9370730363562789,
+        "rej50": 27.830734966592427,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 4,
+      "loss": 0.5246723,
+      "equation": "mSD_over_pT - square(Tau32)",
+      "corr_with_nn_logit": 0.8813708574213098,
+      "metrics": {
+        "acc": 0.84801,
+        "auc": 0.937699003620378,
+        "rej50": 30.646229307173513,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 5,
+      "loss": 0.30625993,
+      "equation": "(mSD_over_pT + -0.36063507) * 3.8962982",
+      "corr_with_nn_logit": 0.8329106143663088,
+      "metrics": {
+        "acc": 0.8537,
+        "auc": 0.8953536560842145,
+        "rej50": 11.385876993166287,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 6,
+      "loss": 0.22532246,
+      "equation": "(mSD_over_pT - square(Tau32)) / 0.38174647",
+      "corr_with_nn_logit": 0.8813708574213102,
+      "metrics": {
+        "acc": 0.86069,
+        "auc": 0.937699003620378,
+        "rej50": 30.646229307173513,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 7,
+      "loss": 0.20351353,
+      "equation": "((Mass_over_pT - Tau32) * 3.3287425) + 0.5904788",
+      "corr_with_nn_logit": 0.8924608966544946,
+      "metrics": {
+        "acc": 0.87333,
+        "auc": 0.9435631790208695,
+        "rej50": 30.22007255139057,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 8,
+      "loss": 0.1838822,
+      "equation": "(tanh(mSD_over_pT + mSD_over_pT) - Tau32) * 2.2942772",
+      "corr_with_nn_logit": 0.9089666291322376,
+      "metrics": {
+        "acc": 0.86846,
+        "auc": 0.9425651705186736,
+        "rej50": 34.71111111111111,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 9,
+      "loss": 0.14655064,
+      "equation": "tanh((square(Mass_over_pT) * 21.406956) - 3.0609758) + -0.29212272",
+      "corr_with_nn_logit": 0.9242667846170018,
+      "metrics": {
+        "acc": 0.88692,
+        "auc": 0.9056734511409614,
+        "rej50": 11.272891294542173,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 11,
+      "loss": 0.11869484,
+      "equation": "tanh((square(Mass_over_pT) * 17.07164) - 2.277467) + (Tau32 * -0.60074514)",
+      "corr_with_nn_logit": 0.9403557722373501,
+      "metrics": {
+        "acc": 0.89018,
+        "auc": 0.9512022706031126,
+        "rej50": 40.7699836867863,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 15,
+      "loss": 0.09258685,
+      "equation": "tanh((square(Mass_over_pT) * 13.780796) - 1.8124694) + ((0.5961077 - (Tau32 * 1.8161825)) + 0.16672352)",
+      "corr_with_nn_logit": 0.9527493656818629,
+      "metrics": {
+        "acc": 0.89675,
+        "auc": 0.957658036464183,
+        "rej50": 47.3781990521327,
+        "n": 100000
+      }
+    }
+  ],
+  "best_auc_equation": {
+    "complexity": 15,
+    "equation": "tanh((square(Mass_over_pT) * 13.780796) - 1.8124694) + ((0.5961077 - (Tau32 * 1.8161825)) + 0.16672352)"
+  },
+  "reference_y_hat_metrics": {
+    "corr": 0.9527493656706711,
+    "metrics": {
+      "acc": 0.89675,
+      "auc": 0.957658036864183,
+      "rej50": 47.3781990521327,
+      "n": 100000
+    }
+  },
+  "consistency_with_saved_npz": true
+}

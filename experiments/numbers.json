@@ -412,6 +412,70 @@
    "text_only": true,
    "paper_text": "$\\pm$ 0.01\\%",
    "note": "no artifact persisted: 3-seed Linear values only in Table 1"
+  },
+  {
+   "name": "norm_z_mean",
+   "artifact": "experiments/physics_sr/norm_summary.json",
+   "pointer": "mean:cells.norm_z_s42.auc,cells.norm_z_s123.auc,cells.norm_z_s7.auc",
+   "expect": 0.961,
+   "tol": 0.0006,
+   "paper_text": "0.961"
+  },
+  {
+   "name": "norm_robust_mean",
+   "artifact": "experiments/physics_sr/norm_summary.json",
+   "pointer": "mean:cells.norm_robust_s42.auc,cells.norm_robust_s123.auc,cells.norm_robust_s7.auc",
+   "expect": 0.96,
+   "tol": 0.0006,
+   "paper_text": "0.960"
+  },
+  {
+   "name": "norm_minmax_mean",
+   "artifact": "experiments/physics_sr/norm_summary.json",
+   "pointer": "mean:cells.norm_mm_s42.auc,cells.norm_mm_s123.auc,cells.norm_mm_s7.auc",
+   "expect": 0.954,
+   "tol": 0.0006,
+   "paper_text": "0.954"
+  },
+  {
+   "name": "norm_raw_mean",
+   "artifact": "experiments/physics_sr/norm_summary.json",
+   "pointer": "mean:cells.norm_raw_s42.auc,cells.norm_raw_s123.auc,cells.norm_raw_s7.auc",
+   "expect": 0.952,
+   "tol": 0.0006,
+   "paper_text": "0.952"
+  },
+  {
+   "name": "norm_sigma_mean",
+   "artifact": "experiments/physics_sr/norm_summary.json",
+   "pointer": "mean:cells.norm_sigma_s42.auc,cells.norm_sigma_s123.auc,cells.norm_sigma_s7.auc",
+   "expect": 0.95,
+   "tol": 0.0006,
+   "paper_text": "0.950"
+  },
+  {
+   "name": "norm_z_spread",
+   "artifact": "experiments/physics_sr/norm_summary.json",
+   "pointer": "spread:cells.norm_z_s42.auc,cells.norm_z_s123.auc,cells.norm_z_s7.auc",
+   "expect": 0.003,
+   "tol": 0.0005,
+   "paper_text": "0.003"
+  },
+  {
+   "name": "norm_robust_spread",
+   "artifact": "experiments/physics_sr/norm_summary.json",
+   "pointer": "spread:cells.norm_robust_s42.auc,cells.norm_robust_s123.auc,cells.norm_robust_s7.auc",
+   "expect": 0.001,
+   "tol": 0.0005,
+   "paper_text": "0.001"
+  },
+  {
+   "name": "norm_sigma_spread",
+   "artifact": "experiments/physics_sr/norm_summary.json",
+   "pointer": "spread:cells.norm_sigma_s42.auc,cells.norm_sigma_s123.auc,cells.norm_sigma_s7.auc",
+   "expect": 0.019,
+   "tol": 0.0005,
+   "paper_text": "0.019"
   }
  ]
 }

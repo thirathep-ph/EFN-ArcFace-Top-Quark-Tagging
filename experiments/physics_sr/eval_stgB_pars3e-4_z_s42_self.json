@@ -1,0 +1,141 @@
+{
+  "source": "D:\\research\\jet_tagging\\experiments\\physics_sr\\fit_quick_stgB_pars3e-4_z_s42.json",
+  "eval": "self",
+  "n": 100000,
+  "equations": [
+    {
+      "complexity": 1,
+      "loss": 0.33417875,
+      "equation": "mSD_over_pT",
+      "corr_with_nn_logit": 0.8329106143663088,
+      "metrics": {
+        "acc": 0.85457,
+        "auc": 0.8953536560842145,
+        "rej50": 11.385876993166287,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 2,
+      "loss": 0.25572923,
+      "equation": "tanh(Mass_over_pT)",
+      "corr_with_nn_logit": 0.8913662363278929,
+      "metrics": {
+        "acc": 0.88312,
+        "auc": 0.9056734511409614,
+        "rej50": 11.272891294542173,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 4,
+      "loss": 0.17303582,
+      "equation": "tanh(Mass_over_pT / 0.38552326)",
+      "corr_with_nn_logit": 0.9171185234274273,
+      "metrics": {
+        "acc": 0.88644,
+        "auc": 0.9056734511409614,
+        "rej50": 11.272891294542173,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 6,
+      "loss": 0.13524957,
+      "equation": "(Tau32 * -0.3470978) + tanh(Mass_over_pT)",
+      "corr_with_nn_logit": 0.9312616480908895,
+      "metrics": {
+        "acc": 0.89536,
+        "auc": 0.9488842947657518,
+        "rej50": 31.318295739348372,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 8,
+      "loss": 0.11818779,
+      "equation": "(Tau32 * -0.26165628) + tanh(Mass_over_pT * 1.6828938)",
+      "corr_with_nn_logit": 0.943077229217127,
+      "metrics": {
+        "acc": 0.89637,
+        "auc": 0.9489697763745052,
+        "rej50": 33.841570751523356,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 10,
+      "loss": 0.11051496,
+      "equation": "tanh(Mass_over_pT / 0.5024908) + ((Tau32 * -0.24096215) - 0.09531221)",
+      "corr_with_nn_logit": 0.9445137287339359,
+      "metrics": {
+        "acc": 0.89443,
+        "auc": 0.9499196196717691,
+        "rej50": 36.352,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 12,
+      "loss": 0.095520094,
+      "equation": "((Tau32 * -0.24805227) + tanh((Mass_over_pT + 0.22662951) / 0.52909285)) - 0.20442833",
+      "corr_with_nn_logit": 0.9520559187399964,
+      "metrics": {
+        "acc": 0.89514,
+        "auc": 0.9570496600018853,
+        "rej50": 45.35753176043557,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 16,
+      "loss": 0.08541994,
+      "equation": "(Tau32 * -0.29556006) + (tanh((Mass_over_pT * 2.335985) + 0.4798874) + ((Mass_over_pT + 1.5070732) * -0.13575521))",
+      "corr_with_nn_logit": 0.9564391357864783,
+      "metrics": {
+        "acc": 0.89668,
+        "auc": 0.9619224857008625,
+        "rej50": 62.32418952618454,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 21,
+      "loss": 0.07628209,
+      "equation": "(tanh(((Mass_over_pT * 1.6543174) + 0.27491832) + Mass_over_pT) + -0.066925876) + tanh(((mSD_over_pT + 0.7547419) * -0.2467245) * (Tau32 + mSD_over_pT))",
+      "corr_with_nn_logit": 0.962818479690232,
+      "metrics": {
+        "acc": 0.89449,
+        "auc": 0.9595101126538356,
+        "rej50": 64.49548387096775,
+        "n": 100000
+      }
+    },
+    {
+      "complexity": 22,
+      "loss": 0.07076688,
+      "equation": "((((Tau32 * -0.14305022) + -0.24472958) * (Mass_over_pT + 1.3447865)) + 1.2720783) * tanh((Tau32 * -0.44229296) + (Mass_over_pT + (Mass_over_pT + 0.0037569497)))",
+      "corr_with_nn_logit": 0.9641489408759472,
+      "metrics": {
+        "acc": 0.90097,
+        "auc": 0.9618252672909073,
+        "rej50": 58.0534262485482,
+        "n": 100000
+      }
+    }
+  ],
+  "best_auc_equation": {
+    "complexity": 16,
+    "equation": "(Tau32 * -0.29556006) + (tanh((Mass_over_pT * 2.335985) + 0.4798874) + ((Mass_over_pT + 1.5070732) * -0.13575521))"
+  },
+  "reference_y_hat_metrics": {
+    "corr": 0.9641489409240774,
+    "metrics": {
+      "acc": 0.90097,
+      "auc": 0.9618252660909072,
+      "rej50": 58.0534262485482,
+      "n": 100000
+    }
+  },
+  "consistency_with_saved_npz": true
+}

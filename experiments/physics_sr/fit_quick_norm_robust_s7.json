@@ -1,0 +1,143 @@
+{
+  "mode": "quick",
+  "n_samples": 100000,
+  "seed": 7,
+  "fit_seconds": 413.92489767074585,
+  "best_loss": 0.016388735,
+  "best_equation": "tanh(((Mass_over_pT / exp(Mass_over_pT)) + exp(-0.5731611 - (Tau32 + 1.1030577))) - 0.09265835) + (Mass_over_pT + (Mass_over_pT * -1.3279957))",
+  "standardization": {
+    "norm": "robust",
+    "x_med": [
+      0.25701227497105567,
+      0.22728934453524965,
+      48.0,
+      40.0,
+      0.3452148288488388,
+      0.29037123918533325,
+      0.544956386089325,
+      0.6595230400562286,
+      0.23575352132320404,
+      0.44687844812870026
+    ],
+    "x_iqr": [
+      0.16038068170351266,
+      0.23146697297473823,
+      23.000000001,
+      35.000000001,
+      0.05944424222571945,
+      0.06838995318276977,
+      0.18977559457881546,
+      0.2345685372815857,
+      0.18622539292438126,
+      0.4395067068503628
+    ],
+    "y_med": 0.8150601387023926,
+    "y_iqr": 18.767069817589356,
+    "feature_names": [
+      "Mass_over_pT",
+      "mSD_over_pT",
+      "Mult",
+      "nSD",
+      "sqrt_d12",
+      "sqrt_d23",
+      "Tau21",
+      "Tau32",
+      "zg",
+      "theta_g"
+    ]
+  },
+  "corr_with_nn_logit": 0.9613724693518343,
+  "metrics_thresholded": {
+    "acc": 0.89532,
+    "auc": 0.9598037225709752,
+    "rej50": 62.51,
+    "n": 100000
+  },
+  "nn_metrics_on_sample": {
+    "acc": 0.9174,
+    "auc": 0.9738456561304488,
+    "rej50": 123.78217821782178,
+    "n": 100000
+  },
+  "n_equations": 13,
+  "equations": [
+    {
+      "complexity": 1,
+      "loss": 0.08898425,
+      "score": 0.0,
+      "equation": "mSD_over_pT"
+    },
+    {
+      "complexity": 2,
+      "loss": 0.067408055,
+      "score": 0.2776948666164024,
+      "equation": "tanh(Mass_over_pT)"
+    },
+    {
+      "complexity": 3,
+      "loss": 0.0662293,
+      "score": 0.01764155795063364,
+      "equation": "mSD_over_pT * 0.7242052"
+    },
+    {
+      "complexity": 4,
+      "loss": 0.060077723,
+      "score": 0.09748385594228766,
+      "equation": "tanh(Mass_over_pT) * 0.8250524"
+    },
+    {
+      "complexity": 6,
+      "loss": 0.044902135,
+      "score": 0.1455768817706015,
+      "equation": "tanh(square(exp(Mass_over_pT))) - 0.6994961"
+    },
+    {
+      "complexity": 7,
+      "loss": 0.035636388,
+      "score": 0.23111809306376896,
+      "equation": "tanh(square(square(exp(Mass_over_pT)))) - 0.65074456"
+    },
+    {
+      "complexity": 9,
+      "loss": 0.03247286,
+      "score": 0.046481293561841386,
+      "equation": "tanh(square(square(1.1064172 * exp(Mass_over_pT)))) - 0.65631145"
+    },
+    {
+      "complexity": 13,
+      "loss": 0.02938832,
+      "score": 0.0249518367611869,
+      "equation": "(Mass_over_pT / exp(exp(mSD_over_pT))) + ((Tau32 * -0.42508286) / exp(abs(Mass_over_pT)))"
+    },
+    {
+      "complexity": 14,
+      "loss": 0.022035105,
+      "score": 0.2879604530679423,
+      "equation": "((Mass_over_pT / exp(mSD_over_pT)) + (Tau32 * -0.38581654)) * exp(abs(Mass_over_pT) / -0.76831657)"
+    },
+    {
+      "complexity": 16,
+      "loss": 0.021675155,
+      "score": 0.008235094846092998,
+      "equation": "(((Mass_over_pT / exp(exp(Mass_over_pT))) + (-0.08921581 * Tau32)) / (0.15600643 + abs(Mass_over_pT))) - -0.019087395"
+    },
+    {
+      "complexity": 17,
+      "loss": 0.02165931,
+      "score": 0.0007312886270148423,
+      "equation": "((Mass_over_pT / exp(exp(Mass_over_pT + -0.22550619))) + (Tau32 * -0.089176275)) / (abs(Mass_over_pT) + abs(0.15601406))"
+    },
+    {
+      "complexity": 18,
+      "loss": 0.017486734,
+      "score": 0.21399284879374744,
+      "equation": "(Mass_over_pT * -1.3265275) + (tanh(exp(-1.2815351 - (Tau32 + 0.69614965)) + (Mass_over_pT / exp(Mass_over_pT))) + Mass_over_pT)"
+    },
+    {
+      "complexity": 20,
+      "loss": 0.016388735,
+      "score": 0.032424163873472335,
+      "equation": "tanh(((Mass_over_pT / exp(Mass_over_pT)) + exp(-0.5731611 - (Tau32 + 1.1030577))) - 0.09265835) + (Mass_over_pT + (Mass_over_pT * -1.3279957))"
+    }
+  ]
+}
