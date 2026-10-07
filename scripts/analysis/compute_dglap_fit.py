@@ -245,7 +245,8 @@ def main():
         ax.set_xlabel('$z_g$')
         ax.set_ylabel('$P(z_g)$')
         panel_label(ax, panel_labels[sc])
-        display_name = name.replace("_", " ")
+        display_name = {"QCD_Core": "QCD-Dense", "QCD_Edge": "QCD-Dilute",
+                        "Top_Core": "Top-Dilute", "Top_Edge": "Top-Dense"}[name]
         ax.text(0.97, 0.95, display_name, transform=ax.transAxes,
                 fontsize=9, ha='right', va='top',
                 bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8, edgecolor='0.7'))

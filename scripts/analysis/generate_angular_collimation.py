@@ -149,10 +149,13 @@ def main():
 
     max_plot = 25000
     rng = np.random.RandomState(42)
+    big_qcd = active_qcd[np.argmax(counts_qcd)] if len(active_qcd) > 0 else -1
+    big_top = active_top[np.argmax(counts_top)] if len(active_top) > 0 else -1
     for i, sc_idx in enumerate(active_qcd):
         mask = (sc_map_final == (i)) & (theta_g > 0.01) & (theta_g < 1.5) & (two_m_pt > 0.01) & (two_m_pt < 1.5)
         idx_plot = rng.choice(np.where(mask)[0], min(max_plot, mask.sum()), replace=False)
-        label = f"Subclass {sc_idx} ($N={mask.sum():,}$)"
+        name = "QCD-Dense" if sc_idx == big_qcd else "QCD-Dilute"
+        label = f"{name} ($N={mask.sum():,}$)"
         axes[0].scatter(two_m_pt[idx_plot], theta_g[idx_plot], alpha=0.15, s=3,
                        color=qcd_sc_colors[i % len(qcd_sc_colors)], label=label)
 
@@ -160,7 +163,8 @@ def main():
         idx = len(active_qcd) + i
         mask = (sc_map_final == idx) & (theta_g > 0.01) & (theta_g < 1.5) & (two_m_pt > 0.01) & (two_m_pt < 1.5)
         idx_plot = rng.choice(np.where(mask)[0], min(max_plot, mask.sum()), replace=False)
-        label = f"Subclass {sc_idx} ($N={mask.sum():,}$)"
+        name = "Top-Dilute" if sc_idx == big_top else "Top-Dense"
+        label = f"{name} ($N={mask.sum():,}$)"
         axes[1].scatter(two_m_pt[idx_plot], theta_g[idx_plot], alpha=0.15, s=3,
                        color=top_sc_colors[i % len(top_sc_colors)], label=label)
 

@@ -101,7 +101,9 @@ def main() -> None:
             entry["status_pct"][cat] = pct
         composition[SUBCLASS_NAMES[sc]] = entry
         matrix.append(row)
-        row_labels.append(f"{SUBCLASS_NAMES[sc]} (N={n_tot})")
+        _display = {"QCD-Core": "QCD-Dense", "QCD-Edge": "QCD-Dilute",
+                    "Top-Core": "Top-Dilute", "Top-Edge": "Top-Dense"}
+        row_labels.append(f"{_display[SUBCLASS_NAMES[sc]]} (N={n_tot})")
 
     apply_style()
     fig, ax = plt.subplots(figsize=(8, 4.5))

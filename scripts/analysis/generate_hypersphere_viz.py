@@ -31,7 +31,7 @@ def parse_args():
 N_POINTS = 50000
 SEED = 42
 
-SUBCLASS_NAMES = {0: "QCD core", 1: "QCD edge", 2: "Top core", 3: "Top edge"}
+SUBCLASS_NAMES = {0: "QCD-Dense", 1: "QCD-Dilute", 2: "Top-Dilute", 3: "Top-Dense"}
 SUBCLASS_COLORS = {0: "#377eb8", 1: "#9ecae1", 2: "#e41a1c", 3: "#fdae6b"}
 CLASS_COLORS = {0: "#377eb8", 1: "#e41a1c"}
 CLASS_NAMES = {0: "QCD", 1: "Top"}
@@ -60,7 +60,7 @@ def main():
     N_POINTS = 50000
     SEED = 42
 
-    SUBCLASS_NAMES = {0: "QCD core", 1: "QCD edge", 2: "Top core", 3: "Top edge"}
+    SUBCLASS_NAMES = {0: "QCD-Dense", 1: "QCD-Dilute", 2: "Top-Dilute", 3: "Top-Dense"}
     SUBCLASS_COLORS = {0: "#377eb8", 1: "#9ecae1", 2: "#e41a1c", 3: "#fdae6b"}
     CLASS_COLORS = {0: "#377eb8", 1: "#e41a1c"}
     CLASS_NAMES = {0: "QCD", 1: "Top"}

@@ -22,11 +22,15 @@
       "mass_mean": 128.4737548828125,
       "tau32_mean": 0.7401049733161926
     },
-    "subclass_qcd_edge_fp": {
+    "subclass_qcd_edge_fn": {
       "subclass": "QCD-Edge",
-      "status": "False Positive",
-      "n_total": 0,
-      "n_plotted": 0
+      "status": "False Negative",
+      "n_total": 11940,
+      "n_plotted": 2127,
+      "ln_inv_delta_mean": 2.261846087987796,
+      "ln_kt_mean": 0.33703881039158934,
+      "mass_mean": 155.8970947265625,
+      "tau32_mean": 0.7006269097328186
     },
     "subclass_top_core_tp": {
       "subclass": "Top-Core",
@@ -38,11 +42,15 @@
       "mass_mean": 180.13259887695312,
       "tau32_mean": 0.6258605122566223
     },
-    "subclass_top_core_fn": {
+    "subclass_top_core_fp": {
       "subclass": "Top-Core",
-      "status": "False Negative",
-      "n_total": 0,
-      "n_plotted": 0
+      "status": "False Positive",
+      "n_total": 19379,
+      "n_plotted": 2056,
+      "ln_inv_delta_mean": 2.2522016807522593,
+      "ln_kt_mean": 0.4251863636230896,
+      "mass_mean": 178.78985595703125,
+      "tau32_mean": 0.6904930472373962
     },
     "subclass_top_edge": {
       "subclass": "Top-Edge",

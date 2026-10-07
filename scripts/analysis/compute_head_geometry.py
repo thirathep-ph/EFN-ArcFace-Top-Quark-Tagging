@@ -36,6 +36,8 @@ N_EVENTS = 50000
 BATCH_SIZE = 1024
 
 NAME_MAP = {0: 'QCD_Core', 1: 'QCD_Edge', 2: 'Top_Core', 3: 'Top_Edge'}
+SC_DISPLAY = {'QCD_Core': 'QCD-Dense', 'QCD_Edge': 'QCD-Dilute',
+              'Top_Core': 'Top-Dilute', 'Top_Edge': 'Top-Dense'}
 
 def arch_name(model_dir):
     import torch
@@ -201,7 +203,7 @@ def main():
                 ax.text(0.5, 0.5, 'N<10', ha='center', va='center')
                 continue
             ax.hist(v, bins=30, density=True, alpha=0.4, color=sc_colors[sc_id],
-                   label=f'{sc_name} ($N={len(v):,}$)')
+                   label=f'{SC_DISPLAY.get(sc_name, sc_name)} ($N={len(v):,}$)')
             if fit:
                 z_grid = np.linspace(0.1, 0.5, 100)
                 ax.plot(z_grid, dglap_power_law(z_grid, fit['A'], fit['alpha'], fit['beta']),
@@ -210,7 +212,7 @@ def main():
             ax.set_xlabel('$z_g$')
             if sc_id == 0:
                 ax.set_ylabel(f'{name}\nP($z_g$)', fontsize=9)
-            ax.set_title(f'{sc_name}')
+            ax.set_title(f'{SC_DISPLAY.get(sc_name, sc_name)}')
             ax.legend(loc="upper right", **{**LEGEND_KWARGS, "fontsize": 6})
 
         all_results[name] = results

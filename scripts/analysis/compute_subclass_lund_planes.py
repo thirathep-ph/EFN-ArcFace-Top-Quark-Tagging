@@ -62,12 +62,12 @@ STATUS = ["True Positive", "False Positive", "True Negative", "False Negative"]
 # (subclass id, status filter or None, file stem, plot label)
 # Predicted-label partition: QCD-Edge holds TN+FN, Top-Core holds TP+FP.
 PANELS = [
-    (0, None, "subclass_qcd_core", "QCD-Core (all)"),
-    (1, "True Negative", "subclass_qcd_edge_tn", "QCD-Edge (true negative)"),
-    (1, "False Negative", "subclass_qcd_edge_fn", "QCD-Edge (false negative)"),
-    (2, "True Positive", "subclass_top_core_tp", "Top-Core (true positive)"),
-    (2, "False Positive", "subclass_top_core_fp", "Top-Core (false positive)"),
-    (3, None, "subclass_top_edge", "Top-Edge (all)"),
+    (0, None, "subclass_qcd_core", "QCD-Dense (all)"),
+    (1, "True Negative", "subclass_qcd_edge_tn", "QCD-Dilute (true negative)"),
+    (1, "False Negative", "subclass_qcd_edge_fn", "QCD-Dilute (false negative)"),
+    (2, "True Positive", "subclass_top_core_tp", "Top-Dilute (true positive)"),
+    (2, "False Positive", "subclass_top_core_fp", "Top-Dilute (false positive)"),
+    (3, None, "subclass_top_edge", "Top-Dense (all)"),
 ]
 
 

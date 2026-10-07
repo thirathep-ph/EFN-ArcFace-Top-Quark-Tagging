@@ -83,6 +83,7 @@ def main():
         models.append((short, d))
 
     results = {}
+    model_counts = {}
     apply_style()
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 
@@ -120,6 +121,7 @@ def main():
             n = int(np.sum(sub == sc_id))
             counts[sc_name] = n
             results[f'{name.replace(chr(10), " ")}_{sc_name}_N'] = n
+        model_counts[name] = dict(counts)
 
         results[f'{name.replace(chr(10), " ")}_norms_median'] = float(np.median(norms))
         results[f'{name.replace(chr(10), " ")}_norms_std'] = float(np.std(norms))
@@ -150,7 +152,12 @@ def main():
     axes[1].set_ylim(0, y_max * 1.18)
     axes[1].set_ylabel('$N$ events (50k total)')
     axes[1].set_xticks(np.arange(4) + 0.15)
-    axes[1].set_xticklabels(['QCD\nCore', 'QCD\nEdge', 'Top\nCore', 'Top\nEdge'], fontsize=7)
+    # Tick labels follow the size convention (larger cluster = Core side):
+    # QCD bigger cluster -> Dense; Top bigger cluster (Core side) -> Dilute side.
+    ref = model_counts[models[0][0]]
+    qcd_lab = ['QCD\nDense', 'QCD\nDilute'] if ref['QCD_Core'] >= ref['QCD_Edge'] else ['QCD\nDilute', 'QCD\nDense']
+    top_lab = ['Top\nDilute', 'Top\nDense'] if ref['Top_Core'] >= ref['Top_Edge'] else ['Top\nDense', 'Top\nDilute']
+    axes[1].set_xticklabels(qcd_lab + top_lab, fontsize=7)
     axes[1].legend(fontsize=7, handlelength=1.2, **{k: v for k, v in LEGEND_KWARGS.items() if k not in ('fontsize',)})
     add_grid(axes[1], axis='y')
     panel_label(axes[1], '(b)')

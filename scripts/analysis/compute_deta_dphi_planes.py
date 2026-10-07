@@ -29,6 +29,9 @@ PANELS = [
     (2, None, "subclass_top_core", "Top-Core"),
     (3, None, "subclass_top_edge", "Top-Edge"),
 ]
+DISPLAY = {"QCD (all)": "QCD (all)", "Top (all)": "Top (all)",
+           "QCD-Core": "QCD-Dense", "QCD-Edge": "QCD-Dilute",
+           "Top-Core": "Top-Dilute", "Top-Edge": "Top-Dense"}
 def normalize(x): return x / (np.linalg.norm(x, axis=1, keepdims=True) + 1e-10)
 def load_centers(p):
     import torch
@@ -103,7 +106,7 @@ def main():
         if n_plot==0: continue
         panel_events=phys_events[panel_mask]
         avg_path=os.path.join(OUT_DIR, f"{stem}_avg.png")
-        plot_deta_dphi_plane(panel_events, label=label, save_path=avg_path)
+        plot_deta_dphi_plane(panel_events, label=DISPLAY[label], save_path=avg_path)
         # B-minimal: paper keeps canonical 64-d; only canonical run copies to paper/figures
         if is_canonical:
             paper_path=os.path.join(repo_root,"paper","figures",f"deta_dphi_{stem}_avg.png")
@@ -123,7 +126,7 @@ def main():
         # load single event
         rep_event=load_events_by_indices(TEST_H5, np.array([rep_idx]))
         rep_path=os.path.join(OUT_DIR, f"{stem}_rep.png")
-        plot_representative_jet(rep_event[0], title=f"{label} representative (medoid)", save_path=rep_path)
+        plot_representative_jet(rep_event[0], title=f"{DISPLAY[label]} representative (medoid)", save_path=rep_path)
         if is_canonical:
             copy2(rep_path, os.path.join(repo_root,"paper","figures",f"deta_dphi_{stem}_rep.png"))
         results["panels"][stem]={"label":label,"n_total":n_total,"n_plotted":n_plot,"rep_idx":int(rep_idx)}
