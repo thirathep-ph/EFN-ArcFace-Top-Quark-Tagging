@@ -314,6 +314,116 @@ def compute_nmi_across_models(embeddings_dict, labels_dict):
     return model_names, nmi_matrix, ari_matrix
 
 
+DISPLAY_NAMES = {
+    "arcface_s16_m05": "EFN + ArcFace (ours)",
+    "linear_seed42": "EFN + Linear",
+    "coslinear_seed42": "EFN + CosLinear",
+}
+MODEL_ORDER = ["arcface_s16_m05", "linear_seed42", "coslinear_seed42"]
+
+
+def replot(scores_npz, results_json):
+    """Re-render ROC + rejection PNGs from cached artifacts.
+
+    Display-only: curves come from cached per-event scores (verified
+    bit-identical to the gated AUCs), rejection points from the archived
+    results JSON. Writes NO json.
+    """
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+    cache = np.load(scores_npz)
+    labels = cache["labels"]
+    with open(results_json) as f:
+        stored = json.load(f)
+    colors = {
+        "arcface_s16_m05": COLORS["qcd"],
+        "linear_seed42": COLORS["green"],
+        "coslinear_seed42": COLORS["top"],
+    }
+
+    # --- Panel (a): ROC curves with bootstrap CI bands + low-FPR inset ---
+    fig, ax = plt.subplots(figsize=(5.0, 4.4))
+    rng = np.random.RandomState(42)
+    fpr_grid = np.linspace(0, 1, 200)
+    n = len(labels)
+    for name in MODEL_ORDER:
+        scores = cache[f"scores_{name}"].astype(np.float64)
+        fpr, tpr, _ = roc_curve(labels, scores)
+        roc_auc_val = auc(fpr, tpr)
+        ax.plot(fpr, tpr, color=colors[name], linewidth=2.2,
+                label=f"{DISPLAY_NAMES[name]} (AUC={roc_auc_val:.3f})")
+        tprs = []
+        for _ in range(200):
+            idx = rng.choice(n, n, replace=True)
+            f_b, t_b, _ = roc_curve(labels[idx], scores[idx])
+            tprs.append(np.interp(fpr_grid, f_b, t_b))
+        tprs = np.array(tprs)
+        mean_tpr = tprs.mean(axis=0)
+        std_tpr = tprs.std(axis=0)
+        ax.fill_between(fpr_grid, np.clip(mean_tpr - 1.96 * std_tpr, 0, 1),
+                        np.clip(mean_tpr + 1.96 * std_tpr, 0, 1),
+                        color=colors[name], alpha=0.12)
+    ax.plot([0, 1], [0, 1], 'k--', alpha=0.5, linewidth=0.8)
+    ax.set_xlabel('False Positive Rate', fontsize=12)
+    ax.set_ylabel('True Positive Rate', fontsize=12)
+    ax.tick_params(labelsize=11)
+    panel_label(ax, "(a)", loc="left")
+    ax.legend(loc="lower right", fontsize=10,
+              **{k: v for k, v in LEGEND_KWARGS.items() if k not in ("ncol", "fontsize")})
+    add_grid(ax)
+    ax.set_xlim(-0.01, 1.01)
+    ax.set_ylim(-0.01, 1.01)
+    ax_in = inset_axes(ax, width="44%", height="44%", loc="center right", borderpad=2.0)
+    for name in MODEL_ORDER:
+        scores = cache[f"scores_{name}"].astype(np.float64)
+        fpr, tpr, _ = roc_curve(labels, scores)
+        ax_in.plot(fpr, tpr, color=colors[name], linewidth=1.6)
+    ax_in.set_xlim(-0.005, 0.105)
+    ax_in.set_ylim(0.78, 1.005)
+    ax_in.set_xticks([0, 0.05, 0.1])
+    ax_in.set_yticks([0.8, 0.9, 1.0])
+    ax_in.tick_params(labelsize=8)
+    ax_in.set_title("zoom: low FPR", fontsize=9, pad=3)
+    ax_in.grid(True, alpha=0.2, linestyle="--", linewidth=0.4)
+    for spine in ax_in.spines.values():
+        spine.set_edgecolor("0.45")
+        spine.set_linewidth(0.8)
+    save_fig(fig, "final_roc_curves.png", to_paper=False)
+
+    # --- Panel (b): rejection rates, 50%-TPR values annotated from JSON ---
+    fig, ax = plt.subplots(figsize=(5.0, 4.4))
+    tpr_labels = ["tpr_30", "tpr_50", "tpr_70", "tpr_80", "tpr_90", "tpr_95"]
+    tpr_values = [0.30, 0.50, 0.70, 0.80, 0.90, 0.95]
+    for name in MODEL_ORDER:
+        rejections = [stored["rejection_rates"][name]["rejection_rates"][k]["rejection"]
+                       for k in tpr_labels]
+        ax.plot(tpr_values, rejections, 'o-', color=colors[name],
+                label=DISPLAY_NAMES[name], linewidth=2.2, markersize=7)
+    r50 = {name: stored["rejection_rates"][name]["rejection_rates"]["tpr_50"]["rejection"]
+           for name in MODEL_ORDER}
+    ax.annotate(f"{r50['coslinear_seed42']:.1f}x", xy=(0.50, r50['coslinear_seed42']),
+                xytext=(0.58, 175), fontsize=10, color=colors["coslinear_seed42"],
+                arrowprops=dict(arrowstyle="-", color=colors["coslinear_seed42"], lw=0.8))
+    ax.annotate(f"{r50['arcface_s16_m05']:.1f}x", xy=(0.50, r50['arcface_s16_m05']),
+                xytext=(0.375, 150), fontsize=10, color=colors["arcface_s16_m05"],
+                arrowprops=dict(arrowstyle="-", color=colors["arcface_s16_m05"], lw=0.8))
+    ax.annotate(f"{r50['linear_seed42']:.1f}x", xy=(0.50, r50['linear_seed42']),
+                xytext=(0.60, 92), fontsize=10, color=colors["linear_seed42"],
+                arrowprops=dict(arrowstyle="-", color=colors["linear_seed42"], lw=0.8))
+    ax.set_xlabel('Signal Efficiency (TPR)', fontsize=12)
+    ax.set_ylabel('Background Rejection ($1/\\mathrm{FPR}$)', fontsize=12)
+    ax.tick_params(labelsize=11)
+    panel_label(ax, "(b)", loc="left")
+    ax.set_xticks(tpr_values)
+    ax.set_xticklabels([f'{int(v*100)}%' if v < 0.95 else '' for v in tpr_values])
+    ax.set_xlim(0.27, 1.005)
+    ax.legend(loc="lower left", fontsize=10,
+              **{k: v for k, v in LEGEND_KWARGS.items() if k not in ("ncol", "fontsize")})
+    add_grid(ax)
+    ax.set_yscale('log')
+    save_fig(fig, "final_rejection_rates.png", to_paper=False)
+    print(f"\nReplotted from: {scores_npz} + {results_json}  [COMPLETE]")
+
+
 def main():
     """
     Run the full bootstrap + ROC + NMI/ARI analysis pipeline.
@@ -328,7 +438,18 @@ def main():
                         help='Random seed for the subsample (default 42).')
     parser.add_argument('--model_dir', type=str, default="experiments/robustness_s16_m05",
                         help='Directory containing model checkpoint (for single model eval).')
+    parser.add_argument('--replot', action='store_true',
+                        help='re-render PNGs from cached scores + archived JSON (no recompute, no JSON write).')
+    parser.add_argument('--scores-npz', type=str, default="experiments/paired_scores_cache.npz",
+                        help='Cached per-event scores for --replot (local copy, gitignored).')
+    parser.add_argument('--results-json', type=str,
+                        default="experiments/archive/final_analysis_results.json",
+                        help='Archived results JSON holding the paper rejection numbers.')
     args = parser.parse_args()
+
+    if args.replot:
+        replot(args.scores_npz, args.results_json)
+        return
 
     device, _ = get_device()
     print(f"Device: {device}\n")

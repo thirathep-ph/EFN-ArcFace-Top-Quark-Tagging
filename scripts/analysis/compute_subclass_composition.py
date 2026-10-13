@@ -26,7 +26,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 
 from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.figure_style import apply_style, save_fig
@@ -55,12 +54,69 @@ def load_centers() -> np.ndarray:
     return normalize(sd["arcface_head.class_centers"].detach().cpu().numpy())
 
 
+_DISPLAY = {"QCD-Core": "QCD-Dense", "QCD-Edge": "QCD-Dilute",
+           "Top-Core": "Top-Dilute", "Top-Edge": "Top-Dense"}
+
+
+def render(matrix: np.ndarray, row_labels: list, partition: str) -> None:
+    """Draw the composition figure: two 2x2 panels (Top | QCD), print-sized.
+
+    Display-only: the matrix is block-diagonal (Top rows live in TP/FP,
+    QCD rows in TN/FN), so one 4x4 heatmap wastes half its area. Values
+    come from the caller unchanged.
+    """
+    order = ["QCD-Core", "QCD-Edge", "Top-Core", "Top-Edge"]
+    idx = {name: row_labels.index(next(l for l in row_labels if l.startswith(_DISPLAY[name])))
+           for name in order}
+    top_mat = matrix[[idx["Top-Core"], idx["Top-Edge"]]][:, [0, 1]]      # TP, FP
+    qcd_mat = matrix[[idx["QCD-Core"], idx["QCD-Edge"]]][:, [2, 3]]      # TN, FN
+    top_rows = [row_labels[idx["Top-Core"]], row_labels[idx["Top-Edge"]]]
+    qcd_rows = [row_labels[idx["QCD-Core"]], row_labels[idx["QCD-Edge"]]]
+
+    apply_style()
+    fig, (axT, axQ) = plt.subplots(1, 2, figsize=(10, 4.4), constrained_layout=True)
+    for ax, mat, rows, cols, title in [
+        (axT, top_mat, top_rows, ["True Positive", "False Positive"], "Top subclasses"),
+        (axQ, qcd_mat, qcd_rows, ["True Negative", "False Negative"], "QCD subclasses"),
+    ]:
+        im = ax.imshow(mat, cmap="Blues", vmin=0, vmax=100, aspect="auto")
+        ax.set_xticks([0, 1], cols, fontsize=12)
+        ax.set_yticks([0, 1], [r.replace(" (N=", "\n(N=") for r in rows], fontsize=12)
+        ax.set_title(title, fontsize=14, pad=8)
+        for i in range(2):
+            for j in range(2):
+                v = mat[i, j]
+                if v >= 0.05:
+                    ax.text(j, i, f"{v:.1f}", ha="center", va="center",
+                            fontsize=16, color="white" if v > 50 else "black")
+    axT.set_ylabel(f"Discovered subclass ({partition}-label partition)", fontsize=12)
+    cbar = fig.colorbar(im, ax=[axT, axQ], shrink=0.95, pad=0.02)
+    cbar.set_label("Percentage (%)", fontsize=13)
+    cbar.ax.tick_params(labelsize=12)
+    save_fig(fig, "subclass_composition_heatmap.png", to_paper=False)
+
+
 def main() -> None:
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--partition", choices=["predicted", "true"], default="predicted",
                         help="predicted (model view) or true (GT consistency check)")
+    parser.add_argument("--replot", action="store_true",
+                        help="re-render PNG from cached OUT_JSON only (no recompute, no JSON write)")
     args = parser.parse_args()
+
+    if args.replot:
+        with open(OUT_JSON) as f:
+            composition = json.load(f)["composition"]
+        matrix, row_labels = [], []
+        for sc in range(4):
+            entry = composition[SUBCLASS_NAMES[sc]]
+            matrix.append([entry["status_pct"][cat] for cat in STATUS])
+            row_labels.append(f"{_DISPLAY[SUBCLASS_NAMES[sc]]} (N={entry['n']})")
+        render(np.array(matrix), row_labels, args.partition)
+        print(f"\nReplotted from: {OUT_JSON}  [COMPLETE]")
+        return
+
     t0 = time.time()
     emb_np = np.load(EMBEDDINGS)
     embeddings, labels = emb_np["embeddings"], emb_np["labels"]
@@ -105,19 +161,7 @@ def main() -> None:
                     "Top-Core": "Top-Dilute", "Top-Edge": "Top-Dense"}
         row_labels.append(f"{_display[SUBCLASS_NAMES[sc]]} (N={n_tot})")
 
-    apply_style()
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    mat = np.array(matrix)
-    annot_labels = np.where(mat < 0.05, "", np.char.mod("%.1f", np.round(mat, 1)))
-    sns.heatmap(mat, annot=annot_labels, fmt="", ax=ax,
-                xticklabels=STATUS, yticklabels=row_labels,
-                cmap="YlGnBu", cbar_kws={"label": "Percentage (%)", "shrink": 0.8},
-                annot_kws={"fontsize": 8})
-    ax.set_xlabel("Prediction status")
-    ax.set_ylabel(f"Discovered subclass ({args.partition}-label partition)")
-    ax.tick_params(axis="y", rotation=0)
-    plt.tight_layout()
-    save_fig(fig, "subclass_composition_heatmap.png", to_paper=True)
+    render(np.array(matrix), row_labels, args.partition)
 
     with open(OUT_JSON, "w") as f:
         json.dump({"n_events": int(len(labels)), "composition": composition}, f, indent=2)
