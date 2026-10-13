@@ -1,8 +1,20 @@
 """
 Shared Figure Composition Standards for Publication Figures
-===========================================================
+==========================================================
 All paper figures should import and use these constants/functions
 for visual consistency (font, color, legend, panel labels, grid).
+
+PRINT-SIZE CONTRACT (paper textwidth = 6.5in, arxiv.sty):
+effective_pt = native_fontsize * (print_width_in / native_width_in),
+native_width_in ~= figsize_width * 0.92 (bbox_inches="tight").
+Targets at print size: labels/annotations >= 9pt, ticks/legend >= 8pt.
+Rule of thumb: a figure printed at 0.48\\textwidth (3.1in) from a
+5in-wide native needs native labels >= 14pt; a figure printed at
+0.90\\textwidth (5.9in) from a 10in-wide native needs native >= 15pt
+for ticks and >= 17pt for titles/annotations.
+Every figure generator MUST call apply_style() (DejaVu Serif) --
+plots rendered without it fall back to DejaVu Sans and break the
+paper's single-font rule. Display-only refonts never touch JSON.
 """
 import matplotlib.pyplot as plt
 import matplotlib as mpl

@@ -15,6 +15,11 @@ SSOT of the work: goal, current position, and what's done. Newest log entry on t
 
 ## Done
 
+### 2026-10-13 p.m.: figure print-size fix (3 replot-capable figs)
+
+- ROC/rejection natives → 14/12/12/13pt; composition → 15/17/20pt with print 0.48→0.90 textwidth. Effective print sizes now ~8-13pt (was 4-8pt). Zero JSON diff, PNGs pushed to paper + gallery.
+- Root causes logged for data machine: most generators skip apply_style() (Sans vs Serif mix); print-size contract added to figure_style.py docstring (targets: labels/annots ≥9pt, ticks/legend ≥8pt effective).
+
 ### 2026-10-13 p.m.: rejection overlap fix + Dense/Dilute filenames
 
 - Rejection 50%-TPR labels (123.6/121.6/131.7×) staggered to (0.60,260)/(0.62,150)/(0.62,85); text-box no-overlap verified programmatically (caution: `Annotation.get_window_extent` unions the leader arrow — check `Text.get_window_extent`). Replot: zero JSON diff.

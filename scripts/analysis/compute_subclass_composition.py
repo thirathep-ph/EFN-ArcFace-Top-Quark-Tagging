@@ -80,19 +80,19 @@ def render(matrix: np.ndarray, row_labels: list, partition: str) -> None:
         (axQ, qcd_mat, qcd_rows, ["True Negative", "False Negative"], "QCD subclasses"),
     ]:
         im = ax.imshow(mat, cmap="Blues", vmin=0, vmax=100, aspect="auto")
-        ax.set_xticks([0, 1], cols, fontsize=12)
-        ax.set_yticks([0, 1], [r.replace(" (N=", "\n(N=") for r in rows], fontsize=12)
-        ax.set_title(title, fontsize=14, pad=8)
+        ax.set_xticks([0, 1], cols, fontsize=15)
+        ax.set_yticks([0, 1], [r.replace(" (N=", "\n(N=") for r in rows], fontsize=15)
+        ax.set_title(title, fontsize=17, pad=8)
         for i in range(2):
             for j in range(2):
                 v = mat[i, j]
                 if v >= 0.05:
                     ax.text(j, i, f"{v:.1f}", ha="center", va="center",
-                            fontsize=16, color="white" if v > 50 else "black")
-    axT.set_ylabel(f"Discovered subclass ({partition}-label partition)", fontsize=12)
+                            fontsize=20, color="white" if v > 50 else "black")
+    axT.set_ylabel(f"Discovered subclass ({partition}-label partition)", fontsize=15)
     cbar = fig.colorbar(im, ax=[axT, axQ], shrink=0.95, pad=0.02)
-    cbar.set_label("Percentage (%)", fontsize=13)
-    cbar.ax.tick_params(labelsize=12)
+    cbar.set_label("Percentage (%)", fontsize=16)
+    cbar.ax.tick_params(labelsize=15)
     save_fig(fig, "subclass_composition_heatmap.png", to_paper=False)
 
 

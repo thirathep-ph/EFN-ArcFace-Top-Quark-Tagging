@@ -363,11 +363,11 @@ def replot(scores_npz, results_json):
                         np.clip(mean_tpr + 1.96 * std_tpr, 0, 1),
                         color=colors[name], alpha=0.12)
     ax.plot([0, 1], [0, 1], 'k--', alpha=0.5, linewidth=0.8)
-    ax.set_xlabel('False Positive Rate', fontsize=12)
-    ax.set_ylabel('True Positive Rate', fontsize=12)
-    ax.tick_params(labelsize=11)
+    ax.set_xlabel('False Positive Rate', fontsize=14)
+    ax.set_ylabel('True Positive Rate', fontsize=14)
+    ax.tick_params(labelsize=12)
     panel_label(ax, "(a)", loc="left")
-    ax.legend(loc="lower right", fontsize=10,
+    ax.legend(loc="lower right", fontsize=12,
               **{k: v for k, v in LEGEND_KWARGS.items() if k not in ("ncol", "fontsize")})
     add_grid(ax)
     ax.set_xlim(-0.01, 1.01)
@@ -381,8 +381,8 @@ def replot(scores_npz, results_json):
     ax_in.set_ylim(0.78, 1.005)
     ax_in.set_xticks([0, 0.05, 0.1])
     ax_in.set_yticks([0.8, 0.9, 1.0])
-    ax_in.tick_params(labelsize=8)
-    ax_in.set_title("zoom: low FPR", fontsize=9, pad=3)
+    ax_in.tick_params(labelsize=10)
+    ax_in.set_title("zoom: low FPR", fontsize=11, pad=3)
     ax_in.grid(True, alpha=0.2, linestyle="--", linewidth=0.4)
     for spine in ax_in.spines.values():
         spine.set_edgecolor("0.45")
@@ -403,22 +403,22 @@ def replot(scores_npz, results_json):
     # Staggered labels: the three 50%-TPR values sit within ~10 units on a log
     # axis, so stacked-right labels with fanned leaders (was: overlapping).
     ax.annotate(f"{r50['coslinear_seed42']:.1f}x", xy=(0.50, r50['coslinear_seed42']),
-                xytext=(0.60, 260), fontsize=10, color=colors["coslinear_seed42"],
+                xytext=(0.60, 260), fontsize=13, color=colors["coslinear_seed42"],
                 arrowprops=dict(arrowstyle="-", color=colors["coslinear_seed42"], lw=0.8))
     ax.annotate(f"{r50['arcface_s16_m05']:.1f}x", xy=(0.50, r50['arcface_s16_m05']),
-                xytext=(0.62, 150), fontsize=10, color=colors["arcface_s16_m05"],
+                xytext=(0.62, 150), fontsize=13, color=colors["arcface_s16_m05"],
                 arrowprops=dict(arrowstyle="-", color=colors["arcface_s16_m05"], lw=0.8))
     ax.annotate(f"{r50['linear_seed42']:.1f}x", xy=(0.50, r50['linear_seed42']),
-                xytext=(0.62, 85), fontsize=10, color=colors["linear_seed42"],
+                xytext=(0.62, 85), fontsize=13, color=colors["linear_seed42"],
                 arrowprops=dict(arrowstyle="-", color=colors["linear_seed42"], lw=0.8))
-    ax.set_xlabel('Signal Efficiency (TPR)', fontsize=12)
-    ax.set_ylabel('Background Rejection ($1/\\mathrm{FPR}$)', fontsize=12)
-    ax.tick_params(labelsize=11)
+    ax.set_xlabel('Signal Efficiency (TPR)', fontsize=14)
+    ax.set_ylabel('Background Rejection ($1/\\mathrm{FPR}$)', fontsize=14)
+    ax.tick_params(labelsize=12)
     panel_label(ax, "(b)", loc="left")
     ax.set_xticks(tpr_values)
     ax.set_xticklabels([f'{int(v*100)}%' if v < 0.95 else '' for v in tpr_values])
     ax.set_xlim(0.27, 1.005)
-    ax.legend(loc="lower left", fontsize=10,
+    ax.legend(loc="lower left", fontsize=12,
               **{k: v for k, v in LEGEND_KWARGS.items() if k not in ("ncol", "fontsize")})
     add_grid(ax)
     ax.set_yscale('log')
