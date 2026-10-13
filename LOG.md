@@ -15,7 +15,7 @@ SSOT of the work: goal, current position, and what's done. Newest log entry on t
 
 ## Done
 
-### 2026-10-13 (fig restyle, uncommitted → commit below)
+### 2026-10-13 (fig restyle, `5359b63`)
 
 - User: heatmap looked washed out, ROC/rejection used little space with tiny fonts (all printed at 0.48\textwidth). Restyled all three, display-only.
 - `compute_subclass_composition.py`: new `render()` (two 2×2 panels Top|QCD, Blues, print-size fonts) + `--replot` from `subclass_composition.json`. Removed now-unused seaborn import.
