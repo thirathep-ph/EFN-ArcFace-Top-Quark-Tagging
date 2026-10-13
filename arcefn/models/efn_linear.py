@@ -23,6 +23,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from arcefn.models.efn_arcface import EFN, get_efn_features
+from arcefn.utils.model_utils import count_parameters
 
 
 class TopTaggingLinear(nn.Module):
@@ -67,22 +68,6 @@ class TopTaggingLinear(nn.Module):
         jet_emb = self.efn(coords, z, mask)          # (B, embedding_dim)
         logits = self.classifier(jet_emb)             # (B, 2) — Wx + b
         return logits, jet_emb
-
-
-def count_parameters(model):
-    """Count trainable parameters in a model.
-
-    Parameters
-    ----------
-    model : nn.Module
-        PyTorch model.
-
-    Returns
-    -------
-    int
-        Number of trainable parameters.
-    """
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 if __name__ == '__main__':

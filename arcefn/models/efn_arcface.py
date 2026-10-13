@@ -16,6 +16,8 @@ import torch.nn.functional as F
 import numpy as np
 # Note: For pure speed in forward passes, we use torch operations that mimic vector logic.
 
+from arcefn.utils.model_utils import count_parameters
+
 def get_efn_features(constituents, mask=None):
     """
     Transform raw Cartesian (E, px, py, pz) into EFN-ready features.
@@ -317,21 +319,6 @@ def distance_corr_loss(x, y, mask=None):
     # Distance correlation
     dcor = torch.sqrt(dcov2 / (torch.sqrt(dvarx2 * dvary2) + 1e-10) + 1e-10)
     return dcor
-
-def count_parameters(model):
-    """Count trainable parameters in a model.
-
-    Parameters
-    ----------
-    model : nn.Module
-        PyTorch model.
-
-    Returns
-    -------
-    int
-        Number of trainable parameters.
-    """
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 if __name__ == '__main__':
     print("EFN + ArcFace Model (xAI, 1 Class Center Per Class)")
