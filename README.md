@@ -10,13 +10,13 @@
 
 ## Intro
 
-Top-quark vs QCD jet classification is a core LHC task where deep taggers are accurate but opaque. This project replaces the black-box head with geometry: an IRC-safe Energy Flow Network backbone plus an ArcFace prototype head, so the binary decision is exactly nearest-prototype on the unit hypersphere S^63. Unsupervised clustering on that manifold recovers jet subclasses, which are then checked against QCD predictions (splitting functions, angular scaling, Lund topology) instead of being trusted on faith.
+Top-quark vs QCD jet classification is a core LHC task where deep taggers are accurate but opaque. The primary goal of this project is class prototypes: an IRC-safe Energy Flow Network backbone plus an ArcFace head that learns one prototype per class (Top vs QCD), so the binary decision is exactly nearest-prototype on the unit hypersphere S^63. ArcFace was chosen for this reason — to give each class an explicit, inspectable prototype. Subclass structure (Core/Edge × Top/QCD) was a secondary finding en route — uncovered by unsupervised clustering on that manifold and then checked against QCD predictions (splitting functions, angular scaling, Lund topology) instead of being trusted on faith.
 
 ## What was done
 
-- **Tagger**: EFN Φ [2→128→128→128] + ρ [128→128→64], 59,072 params, ArcFace margin m=0.5, scale s=16, seed 42. Trained on 1.2M jets, tested on 404k (Top Tagging Reference Dataset).
+- **Primary — Tagger (class prototypes)**: EFN Φ [2→128→128→128] + ρ [128→128→64], 59,072 params, ArcFace margin m=0.5, scale s=16, seed 42. Trained on 1.2M jets, tested on 404k (Top Tagging Reference Dataset).
 - **Baselines**: EFN+Linear and EFN+CosLinear (3 seeds each) to isolate the effect of the hypersphere vs the margin; random forest on 10 hand-crafted substructure observables.
-- **Subclass discovery**: spectral clustering per predicted class (eigengap selects k=2/class → 4 subclasses: Core/Edge × Top/QCD), with null controls (noise jets, untrained encoder) and a label-shuffled retraining control.
+- **Secondary finding en route — subclass structure (not the primary goal)**: spectral clustering per predicted class (eigengap selects k=2/class → 4 subclasses: Core/Edge × Top/QCD), with null controls (noise jets, untrained encoder) and a label-shuffled retraining control.
 - **Validation battery**: SoftDrop z_g power-law fits, angular collimation, Lund planes, one mass-matched bin, 3-head geometry comparison (TwoNN/PR/PCA), PySR symbolic distillation, JetNet30 out-of-distribution scan.
 - **Verification**: all 48 reported numbers are tracked to artifacts in `experiments/numbers.json`.
 
@@ -29,19 +29,19 @@ Top-quark vs QCD jet classification is a core LHC task where deep taggers are ac
 | EFN + CosLinear (3-seed mean) | 92.00% ±0.03 | 0.975 | 132× |
 | RF (10 substructure features) | 92.37% | 0.977 | 150× |
 
-- **Subclasses**: 4 found, 3 of 4 validated against QCD; predicted-vs-truth partitions agree (ARI 0.79). Top-Edge fit is non-identifiable and excluded from physics reading.
+- **Secondary finding — subclasses (found en route)**: 4 found, 3 of 4 validated against QCD; predicted-vs-truth partitions agree (ARI 0.79). Top-Edge fit is non-identifiable and excluded from physics reading.
 - **Splitting exponents** (z_g fits): QCD-Core −1.24, QCD-Edge −1.02, Top-Core −0.49 — ordering matches the QCD soft-singularity hierarchy (quark and gluon tails share the 1/z_g shape, differing only by color factor).
 - **Geometry**: embeddings collapse to ~2D (TwoNN 2.21, PCA 83.6+16.4); prototypes 43.6° apart.
 - **Distillation**: PySR recovers tanh(m/pT) − 0.348·τ32 — the leading physics only (rejection drops 124→33, stated as-is).
 
 ## Discussion
 
-- The random forest wins on accuracy: on this dataset, engineered features beat raw-kinematics EFN. The contribution here is the readable representation, not SOTA accuracy.
+- The random forest wins on accuracy: on this dataset, engineered features beat raw-kinematics EFN. The contribution here is the readable class-prototype representation (one prototype per class on S^63), not SOTA accuracy and not subclass discovery.
 - Known limits, all stated openly: simulation-only (Pythia 8, no detector effects), binary task, narrow pT window, mass-confounded Core–Edge separation, single-seed label shuffle, exploratory p-values.
 
 ## Conclusion
 
-A 59k-parameter tagger whose decision rule can be drawn on a hypersphere, whose latent geometry recovers known QCD structure (3 of 4 subclasses validated, 1 honestly excluded), with every number traceable to tracked artifacts. No result rests on a single p-value or an unchecked claim.
+A 59k-parameter tagger whose decision rule is exactly nearest-class-prototype on a hypersphere — the primary contribution — with subclass QCD structure as a secondary finding en route (3 of 4 validated, 1 honestly excluded), and every number traceable to tracked artifacts. No result rests on a single p-value or an unchecked claim.
 
 ## Reproduce
 
