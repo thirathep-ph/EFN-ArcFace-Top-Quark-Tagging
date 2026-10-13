@@ -400,14 +400,16 @@ def replot(scores_npz, results_json):
                 label=DISPLAY_NAMES[name], linewidth=2.2, markersize=7)
     r50 = {name: stored["rejection_rates"][name]["rejection_rates"]["tpr_50"]["rejection"]
            for name in MODEL_ORDER}
+    # Staggered labels: the three 50%-TPR values sit within ~10 units on a log
+    # axis, so stacked-right labels with fanned leaders (was: overlapping).
     ax.annotate(f"{r50['coslinear_seed42']:.1f}x", xy=(0.50, r50['coslinear_seed42']),
-                xytext=(0.58, 175), fontsize=10, color=colors["coslinear_seed42"],
+                xytext=(0.60, 260), fontsize=10, color=colors["coslinear_seed42"],
                 arrowprops=dict(arrowstyle="-", color=colors["coslinear_seed42"], lw=0.8))
     ax.annotate(f"{r50['arcface_s16_m05']:.1f}x", xy=(0.50, r50['arcface_s16_m05']),
-                xytext=(0.375, 150), fontsize=10, color=colors["arcface_s16_m05"],
+                xytext=(0.62, 150), fontsize=10, color=colors["arcface_s16_m05"],
                 arrowprops=dict(arrowstyle="-", color=colors["arcface_s16_m05"], lw=0.8))
     ax.annotate(f"{r50['linear_seed42']:.1f}x", xy=(0.50, r50['linear_seed42']),
-                xytext=(0.60, 92), fontsize=10, color=colors["linear_seed42"],
+                xytext=(0.62, 85), fontsize=10, color=colors["linear_seed42"],
                 arrowprops=dict(arrowstyle="-", color=colors["linear_seed42"], lw=0.8))
     ax.set_xlabel('Signal Efficiency (TPR)', fontsize=12)
     ax.set_ylabel('Background Rejection ($1/\\mathrm{FPR}$)', fontsize=12)

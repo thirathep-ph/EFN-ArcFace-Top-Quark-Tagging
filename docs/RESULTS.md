@@ -2,7 +2,7 @@
 
 ## Abstract
 
-Top-quark vs QCD jet classification with a geometrically readable decision rule: an IRC-safe Energy Flow Network backbone (59,072 params) plus an ArcFace head that learns one prototype per class, so classifying = nearest class-prototype on the unit hypersphere S⁶³. Tested on 404k jets: **91.84% accuracy [91.76, 91.92], AUC 0.974, 124× rejection**. Subclass structure (4 groups: Core/Edge × Top/QCD) was a secondary finding en route — uncovered by unsupervised clustering on the manifold, 3 of 4 validated against QCD predictions (splitting functions, angular scaling, Lund topology). A feature-based random forest still leads (92.37%) — stated openly, not hidden.
+Top-quark vs QCD jet classification with a geometrically readable decision rule: an IRC-safe Energy Flow Network backbone (59,072 params) plus an ArcFace head that learns one prototype per class, so classifying = nearest class-prototype on the unit hypersphere S⁶³. Tested on 404k jets: **91.84% accuracy [91.76, 91.92], AUC 0.974, 124× rejection**. Subclass structure (4 groups: Dense/Dilute × Top/QCD) was a secondary finding en route — uncovered by unsupervised clustering on the manifold, 3 of 4 validated against QCD predictions (splitting functions, angular scaling, Lund topology). A feature-based random forest still leads (92.37%) — stated openly, not hidden.
 
 <details>
 <summary>Pipeline figure</summary>
@@ -59,19 +59,19 @@ Model score vs jet mass — gradual transition, not a sharp mass cutoff; misclas
 
 ## 3. Secondary finding: subclass structure & physics check (paper §3.2)
 
-**Takeaway:** secondary finding en route — 4 subclasses found, 3 of 4 validated against QCD; Top-Edge excluded (non-identifiable fit). Predicted-vs-truth partitions agree (ARI 0.79).
+**Takeaway:** secondary finding en route — 4 subclasses found, 3 of 4 validated against QCD; Top-Dense excluded (non-identifiable fit). Predicted-vs-truth partitions agree (ARI 0.79).
 
 <details>
 <summary>Table + figures</summary>
 
 | Subclass | Mass | τ32 | Reading |
 |:---------|:----:|:---:|:--------|
-| QCD-Core | ~62 GeV | — | ordinary single-prong |
-| QCD-Edge | ~134 GeV | — | hard gluon mimicking top (holds 99% of false negatives) |
-| Top-Core | ~181 GeV | ~0.63 | boundary mixture (absorbs 93% of false positives) |
-| Top-Edge | ~174 GeV | ~0.46 | diffuse tail, fit non-identifiable — excluded |
+| QCD-Dense | ~62 GeV | — | ordinary single-prong |
+| QCD-Dilute | ~134 GeV | — | hard gluon mimicking top (holds 99% of false negatives) |
+| Top-Dilute | ~181 GeV | ~0.63 | boundary mixture (absorbs 93% of false positives) |
+| Top-Dense | ~174 GeV | ~0.46 | diffuse tail, fit non-identifiable — excluded |
 
-DGLAP power-law fits A·z^α(1−z)^β: QCD-Core α=−1.242, QCD-Edge −1.022, Top-Core −0.493 (ordering matches soft-gluon hierarchy; quark jets share the same 1/zg tail modulo color factor). Angular: subclass means follow θg ≈ 2m/pT (narrow-pT readout, stated limitation). One mass-matched bin keeps the Core–Edge gap (suggestive, not fully clean).
+DGLAP power-law fits A·z^α(1−z)^β: QCD-Dense α=−1.242, QCD-Dilute −1.022, Top-Dilute −0.493 (ordering matches soft-gluon hierarchy; quark jets share the same 1/zg tail modulo color factor). Angular: subclass means follow θg ≈ 2m/pT (narrow-pT readout, stated limitation). One mass-matched bin keeps the Dense–Dilute gap (suggestive, not fully clean).
 
 ![Eigengap](figures/eigengap_spectrum.png)
 Eigenvalue spectra + eigengaps: largest gap at k=2 for both QCD and Top partitions.
@@ -86,7 +86,7 @@ Subclass composition across prediction categories (TP/FP/FN/TN).
 Mass / τ32 / zg distributions per subclass: the four groups separate physically.
 
 ![DGLAP fits](figures/dglap_fit.png)
-Power-law fits: QCD-Core α=−1.242, QCD-Edge −1.022, Top-Core −0.493, Top-Edge +1.105 (excluded).
+Power-law fits: QCD-Dense α=−1.242, QCD-Dilute −1.022, Top-Dilute −0.493, Top-Dense +1.105 (excluded).
 
 ![Angular](figures/angular_collimation.png)
 Subclass means follow θg ≈ 2m/pT scaling (narrow pT window: readout of mass, stated as limitation).
@@ -103,53 +103,53 @@ False positives: top-like QCD (high-mass tail).
 ![Lund FN](figures/lund_status_fn.png)
 False negatives: QCD-like tops in the overlap region.
 
-![Lund QCD-Core](figures/lund_subclass_qcd_core.png)
-QCD-Core Lund plane.
+![Lund QCD-Dense](figures/lund_subclass_qcd_dense.png)
+QCD-Dense Lund plane.
 
-![Lund QCD-Edge TN](figures/lund_subclass_qcd_edge_tn.png)
-QCD-Edge (true-negative slice) Lund plane.
+![Lund QCD-Dilute TN](figures/lund_subclass_qcd_dilute_tn.png)
+QCD-Dilute (true-negative slice) Lund plane.
 
-![Lund QCD-Edge FP](figures/lund_subclass_qcd_edge_fp.png)
-QCD-Edge (false-positive slice) Lund plane.
+![Lund QCD-Dilute FP](figures/lund_subclass_qcd_dilute_fp.png)
+QCD-Dilute (false-positive slice) Lund plane.
 
-![Lund Top-Core TP](figures/lund_subclass_top_core_tp.png)
-Top-Core (true-positive slice) Lund plane.
+![Lund Top-Dilute TP](figures/lund_subclass_top_dilute_tp.png)
+Top-Dilute (true-positive slice) Lund plane.
 
-![Lund Top-Core FN](figures/lund_subclass_top_core_fn.png)
-Top-Core (false-negative slice) Lund plane.
+![Lund Top-Dilute FN](figures/lund_subclass_top_dilute_fn.png)
+Top-Dilute (false-negative slice) Lund plane.
 
-![Lund Top-Edge](figures/lund_subclass_top_edge.png)
-Top-Edge Lund plane (diffuse tail, excluded from physics reading).
+![Lund Top-Dense](figures/lund_subclass_top_dense.png)
+Top-Dense Lund plane (diffuse tail, excluded from physics reading).
 
-![QCD-Core avg](figures/deta_dphi_subclass_qcd_core_avg.png)
-QCD-Core average energy-flow map.
+![QCD-Dense avg](figures/deta_dphi_subclass_qcd_dense_avg.png)
+QCD-Dense average energy-flow map.
 
-![QCD-Core rep](figures/deta_dphi_subclass_qcd_core_rep.png)
-QCD-Core representative map.
+![QCD-Dense rep](figures/deta_dphi_subclass_qcd_dense_rep.png)
+QCD-Dense representative map.
 
-![QCD-Edge avg](figures/deta_dphi_subclass_qcd_edge_avg.png)
-QCD-Edge average map.
+![QCD-Dilute avg](figures/deta_dphi_subclass_qcd_dilute_avg.png)
+QCD-Dilute average map.
 
-![QCD-Edge rep](figures/deta_dphi_subclass_qcd_edge_rep.png)
-QCD-Edge representative map.
+![QCD-Dilute rep](figures/deta_dphi_subclass_qcd_dilute_rep.png)
+QCD-Dilute representative map.
 
-![Top-Core avg](figures/deta_dphi_subclass_top_core_avg.png)
-Top-Core average map.
+![Top-Dilute avg](figures/deta_dphi_subclass_top_dilute_avg.png)
+Top-Dilute average map.
 
-![Top-Core rep](figures/deta_dphi_subclass_top_core_rep.png)
-Top-Core representative map.
+![Top-Dilute rep](figures/deta_dphi_subclass_top_dilute_rep.png)
+Top-Dilute representative map.
 
-![Top-Edge avg](figures/deta_dphi_subclass_top_edge_avg.png)
-Top-Edge average map.
+![Top-Dense avg](figures/deta_dphi_subclass_top_dense_avg.png)
+Top-Dense average map.
 
-![Top-Edge rep](figures/deta_dphi_subclass_top_edge_rep.png)
-Top-Edge representative map.
+![Top-Dense rep](figures/deta_dphi_subclass_top_dense_rep.png)
+Top-Dense representative map.
 
 </details>
 
 ## 4. Geometry & supporting evidence (paper §3.3)
 
-**Takeaway:** embeddings collapse to 2-D (TwoNN 2.21, PCA 83.6+16.4); prototypes 43.6° apart; hypersphere alone (CosLinear) keeps balanced subclasses, margin m=0.5 resolves Top Core vs Edge. Null controls (noise, untrained) also give k*=2 — so k*=2 alone proves nothing; the physics case rests on §3.
+**Takeaway:** embeddings collapse to 2-D (TwoNN 2.21, PCA 83.6+16.4); prototypes 43.6° apart; hypersphere alone (CosLinear) keeps balanced subclasses, margin m=0.5 resolves Top Dilute vs Dense. Null controls (noise, untrained) also give k*=2 — so k*=2 alone proves nothing; the physics case rests on §3.
 
 <details>
 <summary>Figures</summary>
@@ -164,7 +164,7 @@ PCA scatter: PC1 83.6% + PC2 16.4% ≈ 100% (2-D collapse).
 Embedding geometry across ArcFace / CosLinear / Linear heads.
 
 ![Head geometry](figures/head_geometry_3way.png)
-Head comparison: hypersphere alone (CosLinear) keeps balanced subclasses; margin m=0.5 specifically resolves Top Core vs Edge.
+Head comparison: hypersphere alone (CosLinear) keeps balanced subclasses; margin m=0.5 specifically resolves Top Dilute vs Dense.
 
 ![Dimensionality](figures/dimensionality_3way.png)
 TwoNN + participation ratio per head: ArcFace TwoNN 2.21 vs 4.98/5.19 controls.
@@ -241,7 +241,7 @@ Pareto front: compact c=6 form (leading-physics distillate, not a replacement �
 
 - **What the class prototypes learned (primary):** high-mass/low-τ32 (Top) vs low-mass/high-τ32 (QCD) — checked, not assumed.
 - **Why the hypersphere matters:** 3-head comparison isolates it — CosLinear keeps balanced subclasses without any margin; Linear collapses.
-- **Limitations (stated openly):** simulation-only (Pythia 8), binary task, no detector effects, Top-Edge excluded, single-seed label-shuffle residual, QCD mass-confounding stated, narrow pT window, OOD scan is hypothesis-generating only.
+- **Limitations (stated openly):** simulation-only (Pythia 8), binary task, no detector effects, Top-Dense excluded, single-seed label-shuffle residual, QCD mass-confounding stated, narrow pT window, OOD scan is hypothesis-generating only.
 - **Future work:** cross-generator check, multi-seed shuffle, full mass-matched table, multi-class.
 
 ## 7. Conclusion (paper §5)

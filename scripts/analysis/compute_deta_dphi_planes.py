@@ -96,6 +96,9 @@ def main():
     results={"n_total":404000, "n_physics":int(len(phys_idx)), "panels":{}}
     # average hist2d
     for subclass, cls, stem, label in PANELS:
+        # Display filename (Dense/Dilute); `stem` stays the JSON key (SSOT, byte-identical).
+        fstem = (stem.replace("qcd_core", "qcd_dense").replace("qcd_edge", "qcd_dilute")
+                 .replace("top_core", "top_dilute").replace("top_edge", "top_dense"))
         if subclass is not None:
             cond=true_global==subclass
         else:
@@ -105,11 +108,11 @@ def main():
         n_plot=int(panel_mask.sum())
         if n_plot==0: continue
         panel_events=phys_events[panel_mask]
-        avg_path=os.path.join(OUT_DIR, f"{stem}_avg.png")
+        avg_path=os.path.join(OUT_DIR, f"{fstem}_avg.png")
         plot_deta_dphi_plane(panel_events, label=DISPLAY[label], save_path=avg_path)
         # B-minimal: paper keeps canonical 64-d; only canonical run copies to paper/figures
         if is_canonical:
-            paper_path=os.path.join(repo_root,"paper","figures",f"deta_dphi_{stem}_avg.png")
+            paper_path=os.path.join(repo_root,"paper","figures",f"deta_dphi_{fstem}_avg.png")
             copy2(avg_path, paper_path)
         # representative: closest to centroid
         if subclass is not None:
@@ -125,10 +128,10 @@ def main():
             rep_idx=idx[np.argmax(emb_norm[idx] @ centroid)]
         # load single event
         rep_event=load_events_by_indices(TEST_H5, np.array([rep_idx]))
-        rep_path=os.path.join(OUT_DIR, f"{stem}_rep.png")
+        rep_path=os.path.join(OUT_DIR, f"{fstem}_rep.png")
         plot_representative_jet(rep_event[0], title=f"{DISPLAY[label]} representative (medoid)", save_path=rep_path)
         if is_canonical:
-            copy2(rep_path, os.path.join(repo_root,"paper","figures",f"deta_dphi_{stem}_rep.png"))
+            copy2(rep_path, os.path.join(repo_root,"paper","figures",f"deta_dphi_{fstem}_rep.png"))
         results["panels"][stem]={"label":label,"n_total":n_total,"n_plotted":n_plot,"rep_idx":int(rep_idx)}
         print(f"  {stem}: n_total={n_total} n_plot={n_plot} rep={rep_idx}")
     # per-model json + canonical copy for REPRODUCING

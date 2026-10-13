@@ -6,14 +6,20 @@ SSOT of the work: goal, current position, and what's done. Newest log entry on t
 
 59k-param IRC-safe EFN + ArcFace tagger (one class prototype per class on S⁶³) with every reported number traceable to `experiments/*.json`. Code side feeds the paper; paper cites nothing that isn't gated here.
 
-## Now (2026-10-13, HEAD `942bd28`)
+## Now (2026-10-13)
 
 - Docs carry the prototype-first frame (`c079543`). `.venv` py3.12.10 + locked deps, pytest 33/33 green.
 - `experiments/*.json` (56 entries) byte-identical to paper's frozen copy — nothing to sync.
-- 3 figures restyled via new `--replot` modes (PNG-only, JSONs untouched); copies pushed to paper `paper/figures/`. Paper chat still must: rebuild PDFs+bundles, run gate, update `LOG.md` there.
+- Rejection labels de-overlapped; deta/lund generators emit Dense/Dilute filenames (JSON keys untouched); gallery renamed to match. 3 fresh PNGs pushed to paper `paper/figures/`.
 - Next: only on demand (distance-based follow-ups; feature-permuted retraining is paper future work).
 
 ## Done
+
+### 2026-10-13 p.m.: rejection overlap fix + Dense/Dilute filenames
+
+- Rejection 50%-TPR labels (123.6/121.6/131.7×) staggered to (0.60,260)/(0.62,150)/(0.62,85); text-box no-overlap verified programmatically (caution: `Annotation.get_window_extent` unions the leader arrow — check `Text.get_window_extent`). Replot: zero JSON diff.
+- `compute_deta_dphi_planes.py` + `compute_subclass_lund_planes.py`: display-stem (`fstem`) map core/edge → dense/dilute for output filenames; `results["panels"]` keys unchanged. `py_compile` OK (data absent, no full run).
+- Renamed 14 tracked PNGs in `docs/figures/` + all `docs/RESULTS.md` refs (table, captions, alt-text) to Dense/Dilute; PNG-internal labels were already Dense/Dilute.
 
 ### 2026-10-13 (fig restyle, `5359b63`)
 

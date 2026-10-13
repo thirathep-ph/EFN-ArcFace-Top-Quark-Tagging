@@ -167,6 +167,9 @@ def main() -> None:
     os.makedirs(os.path.join(model_dir, "lund_planes"), exist_ok=True)
     results: dict = {"n_events_total": int(len(labels)), "n_physics_sample": int(len(phys_idx)), "panels": {}}
     for sc, status_filter, stem, label in PANELS:
+        # Display filename (Dense/Dilute); `stem` stays the JSON key (SSOT, byte-identical).
+        fstem = (stem.replace("qcd_core", "qcd_dense").replace("qcd_edge", "qcd_dilute")
+                 .replace("top_core", "top_dilute").replace("top_edge", "top_dense"))
         cond = (true_global == sc) if status_filter is None else (
             (true_global == sc) & (status == status_filter)
         )
@@ -177,13 +180,13 @@ def main() -> None:
             results["panels"][stem] = {"subclass": SUBCLASS_NAMES[sc], "status": status_filter,
                                        "n_total": n_total, "n_plotted": 0}
             continue
-        lund_path = os.path.join(LUND_DIR, f"{stem}.png")
+        lund_path = os.path.join(LUND_DIR, f"{fstem}.png")
         panel_events = phys_events[panel_mask]
         plot_lund_plane(panel_events, label=label, save_path=lund_path)
         # Paper figures are at repo root / paper / figures
         repo_root = os.path.dirname(os.path.dirname(model_dir))
         paper_path = os.path.join(repo_root, "paper", "figures",
-                                  f"lund_subclass_{stem.replace('subclass_', '')}.png")
+                                   f"lund_subclass_{fstem.replace('subclass_', '')}.png")
         copy2(lund_path, paper_path)
         results["panels"][stem] = {"subclass": SUBCLASS_NAMES[sc], "status": status_filter,
                                    "n_total": n_total, "n_plotted": n_panel, **panel_stats(panel_events)}
