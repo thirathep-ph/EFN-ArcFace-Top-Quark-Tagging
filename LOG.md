@@ -15,6 +15,12 @@ SSOT of the work: goal, current position, and what's done. Newest log entry on t
 
 ## Done
 
+### 2026-10-14: purged 2 leaked GitHub PATs from history (secret-scanning alerts #1 #2)
+
+- Tokens lived in early notebook commits (be316dc, a6e560c…), gone from worktree since 9c04807 but present in pushed history. Purged via filter-repo replace-text (`ghp_*`/`github_pat_*`/`ghs_*`/`ghu_*` → REMOVED) across all 208 commits; verified zero `ghp_` in any blob (`log -S` + full-tree grep). ALL commit hashes rewritten; backup bundle kept at Temp (arcEFN-prepurge.bundle, 85MB) + pre-purge remote copy.
+- Self-inflicted wounds logged: (1) piped long-run output through `Select -First`, which killed filter-repo mid-run — always redirect to log file; (2) filter-repo strips `origin` remote — re-add before pushing.
+- Pushed purged `main` via --force-with-lease. USER STILL MUST: revoke both tokens in GitHub settings (check whether auto-revoked), review Security log for misuse, dismiss/resolve alerts #1 #2 in repo Security tab.
+
 ### 2026-10-14: pushed to public GitHub (user: wipe + replace)
 
 - Pre-push hygiene verified: tree clean, .venv/data/checkpoints untracked, no secrets in tracked files (two .png binary false positives only), pack ~83MB. Machine-local paths inside result JSONs kept as-is (benign, already in history; SSOT integrity wins over scrubbing).

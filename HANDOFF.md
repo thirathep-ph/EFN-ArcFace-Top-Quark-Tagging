@@ -1,6 +1,6 @@
 # HANDOFF — ArcEFN (code workstream)
 
-> Work HERE for models, training, analysis scripts, experiments. Paper lives in `D:\research\ArcEFN-paper`, slides in `D:\research\ArcEFN-talks`. Old mixed repo `D:\research\jet_tagging` is READ-ONLY reference. Remote `origin` = public GitHub repo (pushed 2026-10-14, branch `main` wiped+replaced per user order; work branches stay local-only unless told otherwise). Written 2026-10-07.
+> Work HERE for models, training, analysis scripts, experiments. Paper lives in `D:\research\ArcEFN-paper`, slides in `D:\research\ArcEFN-talks`. Old mixed repo `D:\research\jet_tagging` is READ-ONLY reference. Remote `origin` = public GitHub repo (pushed 2026-10-14, branch `main` wiped+replaced per user order; history purged of 2 leaked PATs same day via filter-repo replace-text, all hashes rewritten — old hashes in LOG below are pre-purge. Work branches stay local-only unless told otherwise). Written 2026-10-07.
 
 ## What this repo is
 
