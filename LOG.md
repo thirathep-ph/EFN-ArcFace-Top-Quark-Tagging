@@ -15,6 +15,11 @@ SSOT of the work: goal, current position, and what's done. Newest log entry on t
 
 ## Done
 
+### 2026-10-14: pushed to public GitHub (user: wipe + replace)
+
+- Pre-push hygiene verified: tree clean, .venv/data/checkpoints untracked, no secrets in tracked files (two .png binary false positives only), pack ~83MB. Machine-local paths inside result JSONs kept as-is (benign, already in history; SSOT integrity wins over scrubbing).
+- `origin` added (URL = paper citation URL), fetched baseline, branched `main` at HEAD, `push --force-with-lease` (remote had 8 unrelated commits, 0 stars/forks — wiped per explicit order). `feat/py-input` stays local-only.
+
 ### 2026-10-14: ROC legend outside-axes + revert-restore round-trip
 
 - User asked revert-to-pre-capture then changed mind back; both done via git revert (history intact). Net new vs yesterday: ROC legend moved below axes (ncol=3, AUC to caption), inset xticks [0, 0.1], print 0.65 — verified clean at print size. Replotted (zero JSON diff), PNGs pushed to paper + gallery.
