@@ -350,7 +350,7 @@ def replot(scores_npz, results_json):
         fpr, tpr, _ = roc_curve(labels, scores)
         roc_auc_val = auc(fpr, tpr)
         ax.plot(fpr, tpr, color=colors[name], linewidth=2.2,
-                label=f"{DISPLAY_NAMES[name]} (AUC={roc_auc_val:.3f})")
+                label=f"{DISPLAY_NAMES[name]}")
         tprs = []
         for _ in range(200):
             idx = rng.choice(n, n, replace=True)
@@ -366,8 +366,7 @@ def replot(scores_npz, results_json):
     ax.set_xlabel('False Positive Rate', fontsize=14)
     ax.set_ylabel('True Positive Rate', fontsize=14)
     ax.tick_params(labelsize=12)
-    panel_label(ax, "(a)", loc="left")
-    ax.legend(loc="lower right", fontsize=12,
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=3, fontsize=12,
               **{k: v for k, v in LEGEND_KWARGS.items() if k not in ("ncol", "fontsize")})
     add_grid(ax)
     ax.set_xlim(-0.01, 1.01)
@@ -379,7 +378,7 @@ def replot(scores_npz, results_json):
         ax_in.plot(fpr, tpr, color=colors[name], linewidth=1.6)
     ax_in.set_xlim(-0.005, 0.105)
     ax_in.set_ylim(0.78, 1.005)
-    ax_in.set_xticks([0, 0.05, 0.1])
+    ax_in.set_xticks([0, 0.1])
     ax_in.set_yticks([0.8, 0.9, 1.0])
     ax_in.tick_params(labelsize=10)
     ax_in.set_title("zoom: low FPR", fontsize=11, pad=3)
@@ -414,7 +413,6 @@ def replot(scores_npz, results_json):
     ax.set_xlabel('Signal Efficiency (TPR)', fontsize=14)
     ax.set_ylabel('Background Rejection ($1/\\mathrm{FPR}$)', fontsize=14)
     ax.tick_params(labelsize=12)
-    panel_label(ax, "(b)", loc="left")
     ax.set_xticks(tpr_values)
     ax.set_xticklabels([f'{int(v*100)}%' if v < 0.95 else '' for v in tpr_values])
     ax.set_xlim(0.27, 1.005)

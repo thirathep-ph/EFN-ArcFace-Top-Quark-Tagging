@@ -15,9 +15,9 @@ SSOT of the work: goal, current position, and what's done. Newest log entry on t
 
 ## Done
 
-### 2026-10-13 p.m.: surgical revert of page-capture-era figure tweaks (user request)
+### 2026-10-14: ROC legend outside-axes + revert-restore round-trip
 
-- Restored: ROC AUC-suffix legend + 3-tick inset + (a)/(b) panel labels; composition single-line ticks + long ylabel. Kept: annotation stagger positions, print-size native fonts, Dense/Dilute filename maps, style contract. Replotted (zero JSON diff), PNGs pushed to paper + gallery.
+- User asked revert-to-pre-capture then changed mind back; both done via git revert (history intact). Net new vs yesterday: ROC legend moved below axes (ncol=3, AUC to caption), inset xticks [0, 0.1], print 0.65 — verified clean at print size. Replotted (zero JSON diff), PNGs pushed to paper + gallery.
 
 ### 2026-10-13 p.m.: figure print-size fix (3 replot-capable figs)
 
