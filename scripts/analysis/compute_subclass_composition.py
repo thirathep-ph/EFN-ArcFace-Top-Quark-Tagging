@@ -76,8 +76,8 @@ def render(matrix: np.ndarray, row_labels: list, partition: str) -> None:
     apply_style()
     fig, (axT, axQ) = plt.subplots(1, 2, figsize=(10, 4.4), constrained_layout=True)
     for ax, mat, rows, cols, title in [
-        (axT, top_mat, top_rows, ["True\nPositive", "False\nPositive"], "Top subclasses"),
-        (axQ, qcd_mat, qcd_rows, ["True\nNegative", "False\nNegative"], "QCD subclasses"),
+        (axT, top_mat, top_rows, ["True Positive", "False Positive"], "Top subclasses"),
+        (axQ, qcd_mat, qcd_rows, ["True Negative", "False Negative"], "QCD subclasses"),
     ]:
         im = ax.imshow(mat, cmap="Blues", vmin=0, vmax=100, aspect="auto")
         ax.set_xticks([0, 1], cols, fontsize=15)
@@ -89,7 +89,7 @@ def render(matrix: np.ndarray, row_labels: list, partition: str) -> None:
                 if v >= 0.05:
                     ax.text(j, i, f"{v:.1f}", ha="center", va="center",
                             fontsize=20, color="white" if v > 50 else "black")
-    axT.set_ylabel("Discovered subclass", fontsize=15)
+    axT.set_ylabel(f"Discovered subclass ({partition}-label partition)", fontsize=15)
     cbar = fig.colorbar(im, ax=[axT, axQ], shrink=0.95, pad=0.02)
     cbar.set_label("Percentage (%)", fontsize=16)
     cbar.ax.tick_params(labelsize=15)

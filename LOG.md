@@ -15,6 +15,10 @@ SSOT of the work: goal, current position, and what's done. Newest log entry on t
 
 ## Done
 
+### 2026-10-13 p.m.: surgical revert of page-capture-era figure tweaks (user request)
+
+- Restored: ROC AUC-suffix legend + 3-tick inset + (a)/(b) panel labels; composition single-line ticks + long ylabel. Kept: annotation stagger positions, print-size native fonts, Dense/Dilute filename maps, style contract. Replotted (zero JSON diff), PNGs pushed to paper + gallery.
+
 ### 2026-10-13 p.m.: figure print-size fix (3 replot-capable figs)
 
 - ROC/rejection natives → 14/12/12/13pt; composition → 15/17/20pt with print 0.48→0.90 textwidth. Effective print sizes now ~8-13pt (was 4-8pt). Zero JSON diff, PNGs pushed to paper + gallery.
