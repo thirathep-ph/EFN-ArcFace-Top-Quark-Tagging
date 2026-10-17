@@ -15,6 +15,13 @@ SSOT of the work: goal, current position, and what's done. Newest log entry on t
 
 ## Done
 
+### 2026-10-14 p.m.: repo renamed + naming/verification rounds
+
+- User renamed GitHub repo → `EFN-ArcFace-Top-Quark-Tagging`; updated local remote URL + README badge/bib example + REPRODUCING git-hygiene URL + infographic footer (commit `9233643`); infographic PNG regenerated with Dense/Dilute labels (`808c51f`). All pushes --force-with-lease, remote main synced.
+- PS 5.1 `Set-Content` corrupted non-ASCII files (BOM+mojibake) → lesson: textual edits via `.venv python` pathlib one-liners only, newline=''.
+- Scan for oddities: 72 tracked files contain machine paths (benign provenance in result JSONs); LICENSE present; git identity matches paper correspondence email. Paper repo pushed private to `thirathep-ph/ArcEFN-paper` (feat/py-input) separately.
+- Still open user-side: revoke 2 leaked PATs, dismiss alerts #1/#2, check Security log, then delete prepurge bundle in Temp.
+
 ### 2026-10-14: purged 2 leaked GitHub PATs from history (secret-scanning alerts #1 #2)
 
 - Tokens lived in early notebook commits (be316dc, a6e560c…), gone from worktree since 9c04807 but present in pushed history. Purged via filter-repo replace-text (`ghp_*`/`github_pat_*`/`ghs_*`/`ghu_*` → REMOVED) across all 208 commits; verified zero `ghp_` in any blob (`log -S` + full-tree grep). ALL commit hashes rewritten; backup bundle kept at Temp (arcEFN-prepurge.bundle, 85MB) + pre-purge remote copy.
