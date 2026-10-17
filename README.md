@@ -4,8 +4,6 @@
 [![Python 3.10–3.12](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![Architecture](docs/figures/architecture_schematic.png)
-
 **[🖼️ Results Gallery — all 42 experiment figures with one-line captions](docs/RESULTS.md)**
 
 ## Intro
