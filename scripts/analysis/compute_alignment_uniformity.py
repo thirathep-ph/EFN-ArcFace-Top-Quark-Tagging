@@ -152,8 +152,8 @@ def main():
     axes[1].set_ylim(0, y_max * 1.18)
     axes[1].set_ylabel('$N$ events (50k total)')
     axes[1].set_xticks(np.arange(4) + 0.15)
-    # Tick labels follow the size convention (larger cluster = Core side):
-    # QCD bigger cluster -> Dense; Top bigger cluster (Core side) -> Dilute side.
+    # Tick labels follow the size convention (larger cluster = Dense side for QCD):
+    # QCD bigger cluster -> Dense; Top bigger cluster (Dense side) -> Dilute side.
     ref = model_counts[models[0][0]]
     qcd_lab = ['QCD\nDense', 'QCD\nDilute'] if ref['QCD_Core'] >= ref['QCD_Edge'] else ['QCD\nDilute', 'QCD\nDense']
     top_lab = ['Top\nDilute', 'Top\nDense'] if ref['Top_Core'] >= ref['Top_Edge'] else ['Top\nDense', 'Top\nDilute']

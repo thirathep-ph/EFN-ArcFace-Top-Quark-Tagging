@@ -403,8 +403,8 @@ def main():
     # Plot 2: Effect sizes
     fig, axes = plt.subplots(1, 3, figsize=(18, 7))
     for ax_idx, (title, key) in enumerate([
-        ("QCD Subclasses (Core vs Edge)", "d_qcd_subclass"),
-        ("Top Subclasses (Core vs Edge)", "d_top_subclass"),
+        ("QCD Subclasses (Dense vs Dilute)", "d_qcd_subclass"),
+        ("Top Subclasses (Dense vs Dilute)", "d_top_subclass"),
         ("Overall (QCD vs Top)", "d_overall"),
     ]):
         ax = axes[ax_idx]

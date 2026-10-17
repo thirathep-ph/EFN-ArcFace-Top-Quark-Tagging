@@ -7,13 +7,13 @@ these pairings were TN vs FP and TP vs FN).
 
 Complements the status-only Lund planes (lund_status_*.png) with the
 subclass-resolved view that the paper's misclassification-localization claim
-needs: every FP belongs to QCD-Edge and every FN to Top-Core, so the
+needs: every FP belongs to QCD-Dilute and every FN to Top-Dilute, so the
 physically interesting panels are
 
-  * QCD-Core   (all, essentially all true negative)
-  * QCD-Edge   true negative  vs  false positive
-  * Top-Core   true positive  vs  false negative
-  * Top-Edge   (all, essentially all true positive)
+  * QCD-Dense  (all, essentially all true negative)
+  * QCD-Dilute  true negative  vs  false positive
+  * Top-Dilute  true positive  vs  false negative
+  * Top-Dense   (all, essentially all true positive)
 
 The subclass partition is the primary PREDICTED-label one (spectral
 clustering per predicted class over 404k, what the model sees); ground-truth

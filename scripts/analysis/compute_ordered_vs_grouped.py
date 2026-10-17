@@ -52,7 +52,7 @@ GMM_SEED = 0
 
 
 def assign_predicted_subclasses(emb_norm, preds):
-    """Cluster each predicted class separately; name the larger Core."""
+    """Cluster each predicted class separately; name the larger cluster Dense."""
     sub = np.full(len(preds), -1, dtype=int)
     for cls, offset in ((0, 0), (1, 2)):
         mask = preds == cls
@@ -190,7 +190,7 @@ def main():
         print(f"  {k}: slope={v['slope']}, r2={v['r2']}, rho={v['spearman']}, n={v['n']}")
 
     # --- 3. Mixed-bin mixture test ---
-    # Boundary regions: QCD-Core/Edge interface and Top-Core/Edge interface,
+    # Boundary regions: QCD Dense/Dilute interface and Top Dense/Dilute interface,
     # defined by u-quantiles where subclass composition changes.
     order = np.argsort(u)
     uso, subo = u[order], sub[order]

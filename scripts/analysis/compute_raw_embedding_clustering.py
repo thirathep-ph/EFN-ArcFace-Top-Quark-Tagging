@@ -62,7 +62,7 @@ def cluster_full(emb_norm, max_k=MAX_K):
 
 
 def cluster_partition(emb_norm, class_mask, max_k=5):
-    """Per-class spectral partition (Core/Edge), largest cluster -> 0."""
+    """Per-class spectral partition (Dense/Dilute), largest cluster -> 0."""
     labels, n_clusters = spectral_clustering_subclass(emb_norm[class_mask], max_k=max_k)
     if n_clusters < 2:
         return np.full(class_mask.sum(), -1, dtype=int)

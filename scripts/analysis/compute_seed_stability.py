@@ -6,7 +6,7 @@ per-class spectral subclasses, and reports subclass fractions, DGLAP
 ``P(z_g)`` fit exponents, and the agreement of the discovered structure
 against the seed-42 reference (ARI/NMI, fractions, alpha).
 
-This answers: does the 4-subclass story (QCD/Top x Core/Edge) and its
+This answers: does the 4-subclass story (QCD/Top x Dense/Dilute) and its
 physics interpretation survive a change of training seed?
 
 Artifacts

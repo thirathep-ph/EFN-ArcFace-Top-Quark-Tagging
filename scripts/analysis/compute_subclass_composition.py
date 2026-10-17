@@ -1,8 +1,8 @@
-"""Regenerate the subclass composition heatmap with canonical Core/Edge labels.
+"""Regenerate the subclass composition heatmap with canonical Dense/Dilute display labels.
 
 The paper's headline subclass partition clusters on PREDICTED labels over
 the full 404k test set (what the model sees) and maps the largest cluster to
-Core, the second to Edge.  Use --partition true to reproduce the GT check.
+Dense, the second to Dilute.  Use --partition true to reproduce the GT check.
 The composition heatmap must use the SAME partition and naming so its caption
 is consistent with Table 2.  This script recomputes the per-subclass breakdown
 by prediction status from the saved embeddings and cached class centers

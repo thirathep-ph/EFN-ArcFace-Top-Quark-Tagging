@@ -83,7 +83,7 @@ def get_model_outputs(model_dir, loader, device):
 
 
 def assign_predicted_subclasses(emb_norm, preds):
-    """Cluster each predicted class separately; name the larger Core."""
+    """Cluster each predicted class separately; name the larger cluster Dense."""
     sub = np.full(len(preds), -1, dtype=int)
     for cls, offset in ((0, 0), (1, 2)):
         mask = preds == cls

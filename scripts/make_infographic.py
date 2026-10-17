@@ -85,16 +85,16 @@ box(0.7, ry, cw, rh, "Classification", [
 ], color=NAVY)
 x = 0.7 + cw + gx
 box(x, ry, cw, rh, "Subclasses (k*=2 x 2)", [
-    "QCD-Core / QCD-Edge",
-    "Top-Core / Top-Edge",
+    "QCD-Dense / QCD-Dilute",
+    "Top-Dilute / Top-Dense",
     "ARI 0.79 vs ground truth",
-    "Top-Edge: non-identifiable",
+    "Top-Dense: non-identifiable",
 ], color=TEAL)
 x += cw + gx
 box(x, ry, cw, rh, "DGLAP check (zg tail)", [
-    f"QCD-Core  alpha = {val('dglap_alpha_qcd_core'):.3f}",
-    f"QCD-Edge  alpha = {val('dglap_alpha_qcd_edge'):.3f}",
-    f"Top-Core  alpha = {val('dglap_alpha_top_core'):.3f}",
+    f"QCD-Dense  alpha = {val('dglap_alpha_qcd_core'):.3f}",
+    f"QCD-Dilute  alpha = {val('dglap_alpha_qcd_edge'):.3f}",
+    f"Top-Dilute  alpha = {val('dglap_alpha_top_core'):.3f}",
     "steeper = softer splitting",
 ], color=TEAL)
 x += cw + gx
@@ -109,7 +109,7 @@ box(x, ry, cw, rh, "Geometry", [
 ax.text(8, 2.35, "Controls: null inputs still give k*=2 (geometry alone proves nothing)  |  "
         "label-shuffled retrain at chance, DGLAP ordering gone",
         ha="center", fontsize=10, color=GREY)
-ax.text(8, 1.85, "Simulation-only (Pythia 8, no detector)  |  mass-confounded Core-Edge split stated  |  "
+ax.text(8, 1.85, "Simulation-only (Pythia 8, no detector)  |  mass-confounded Dense-Dilute split stated  |  "
         "all 48 numbers machine-checked vs artifacts",
         ha="center", fontsize=10, color=GREY)
 ax.text(8, 1.30, "github.com/thirathep-ph/EFN-ArcFace-Top-Quark-Tagging-and-Jet-Substructure-via-Hyperspherical-Prototypes",
