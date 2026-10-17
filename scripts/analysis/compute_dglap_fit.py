@@ -25,7 +25,7 @@ apply_style()
 MAX_EVENTS = 404000
 BATCH_SIZE = 2048
 
-SUBCLASS_NAMES = {0: "QCD_Core", 1: "QCD_Edge", 2: "Top_Core", 3: "Top_Edge"}
+SUBCLASS_NAMES = {0: "QCD_Dense", 1: "QCD_Dilute", 2: "Top_Dilute", 3: "Top_Dense"}
 REFERENCE_ALPHA = {0: -1.0, 1: -0.8, 2: 0.0, 3: -0.3}
 REFERENCE_DESC = {
     0: r"g->gg P(z) $\propto$ 1/z (soft divergence)",
@@ -208,10 +208,10 @@ def main():
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
     panel_labels = ["(a)", "(b)", "(c)", "(d)"]
     sc_colors = [
-        SUBCLASS_COLORS["QCD core"],
-        SUBCLASS_COLORS["QCD edge"],
-        SUBCLASS_COLORS["Top core"],
-        SUBCLASS_COLORS["Top edge"],
+        SUBCLASS_COLORS["QCD dense"],
+        SUBCLASS_COLORS["QCD dilute"],
+        SUBCLASS_COLORS["Top dilute"],
+        SUBCLASS_COLORS["Top dense"],
     ]
 
     for sc in range(4):
@@ -245,8 +245,8 @@ def main():
         ax.set_xlabel('$z_g$')
         ax.set_ylabel('$P(z_g)$')
         panel_label(ax, panel_labels[sc])
-        display_name = {"QCD_Core": "QCD-Dense", "QCD_Edge": "QCD-Dilute",
-                        "Top_Core": "Top-Dilute", "Top_Edge": "Top-Dense"}[name]
+        display_name = {"QCD_Dense": "QCD-Dense", "QCD_Dilute": "QCD-Dilute",
+                        "Top_Dilute": "Top-Dilute", "Top_Dense": "Top-Dense"}[name]
         ax.text(0.97, 0.95, display_name, transform=ax.transAxes,
                 fontsize=9, ha='right', va='top',
                 bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8, edgecolor='0.7'))

@@ -10,8 +10,8 @@ embedding geometry:
 
 Transitions:
 - QCD->Top (predicted class centroids)
-- QCD Core->Edge, Top Core->Edge (predicted subclasses)
-- QCD-Edge->Top-Core, QCD-Core->Top-Edge (cross-class steps)
+- QCD Dense->Edge, Top Dilute->Edge (predicted subclasses)
+- QCD-Dilute->Top-Dilute, QCD-Dense->Top-Dense (cross-class steps)
 
 Outputs (experiments only, not copied to paper/figures):
 - experiments/transition_vectors_3way.json
@@ -223,10 +223,10 @@ def main():
 
     transitions = [
         ("QCD->Top", lambda sub, pred: (pred == 0, pred == 1)),
-        ("QCD Core->Edge", lambda sub, pred: (sub == 0, sub == 1)),
-        ("Top Core->Edge", lambda sub, pred: (sub == 2, sub == 3)),
-        ("QCD-Edge->Top-Core", lambda sub, pred: (sub == 1, sub == 2)),
-        ("QCD-Core->Top-Edge", lambda sub, pred: (sub == 0, sub == 3)),
+        ("QCD Dense->Edge", lambda sub, pred: (sub == 0, sub == 1)),
+        ("Top Dilute->Edge", lambda sub, pred: (sub == 2, sub == 3)),
+        ("QCD-Dilute->Top-Dilute", lambda sub, pred: (sub == 1, sub == 2)),
+        ("QCD-Dense->Top-Dense", lambda sub, pred: (sub == 0, sub == 3)),
     ]
 
     apply_style()
@@ -307,10 +307,10 @@ def main():
         # Predicted-class path uses averaged subclass endpoints.
         paths = [
             ("QCD->Top", (cents.get(0, cents.get(1)), cents.get(2, cents.get(3))), "-", 1.6),
-            ("QCD Core->Edge", (cents.get(0), cents.get(1)), "-", 1.4),
-            ("Top Core->Edge", (cents.get(2), cents.get(3)), "-", 1.4),
-            ("QCD-Edge->Top-Core", (cents.get(1), cents.get(2)), "--", 1.1),
-            ("QCD-Core->Top-Edge", (cents.get(0), cents.get(3)), ":", 1.1),
+            ("QCD Dense->Edge", (cents.get(0), cents.get(1)), "-", 1.4),
+            ("Top Dilute->Edge", (cents.get(2), cents.get(3)), "-", 1.4),
+            ("QCD-Dilute->Top-Dilute", (cents.get(1), cents.get(2)), "--", 1.1),
+            ("QCD-Dense->Top-Dense", (cents.get(0), cents.get(3)), ":", 1.1),
         ]
         for label, (a, b), style, width in paths:
             if a is None or b is None:

@@ -195,10 +195,10 @@ def main():
 
     rng = np.random.default_rng(SCATTER_SEED)
     scatter_cols = [
-        SUBCLASS_COLORS["QCD core"],
-        SUBCLASS_COLORS["QCD edge"],
-        SUBCLASS_COLORS["Top core"],
-        SUBCLASS_COLORS["Top edge"],
+        SUBCLASS_COLORS["QCD dense"],
+        SUBCLASS_COLORS["QCD dilute"],
+        SUBCLASS_COLORS["Top dilute"],
+        SUBCLASS_COLORS["Top dense"],
     ]
 
     for col, (name, model_dir) in enumerate(MODEL_DIRS.items()):
@@ -238,14 +238,14 @@ def main():
                 "median_r2": round(float(np.median(r2)), 4) if len(r2) else None,
                 "mean_unit": [round(float(v), 4) for v in unit] if unit else None,
                 "directional_concentration": round(float(conc), 4),
-                "cos_qcd_core_edge": round(float(np.dot(unit, qcd_dir)), 4) if unit else None,
-                "cos_top_core_edge": round(float(np.dot(unit, top_dir)), 4) if unit else None,
+                "cos_qcd_dense_dilute": round(float(np.dot(unit, qcd_dir)), 4) if unit else None,
+                "cos_top_dilute_dense": round(float(np.dot(unit, top_dir)), 4) if unit else None,
                 "cos_class_qcd_top": round(float(np.dot(unit, class_dir)), 4) if unit else None,
             }
             print(f"  {key}: cells={len(arrows)}, median R2={fields[key]['median_r2']}, "
                   f"conc={fields[key]['directional_concentration']}, "
-                  f"cos(QCD)={fields[key]['cos_qcd_core_edge']}, "
-                  f"cos(Top)={fields[key]['cos_top_core_edge']}")
+                  f"cos(QCD)={fields[key]['cos_qcd_dense_dilute']}, "
+                  f"cos(Top)={fields[key]['cos_top_dilute_dense']}")
 
         results["heads"][name] = {
             "model_dir": str(model_dir),

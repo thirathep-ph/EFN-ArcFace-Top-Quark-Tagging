@@ -35,7 +35,7 @@
             "cohen_tau32": -1.0584
           }
         },
-        "QCD Core->Edge": {
+        "QCD Dense->Edge": {
           "displacement_norm": 1.090131,
           "cos_centroid_fisher": 0.0713,
           "centroid_cos_mean": 1.0,
@@ -60,7 +60,7 @@
             "cohen_tau32": -0.0546
           }
         },
-        "Top Core->Edge": {
+        "Top Dilute->Edge": {
           "displacement_norm": 0.648017,
           "cos_centroid_fisher": 0.1806,
           "centroid_cos_mean": 1.0,
@@ -85,7 +85,7 @@
             "cohen_tau32": -1.1377
           }
         },
-        "QCD-Edge->Top-Core": {
+        "QCD-Dilute->Top-Dilute": {
           "displacement_norm": 0.767616,
           "cos_centroid_fisher": 0.1298,
           "centroid_cos_mean": 1.0,
@@ -110,7 +110,7 @@
             "cohen_tau32": -0.6457
           }
         },
-        "QCD-Core->Top-Edge": {
+        "QCD-Dense->Top-Dense": {
           "displacement_norm": 1.906482,
           "cos_centroid_fisher": 0.1323,
           "centroid_cos_mean": 1.0,
@@ -170,7 +170,7 @@
             "cohen_tau32": -1.0674
           }
         },
-        "QCD Core->Edge": {
+        "QCD Dense->Edge": {
           "displacement_norm": 0.632968,
           "cos_centroid_fisher": 0.1326,
           "centroid_cos_mean": 0.9999,
@@ -195,7 +195,7 @@
             "cohen_tau32": 0.0835
           }
         },
-        "Top Core->Edge": {
+        "Top Dilute->Edge": {
           "displacement_norm": 0.583845,
           "cos_centroid_fisher": 0.316,
           "centroid_cos_mean": 0.9999,
@@ -220,7 +220,7 @@
             "cohen_tau32": 0.5983
           }
         },
-        "QCD-Edge->Top-Core": {
+        "QCD-Dilute->Top-Dilute": {
           "displacement_norm": 1.255719,
           "cos_centroid_fisher": 0.145,
           "centroid_cos_mean": 1.0,
@@ -245,7 +245,7 @@
             "cohen_tau32": -1.4287
           }
         },
-        "QCD-Core->Top-Edge": {
+        "QCD-Dense->Top-Dense": {
           "displacement_norm": 0.617853,
           "cos_centroid_fisher": 0.1784,
           "centroid_cos_mean": 0.9999,
@@ -305,7 +305,7 @@
             "cohen_tau32": -1.0667
           }
         },
-        "QCD Core->Edge": {
+        "QCD Dense->Edge": {
           "displacement_norm": 0.491247,
           "cos_centroid_fisher": 0.2079,
           "centroid_cos_mean": 0.9999,
@@ -330,7 +330,7 @@
             "cohen_tau32": 0.0493
           }
         },
-        "Top Core->Edge": {
+        "Top Dilute->Edge": {
           "displacement_norm": 0.809974,
           "cos_centroid_fisher": 0.3182,
           "centroid_cos_mean": 0.9999,
@@ -355,7 +355,7 @@
             "cohen_tau32": 0.966
           }
         },
-        "QCD-Edge->Top-Core": {
+        "QCD-Dilute->Top-Dilute": {
           "displacement_norm": 1.829663,
           "cos_centroid_fisher": 0.4438,
           "centroid_cos_mean": 1.0,
@@ -380,7 +380,7 @@
             "cohen_tau32": -1.3909
           }
         },
-        "QCD-Core->Top-Edge": {
+        "QCD-Dense->Top-Dense": {
           "displacement_norm": 1.467963,
           "cos_centroid_fisher": 0.2665,
           "centroid_cos_mean": 1.0,

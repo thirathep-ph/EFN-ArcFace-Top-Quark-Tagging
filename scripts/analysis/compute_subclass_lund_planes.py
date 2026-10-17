@@ -2,7 +2,7 @@
 
 Primary partition is PREDICTED-label (what the model sees): predicted-QCD
 subclasses contain TN+FN, predicted-Top subclasses TP+FP. Panels therefore
-split QCD-Edge into TN vs FN and Top-Core into TP vs FP (under true labels
+split QCD-Dilute into TN vs FN and Top-Dilute into TP vs FP (under true labels
 these pairings were TN vs FP and TP vs FN).
 
 Complements the status-only Lund planes (lund_status_*.png) with the
@@ -56,18 +56,18 @@ MAX_K = 5
 PHYS_PER_GROUP = 2000
 PHYS_CAP = 15000
 
-SUBCLASS_NAMES = {0: "QCD-Core", 1: "QCD-Edge", 2: "Top-Core", 3: "Top-Edge"}
+SUBCLASS_NAMES = {0: "QCD-Dense", 1: "QCD-Dilute", 2: "Top-Dilute", 3: "Top-Dense"}
 STATUS = ["True Positive", "False Positive", "True Negative", "False Negative"]
 
 # (subclass id, status filter or None, file stem, plot label)
-# Predicted-label partition: QCD-Edge holds TN+FN, Top-Core holds TP+FP.
+# Predicted-label partition: QCD-Dilute holds TN+FN, Top-Dilute holds TP+FP.
 PANELS = [
-    (0, None, "subclass_qcd_core", "QCD-Dense (all)"),
-    (1, "True Negative", "subclass_qcd_edge_tn", "QCD-Dilute (true negative)"),
-    (1, "False Negative", "subclass_qcd_edge_fn", "QCD-Dilute (false negative)"),
-    (2, "True Positive", "subclass_top_core_tp", "Top-Dilute (true positive)"),
-    (2, "False Positive", "subclass_top_core_fp", "Top-Dilute (false positive)"),
-    (3, None, "subclass_top_edge", "Top-Dense (all)"),
+    (0, None, "subclass_qcd_dense", "QCD-Dense (all)"),
+    (1, "True Negative", "subclass_qcd_dilute_tn", "QCD-Dilute (true negative)"),
+    (1, "False Negative", "subclass_qcd_dilute_fn", "QCD-Dilute (false negative)"),
+    (2, "True Positive", "subclass_top_dilute_tp", "Top-Dilute (true positive)"),
+    (2, "False Positive", "subclass_top_dilute_fp", "Top-Dilute (false positive)"),
+    (3, None, "subclass_top_dense", "Top-Dense (all)"),
 ]
 
 
@@ -168,8 +168,8 @@ def main() -> None:
     results: dict = {"n_events_total": int(len(labels)), "n_physics_sample": int(len(phys_idx)), "panels": {}}
     for sc, status_filter, stem, label in PANELS:
         # Display filename (Dense/Dilute); `stem` stays the JSON key (SSOT, byte-identical).
-        fstem = (stem.replace("qcd_core", "qcd_dense").replace("qcd_edge", "qcd_dilute")
-                 .replace("top_core", "top_dilute").replace("top_edge", "top_dense"))
+        fstem = (stem.replace("qcd_dense", "qcd_dense").replace("qcd_dilute", "qcd_dilute")
+                 .replace("top_dilute", "top_dilute").replace("top_dense", "top_dense"))
         cond = (true_global == sc) if status_filter is None else (
             (true_global == sc) & (status == status_filter)
         )

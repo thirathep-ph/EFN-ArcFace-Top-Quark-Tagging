@@ -178,10 +178,10 @@ def main():
 
     # --- 2. Within-subclass slopes ---
     slopes = {}
-    slopes["QCD-Core_mass"] = slope_stats(u[sub == 0], mass[sub == 0])
-    slopes["QCD-Edge_mass"] = slope_stats(u[sub == 1], mass[sub == 1])
-    slopes["Top-Core_tau32"] = slope_stats(u[sub == 2], tau32[sub == 2])
-    slopes["Top-Edge_tau32"] = slope_stats(u[sub == 3], tau32[sub == 3])
+    slopes["QCD-Dense_mass"] = slope_stats(u[sub == 0], mass[sub == 0])
+    slopes["QCD-Dilute_mass"] = slope_stats(u[sub == 1], mass[sub == 1])
+    slopes["Top-Dilute_tau32"] = slope_stats(u[sub == 2], tau32[sub == 2])
+    slopes["Top-Dense_tau32"] = slope_stats(u[sub == 3], tau32[sub == 3])
     slopes["QCD_all_mass"] = slope_stats(u[preds == 0], mass[preds == 0])
     slopes["Top_all_tau32"] = slope_stats(u[preds == 1], tau32[preds == 1])
     slopes["all_margin"] = slope_stats(u, margin)
@@ -195,17 +195,17 @@ def main():
     order = np.argsort(u)
     uso, subo = u[order], sub[order]
     # QCD boundary: last pure-Core quantile to first pure-Edge quantile.
-    qcd_core_u = uso[subo == 0]
-    qcd_edge_u = uso[subo == 1]
-    top_core_u = uso[subo == 2]
-    top_edge_u = uso[subo == 3]
+    qcd_dense_u = uso[subo == 0]
+    qcd_dilute_u = uso[subo == 1]
+    top_dilute_u = uso[subo == 2]
+    top_dense_u = uso[subo == 3]
     mixtures = {}
     # QCD interface: overlap band between Core max-decile and Edge min-decile.
-    lo, hi = np.quantile(qcd_core_u, 0.9), np.quantile(qcd_edge_u, 0.1)
+    lo, hi = np.quantile(qcd_dense_u, 0.9), np.quantile(qcd_dilute_u, 0.1)
     band = (u >= min(lo, hi)) & (u <= max(lo, hi))
     mixtures["QCD_interface_mass"] = gmm_bic(mass[band & (preds == 0)])
     mixtures["QCD_interface_n"] = int((band & (preds == 0)).sum())
-    lo, hi = np.quantile(top_core_u, 0.9), np.quantile(top_edge_u, 0.1)
+    lo, hi = np.quantile(top_dilute_u, 0.9), np.quantile(top_dense_u, 0.1)
     band = (u >= min(lo, hi)) & (u <= max(lo, hi))
     mixtures["Top_interface_tau32"] = gmm_bic(tau32[band & (preds == 1)])
     mixtures["Top_interface_n"] = int((band & (preds == 1)).sum())
@@ -235,17 +235,17 @@ def main():
                  "red dashes = valleys", fontsize=9, pad=6)
 
     ax = axes[1]
-    cols = {"QCD-Core": "#377eb8", "QCD-Edge": "#9ecae1",
-            "Top-Core": "#e41a1c", "Top-Edge": "#fdae6b"}
+    cols = {"QCD-Dense": "#377eb8", "QCD-Dilute": "#9ecae1",
+            "Top-Dilute": "#e41a1c", "Top-Dense": "#fdae6b"}
     # Subclass strips: rug of u per subclass at fixed y.
     for sc, (name, color) in enumerate(
-        [("QCD-Core", cols["QCD-Core"]), ("QCD-Edge", cols["QCD-Edge"]),
-         ("Top-Core", cols["Top-Core"]), ("Top-Edge", cols["Top-Edge"])]):
+        [("QCD-Dense", cols["QCD-Dense"]), ("QCD-Dilute", cols["QCD-Dilute"]),
+         ("Top-Dilute", cols["Top-Dilute"]), ("Top-Dense", cols["Top-Dense"])]):
         m = sub == sc
         ax.scatter(u[m], np.full(m.sum(), 0.02 + 0.03 * sc), s=3, alpha=0.25,
                    c=color, edgecolors="none", rasterized=True)
     # Within-subclass trend lines: mass for QCD, tau32 for Top (twin axes).
-    for sc, key, color in ((0, "mass", cols["QCD-Core"]), (1, "mass", cols["QCD-Edge"])):
+    for sc, key, color in ((0, "mass", cols["QCD-Dense"]), (1, "mass", cols["QCD-Dilute"])):
         m = sub == sc
         uu = u[m]
         edges = np.quantile(uu, np.linspace(0, 1, 9))

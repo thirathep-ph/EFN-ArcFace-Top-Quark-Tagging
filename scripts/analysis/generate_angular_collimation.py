@@ -144,8 +144,8 @@ def main():
 
     apply_style()
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-    qcd_sc_colors = [SUBCLASS_COLORS['QCD core'], SUBCLASS_COLORS['QCD edge'], '#66c2a5', '#2ca02c']
-    top_sc_colors = [SUBCLASS_COLORS['Top core'], SUBCLASS_COLORS['Top edge'], '#9467bd', '#8c564b']
+    qcd_sc_colors = [SUBCLASS_COLORS['QCD dense'], SUBCLASS_COLORS['QCD dilute'], '#66c2a5', '#2ca02c']
+    top_sc_colors = [SUBCLASS_COLORS['Top dilute'], SUBCLASS_COLORS['Top dense'], '#9467bd', '#8c564b']
 
     max_plot = 25000
     rng = np.random.RandomState(42)

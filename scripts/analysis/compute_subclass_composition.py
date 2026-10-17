@@ -36,7 +36,7 @@ CHECKPOINT = EXPERIMENTS / "robustness_s16_m05" / "checkpoint.pt"
 OUT_JSON = EXPERIMENTS / "subclass_composition.json"
 MAX_K = 5
 
-SUBCLASS_NAMES = {0: "QCD-Core", 1: "QCD-Edge", 2: "Top-Core", 3: "Top-Edge"}
+SUBCLASS_NAMES = {0: "QCD-Dense", 1: "QCD-Dilute", 2: "Top-Dilute", 3: "Top-Dense"}
 STATUS = ["True Positive", "False Positive", "True Negative", "False Negative"]
 
 
@@ -54,8 +54,8 @@ def load_centers() -> np.ndarray:
     return normalize(sd["arcface_head.class_centers"].detach().cpu().numpy())
 
 
-_DISPLAY = {"QCD-Core": "QCD-Dense", "QCD-Edge": "QCD-Dilute",
-           "Top-Core": "Top-Dilute", "Top-Edge": "Top-Dense"}
+_DISPLAY = {"QCD-Dense": "QCD-Dense", "QCD-Dilute": "QCD-Dilute",
+           "Top-Dilute": "Top-Dilute", "Top-Dense": "Top-Dense"}
 
 
 def render(matrix: np.ndarray, row_labels: list, partition: str) -> None:
@@ -65,13 +65,13 @@ def render(matrix: np.ndarray, row_labels: list, partition: str) -> None:
     QCD rows in TN/FN), so one 4x4 heatmap wastes half its area. Values
     come from the caller unchanged.
     """
-    order = ["QCD-Core", "QCD-Edge", "Top-Core", "Top-Edge"]
+    order = ["QCD-Dense", "QCD-Dilute", "Top-Dilute", "Top-Dense"]
     idx = {name: row_labels.index(next(l for l in row_labels if l.startswith(_DISPLAY[name])))
            for name in order}
-    top_mat = matrix[[idx["Top-Core"], idx["Top-Edge"]]][:, [0, 1]]      # TP, FP
-    qcd_mat = matrix[[idx["QCD-Core"], idx["QCD-Edge"]]][:, [2, 3]]      # TN, FN
-    top_rows = [row_labels[idx["Top-Core"]], row_labels[idx["Top-Edge"]]]
-    qcd_rows = [row_labels[idx["QCD-Core"]], row_labels[idx["QCD-Edge"]]]
+    top_mat = matrix[[idx["Top-Dilute"], idx["Top-Dense"]]][:, [0, 1]]      # TP, FP
+    qcd_mat = matrix[[idx["QCD-Dense"], idx["QCD-Dilute"]]][:, [2, 3]]      # TN, FN
+    top_rows = [row_labels[idx["Top-Dilute"]], row_labels[idx["Top-Dense"]]]
+    qcd_rows = [row_labels[idx["QCD-Dense"]], row_labels[idx["QCD-Dilute"]]]
 
     apply_style()
     fig, (axT, axQ) = plt.subplots(1, 2, figsize=(10, 4.4), constrained_layout=True)
@@ -157,8 +157,8 @@ def main() -> None:
             entry["status_pct"][cat] = pct
         composition[SUBCLASS_NAMES[sc]] = entry
         matrix.append(row)
-        _display = {"QCD-Core": "QCD-Dense", "QCD-Edge": "QCD-Dilute",
-                    "Top-Core": "Top-Dilute", "Top-Edge": "Top-Dense"}
+        _display = {"QCD-Dense": "QCD-Dense", "QCD-Dilute": "QCD-Dilute",
+                    "Top-Dilute": "Top-Dilute", "Top-Dense": "Top-Dense"}
         row_labels.append(f"{_display[SUBCLASS_NAMES[sc]]} (N={n_tot})")
 
     render(np.array(matrix), row_labels, args.partition)

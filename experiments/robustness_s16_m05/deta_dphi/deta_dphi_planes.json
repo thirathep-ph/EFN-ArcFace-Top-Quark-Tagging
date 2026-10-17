@@ -14,26 +14,26 @@
       "n_plotted": 5961,
       "rep_idx": 166478
     },
-    "subclass_qcd_core": {
-      "label": "QCD-Core",
+    "subclass_qcd_dense": {
+      "label": "QCD-Dense",
       "n_total": 117786,
       "n_plotted": 3192,
       "rep_idx": 122988
     },
-    "subclass_qcd_edge": {
-      "label": "QCD-Edge",
+    "subclass_qcd_dilute": {
+      "label": "QCD-Dilute",
       "n_total": 75299,
       "n_plotted": 2768,
       "rep_idx": 264371
     },
-    "subclass_top_core": {
-      "label": "Top-Core",
+    "subclass_top_dilute": {
+      "label": "Top-Dilute",
       "n_total": 111029,
       "n_plotted": 3065,
       "rep_idx": 398112
     },
-    "subclass_top_edge": {
-      "label": "Top-Edge",
+    "subclass_top_dense": {
+      "label": "Top-Dense",
       "n_total": 99886,
       "n_plotted": 2896,
       "rep_idx": 58516

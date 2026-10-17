@@ -92,10 +92,10 @@
       "d=1.75": 5.125798212065307
     },
     "subclass_counts_from_interpretation": {
-      "qcd_core": 123322,
-      "qcd_edge": 78592,
-      "top_core": 101260,
-      "top_edge": 100826
+      "qcd_dense": 123322,
+      "qcd_dilute": 78592,
+      "top_dilute": 101260,
+      "top_dense": 100826
     }
   }
 }

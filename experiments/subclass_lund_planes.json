@@ -2,8 +2,8 @@
   "n_events_total": 404000,
   "n_physics_sample": 15000,
   "panels": {
-    "subclass_qcd_core": {
-      "subclass": "QCD-Core",
+    "subclass_qcd_dense": {
+      "subclass": "QCD-Dense",
       "status": null,
       "n_total": 117786,
       "n_plotted": 3143,
@@ -12,8 +12,8 @@
       "mass_mean": 62.46371841430664,
       "tau32_mean": 0.7445085048675537
     },
-    "subclass_qcd_edge_tn": {
-      "subclass": "QCD-Edge",
+    "subclass_qcd_dilute_tn": {
+      "subclass": "QCD-Dilute",
       "status": "True Negative",
       "n_total": 63359,
       "n_plotted": 2239,
@@ -22,8 +22,8 @@
       "mass_mean": 128.4737548828125,
       "tau32_mean": 0.7401049733161926
     },
-    "subclass_qcd_edge_fn": {
-      "subclass": "QCD-Edge",
+    "subclass_qcd_dilute_fn": {
+      "subclass": "QCD-Dilute",
       "status": "False Negative",
       "n_total": 11940,
       "n_plotted": 2127,
@@ -32,8 +32,8 @@
       "mass_mean": 155.8970947265625,
       "tau32_mean": 0.7006269097328186
     },
-    "subclass_top_core_tp": {
-      "subclass": "Top-Core",
+    "subclass_top_dilute_tp": {
+      "subclass": "Top-Dilute",
       "status": "True Positive",
       "n_total": 91650,
       "n_plotted": 2447,
@@ -42,8 +42,8 @@
       "mass_mean": 180.13259887695312,
       "tau32_mean": 0.6258605122566223
     },
-    "subclass_top_core_fp": {
-      "subclass": "Top-Core",
+    "subclass_top_dilute_fp": {
+      "subclass": "Top-Dilute",
       "status": "False Positive",
       "n_total": 19379,
       "n_plotted": 2056,
@@ -52,8 +52,8 @@
       "mass_mean": 178.78985595703125,
       "tau32_mean": 0.6904930472373962
     },
-    "subclass_top_edge": {
-      "subclass": "Top-Edge",
+    "subclass_top_dense": {
+      "subclass": "Top-Dense",
       "status": null,
       "n_total": 99886,
       "n_plotted": 2988,

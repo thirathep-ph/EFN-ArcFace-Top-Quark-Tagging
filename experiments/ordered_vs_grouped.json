@@ -9,25 +9,25 @@
     "valleys": []
   },
   "within_slopes": {
-    "QCD-Core_mass": {
+    "QCD-Dense_mass": {
       "slope": 134.620511,
       "r2": 0.0241,
       "spearman": -0.0217,
       "n": 14622
     },
-    "QCD-Edge_mass": {
+    "QCD-Dilute_mass": {
       "slope": 92.158098,
       "r2": 0.4176,
       "spearman": 0.7982,
       "n": 9408
     },
-    "Top-Core_tau32": {
+    "Top-Dilute_tau32": {
       "slope": -0.264507,
       "r2": 0.1787,
       "spearman": -0.4273,
       "n": 13783
     },
-    "Top-Edge_tau32": {
+    "Top-Dense_tau32": {
       "slope": -0.519122,
       "r2": 0.3026,
       "spearman": -0.5592,

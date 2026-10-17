@@ -4,43 +4,43 @@
   "per_seed": {
     "42": {
       "fractions": {
-        "QCD_Core": {
+        "QCD_Dense": {
           "n": 123322,
           "pct": 30.53
         },
-        "QCD_Edge": {
+        "QCD_Dilute": {
           "n": 78592,
           "pct": 19.45
         },
-        "Top_Core": {
+        "Top_Dilute": {
           "n": 101260,
           "pct": 25.06
         },
-        "Top_Edge": {
+        "Top_Dense": {
           "n": 100826,
           "pct": 24.96
         }
       },
       "dglap": {
-        "QCD_Core": {
+        "QCD_Dense": {
           "alpha": -1.2668,
           "beta": -1.2754,
           "r2": 0.9986,
           "n": 121480
         },
-        "QCD_Edge": {
+        "QCD_Dilute": {
           "alpha": -0.8591,
           "beta": -0.2634,
           "r2": 0.9951,
           "n": 78501
         },
-        "Top_Core": {
+        "Top_Dilute": {
           "alpha": -0.5426,
           "beta": 0.1178,
           "r2": 0.9665,
           "n": 101248
         },
-        "Top_Edge": {
+        "Top_Dense": {
           "alpha": 1.1058,
           "beta": 6.6,
           "r2": 0.9882,
@@ -50,43 +50,43 @@
     },
     "123": {
       "fractions": {
-        "QCD_Core": {
+        "QCD_Dense": {
           "n": 122266,
           "pct": 30.26
         },
-        "QCD_Edge": {
+        "QCD_Dilute": {
           "n": 79648,
           "pct": 19.71
         },
-        "Top_Core": {
+        "Top_Dilute": {
           "n": 101127,
           "pct": 25.03
         },
-        "Top_Edge": {
+        "Top_Dense": {
           "n": 100959,
           "pct": 24.99
         }
       },
       "dglap": {
-        "QCD_Core": {
+        "QCD_Dense": {
           "alpha": -1.2612,
           "beta": -1.2465,
           "r2": 0.9985,
           "n": 120423
         },
-        "QCD_Edge": {
+        "QCD_Dilute": {
           "alpha": -0.8733,
           "beta": -0.3224,
           "r2": 0.9949,
           "n": 79558
         },
-        "Top_Core": {
+        "Top_Dilute": {
           "alpha": -0.49,
           "beta": 0.2803,
           "r2": 0.9641,
           "n": 101116
         },
-        "Top_Edge": {
+        "Top_Dense": {
           "alpha": 1.106,
           "beta": 6.6046,
           "r2": 0.9891,
@@ -96,43 +96,43 @@
     },
     "7": {
       "fractions": {
-        "QCD_Core": {
+        "QCD_Dense": {
           "n": 123772,
           "pct": 30.64
         },
-        "QCD_Edge": {
+        "QCD_Dilute": {
           "n": 78142,
           "pct": 19.34
         },
-        "Top_Core": {
+        "Top_Dilute": {
           "n": 103348,
           "pct": 25.58
         },
-        "Top_Edge": {
+        "Top_Dense": {
           "n": 98738,
           "pct": 24.44
         }
       },
       "dglap": {
-        "QCD_Core": {
+        "QCD_Dense": {
           "alpha": -1.2879,
           "beta": -1.3155,
           "r2": 0.9984,
           "n": 121928
         },
-        "QCD_Edge": {
+        "QCD_Dilute": {
           "alpha": -0.8233,
           "beta": -0.1942,
           "r2": 0.9937,
           "n": 78053
         },
-        "Top_Core": {
+        "Top_Dilute": {
           "alpha": -0.5201,
           "beta": 0.2116,
           "r2": 0.9702,
           "n": 103337
         },
-        "Top_Edge": {
+        "Top_Dense": {
           "alpha": 1.106,
           "beta": 6.5992,
           "r2": 0.9872,

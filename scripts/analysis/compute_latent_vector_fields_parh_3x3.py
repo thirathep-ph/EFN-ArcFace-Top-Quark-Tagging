@@ -199,10 +199,10 @@ def main():
     }
     rng = np.random.default_rng(SCATTER_SEED)
     scatter_cols = [
-        SUBCLASS_COLORS["QCD core"],
-        SUBCLASS_COLORS["QCD edge"],
-        SUBCLASS_COLORS["Top core"],
-        SUBCLASS_COLORS["Top edge"],
+        SUBCLASS_COLORS["QCD dense"],
+        SUBCLASS_COLORS["QCD dilute"],
+        SUBCLASS_COLORS["Top dilute"],
+        SUBCLASS_COLORS["Top dense"],
     ]
 
     # Precompute global color ranges per observable across heads.
@@ -316,8 +316,8 @@ def main():
                 "median_r2": round(float(np.median(r2s)), 4) if len(r2s) else None,
                 "mean_unit": [round(float(v), 4) for v in mean_unit],
                 "directional_concentration": round(float(conc), 4),
-                "cos_qcd_core_edge": round(float(np.dot(mean_unit, qcd_dir)), 4),
-                "cos_top_core_edge": round(float(np.dot(mean_unit, top_dir)), 4),
+                "cos_qcd_dense_dilute": round(float(np.dot(mean_unit, qcd_dir)), 4),
+                "cos_top_dilute_dense": round(float(np.dot(mean_unit, top_dir)), 4),
                 "cos_class_qcd_top": round(float(np.dot(mean_unit, class_dir)), 4),
             }
 

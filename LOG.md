@@ -6,14 +6,20 @@ SSOT of the work: goal, current position, and what's done. Newest log entry on t
 
 59k-param IRC-safe EFN + ArcFace tagger (one class prototype per class on S⁶³) with every reported number traceable to `experiments/*.json`. Code side feeds the paper; paper cites nothing that isn't gated here.
 
-## Now (2026-10-13)
+## Now (2026-10-14)
 
-- Docs carry the prototype-first frame (`c079543`). `.venv` py3.12.10 + locked deps, pytest 33/33 green.
-- `experiments/*.json` (56 entries) byte-identical to paper's frozen copy — nothing to sync.
-- Rejection labels de-overlapped; deta/lund generators emit Dense/Dilute filenames (JSON keys untouched); gallery renamed to match. 3 fresh PNGs pushed to paper `paper/figures/`.
-- Next: only on demand (distance-based follow-ups; feature-permuted retraining is paper future work).
+- Deep naming sweep DONE: JSON keys renamed Dense/Dilute everywhere (`experiments/*.json`, numbers.json names+pointers, SUBCLASS_NAMES, panels keys, slopes maps, cos_* fields). Values untouched. 59 files (37 JSON, 20 .py), parse-verified.
+- Paper `experiments_frozen/` mirror renamed identically (40 files); paper gate re-run ALL GREEN (66/66 numbers, 63/63 refs, 39/39 floats).
+- Legacy `core/edge` tokens remain ONLY in LOG.md historical entries (deliberate: past-hash narration, not rewritten).
 
 ## Done
+
+### 2026-10-14 p.m.: deep JSON-key rename Core/Edge → Dense/Dilute (user: go deep to JSON keys)
+
+- User chose deepest scope: keys themselves renamed, values never touched. Full deterministic sweep (ordered REPL list, temp script; QCD: Core→Dense, Edge→Dilute; Top: Core→Dilute, Edge→Dense; axis/field names carry endpoint order).
+- Code repo: 59 files (37 JSON + 20 .py), all JSON parse OK, all touched .py py_compile OK. Paper repo: 40 files (37 JSON), gate ALL GREEN after rename.
+- numbers.json pointers/fnames auto-renamed; zero legacy residue outside LOG.md history; infographic regenerated.
+- LOG.md is historical narration — legacy wording in entries below untouched by design.
 
 ### 2026-10-14 p.m.: repo renamed + naming/verification rounds
 

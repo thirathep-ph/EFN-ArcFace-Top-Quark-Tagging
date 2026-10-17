@@ -3,20 +3,20 @@
     "alignment": 0.432837451171875,
     "uniformity": -0.8050858441137155,
     "subclass_counts": {
-      "QCD_Core": 15294,
-      "QCD_Edge": 9926,
-      "Top_Core": 12483,
-      "Top_Edge": 12297
+      "QCD_Dense": 15294,
+      "QCD_Dilute": 9926,
+      "Top_Dilute": 12483,
+      "Top_Dense": 12297
     }
   },
   "Linear (cross-entropy)": {
     "alignment": 0.36516514648437504,
     "uniformity": -0.9555169455308453,
     "subclass_counts": {
-      "QCD_Core": 22698,
-      "QCD_Edge": 2522,
-      "Top_Core": 21541,
-      "Top_Edge": 3239
+      "QCD_Dense": 22698,
+      "QCD_Dilute": 2522,
+      "Top_Dilute": 21541,
+      "Top_Dense": 3239
     }
   }
 }

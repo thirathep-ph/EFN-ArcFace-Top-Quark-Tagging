@@ -349,10 +349,10 @@ def main():
             "d_qcd_subclass": float(d_qcd),
             "d_top_subclass": float(d_top),
             "d_overall": float(d_overall),
-            "n_qcd_core": int(m0.sum()),
-            "n_qcd_edge": int(m1.sum()),
-            "n_top_core": int(m2.sum()),
-            "n_top_edge": int(m3.sum()),
+            "n_qcd_dense": int(m0.sum()),
+            "n_qcd_dilute": int(m1.sum()),
+            "n_top_dilute": int(m2.sum()),
+            "n_top_dense": int(m3.sum()),
         }
 
     print("  Effect sizes (Cohen's d) with sample sizes:")
@@ -363,8 +363,8 @@ def main():
             es = effect_sizes[name]
             print(f"  {name:15s} {es['d_qcd_subclass']:>10.3f} {es['d_top_subclass']:>10.3f} "
                   f"{es['d_overall']:>10.3f} "
-                  f"{es['n_qcd_core']+es['n_qcd_edge']:>12d} "
-                  f"{es['n_top_core']+es['n_top_edge']:>12d}")
+                  f"{es['n_qcd_dense']+es['n_qcd_dilute']:>12d} "
+                  f"{es['n_top_dilute']+es['n_top_dense']:>12d}")
 
     # Step 6: PCA
     print(f"\n{'='*60}")

@@ -35,9 +35,9 @@ TEST_H5 = str(DATA_DIR / 'test.h5')
 N_EVENTS = 50000
 BATCH_SIZE = 1024
 
-NAME_MAP = {0: 'QCD_Core', 1: 'QCD_Edge', 2: 'Top_Core', 3: 'Top_Edge'}
-SC_DISPLAY = {'QCD_Core': 'QCD-Dense', 'QCD_Edge': 'QCD-Dilute',
-              'Top_Core': 'Top-Dilute', 'Top_Edge': 'Top-Dense'}
+NAME_MAP = {0: 'QCD_Dense', 1: 'QCD_Dilute', 2: 'Top_Dilute', 3: 'Top_Dense'}
+SC_DISPLAY = {'QCD_Dense': 'QCD-Dense', 'QCD_Dilute': 'QCD-Dilute',
+              'Top_Dilute': 'Top-Dilute', 'Top_Dense': 'Top-Dense'}
 
 def arch_name(model_dir):
     import torch
@@ -162,8 +162,8 @@ def main():
     fig, axes = plt.subplots(n_rows, 4, figsize=(14, 3 * n_rows))
     if n_rows == 1:
         axes = axes[None, :]  # type: ignore[assignment]
-    sc_colors = [SUBCLASS_COLORS['QCD core'], SUBCLASS_COLORS['QCD edge'],
-                 SUBCLASS_COLORS['Top core'], SUBCLASS_COLORS['Top edge']]
+    sc_colors = [SUBCLASS_COLORS['QCD dense'], SUBCLASS_COLORS['QCD dilute'],
+                 SUBCLASS_COLORS['Top dilute'], SUBCLASS_COLORS['Top dense']]
 
     for row, (name, ckpt_dir) in enumerate(zip(names, model_dirs)):
         print(f"\n--- {name} ---")

@@ -55,17 +55,17 @@ d12 = np.sqrt(np.clip(feat[:, 4], 0, None))
 fig, axes = plt.subplots(2, 2, figsize=(10, 7), sharex=False)
 panels = [
     ("Mass [GeV]", mass, np.linspace(0, 300, 60),
-     [(sub == 0, "QCD-Dense", SUBCLASS_COLORS["QCD core"]),
-       (sub == 1, "QCD-Dilute", SUBCLASS_COLORS["QCD edge"])]),
+     [(sub == 0, "QCD-Dense", SUBCLASS_COLORS["QCD dense"]),
+       (sub == 1, "QCD-Dilute", SUBCLASS_COLORS["QCD dilute"])]),
      ("Mass [GeV]", mass, np.linspace(0, 300, 60),
-      [(sub == 2, "Top-Dilute", SUBCLASS_COLORS["Top core"]),
-       (sub == 3, "Top-Dense", SUBCLASS_COLORS["Top edge"])]),
+      [(sub == 2, "Top-Dilute", SUBCLASS_COLORS["Top dilute"]),
+       (sub == 3, "Top-Dense", SUBCLASS_COLORS["Top dense"])]),
      ("Tau32", tau32, np.linspace(0.2, 1.0, 60),
-      [(sub == 0, "QCD-Dense", SUBCLASS_COLORS["QCD core"]),
-       (sub == 1, "QCD-Dilute", SUBCLASS_COLORS["QCD edge"])]),
+      [(sub == 0, "QCD-Dense", SUBCLASS_COLORS["QCD dense"]),
+       (sub == 1, "QCD-Dilute", SUBCLASS_COLORS["QCD dilute"])]),
      ("Tau32", tau32, np.linspace(0.2, 1.0, 60),
-      [(sub == 2, "Top-Dilute", SUBCLASS_COLORS["Top core"]),
-       (sub == 3, "Top-Dense", SUBCLASS_COLORS["Top edge"])]),
+      [(sub == 2, "Top-Dilute", SUBCLASS_COLORS["Top dilute"]),
+       (sub == 3, "Top-Dense", SUBCLASS_COLORS["Top dense"])]),
 ]
 
 legend_loc = ["upper right", "upper right", "upper left", "upper left"]

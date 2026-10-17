@@ -150,8 +150,8 @@ def main():
             "d=1.73": 2 * two_prop ** 2 / 1.73 ** 2,
         },
         "subclass_counts_from_interpretation": {
-            "qcd_core": 123322, "qcd_edge": 78592,
-            "top_core": 101260, "top_edge": 100826,
+            "qcd_dense": 123322, "qcd_dilute": 78592,
+            "top_dilute": 101260, "top_dense": 100826,
         },
     }
     print(f"  Detectable diff @80% power: {d_min*100:.2f} pp")

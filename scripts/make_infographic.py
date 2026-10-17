@@ -92,9 +92,9 @@ box(x, ry, cw, rh, "Subclasses (k*=2 x 2)", [
 ], color=TEAL)
 x += cw + gx
 box(x, ry, cw, rh, "DGLAP check (zg tail)", [
-    f"QCD-Dense  alpha = {val('dglap_alpha_qcd_core'):.3f}",
-    f"QCD-Dilute  alpha = {val('dglap_alpha_qcd_edge'):.3f}",
-    f"Top-Dilute  alpha = {val('dglap_alpha_top_core'):.3f}",
+    f"QCD-Dense  alpha = {val('dglap_alpha_qcd_dense'):.3f}",
+    f"QCD-Dilute  alpha = {val('dglap_alpha_qcd_dilute'):.3f}",
+    f"Top-Dilute  alpha = {val('dglap_alpha_top_dilute'):.3f}",
     "steeper = softer splitting",
 ], color=TEAL)
 x += cw + gx

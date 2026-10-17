@@ -16,7 +16,7 @@ Top-quark vs QCD jet classification is a core LHC task where deep taggers are ac
 
 - **Primary — Tagger (class prototypes)**: EFN Φ [2→128→128→128] + ρ [128→128→64], 59,072 params, ArcFace margin m=0.5, scale s=16, seed 42. Trained on 1.2M jets, tested on 404k (Top Tagging Reference Dataset).
 - **Baselines**: EFN+Linear and EFN+CosLinear (3 seeds each) to isolate the effect of the hypersphere vs the margin; random forest on 10 hand-crafted substructure observables.
-- **Secondary finding en route — subclass structure (not the primary goal)**: spectral clustering per predicted class (eigengap selects k=2/class → 4 subclasses: Dense/Dilute × Top/QCD (JSON artifacts may still use the legacy keys Core/Edge)), with null controls (noise jets, untrained encoder) and a label-shuffled retraining control.
+- **Secondary finding en route — subclass structure (not the primary goal)**: spectral clustering per predicted class (eigengap selects k=2/class → 4 subclasses: Dense/Dilute × Top/QCD), with null controls (noise jets, untrained encoder) and a label-shuffled retraining control.
 - **Validation battery**: SoftDrop z_g power-law fits, angular collimation, Lund planes, one mass-matched bin, 3-head geometry comparison (TwoNN/PR/PCA), PySR symbolic distillation, JetNet30 out-of-distribution scan.
 - **Verification**: all 48 reported numbers are tracked to artifacts in `experiments/numbers.json`.
 

@@ -193,8 +193,8 @@ def main():
     fig.subplots_adjust(wspace=0.28, left=0.07, right=0.97, top=0.88, bottom=0.16)
     rng = np.random.default_rng(123)
     idx = rng.choice(len(u), min(6000, len(u)), replace=False)
-    cols = [SUBCLASS_COLORS["QCD core"], SUBCLASS_COLORS["QCD edge"],
-            SUBCLASS_COLORS["Top core"], SUBCLASS_COLORS["Top edge"]]
+    cols = [SUBCLASS_COLORS["QCD dense"], SUBCLASS_COLORS["QCD dilute"],
+            SUBCLASS_COLORS["Top dilute"], SUBCLASS_COLORS["Top dense"]]
     ax = axes[0]
     for sc, color in enumerate(cols):
         m = np.intersect1d(idx, np.where(sub == sc)[0])

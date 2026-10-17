@@ -37,8 +37,8 @@ TITLE_SIZE = 11
 COLORS = {
     "qcd":       "#377eb8",
     "top":       "#e41a1c",
-    "qcd_edge":  "#9ecae1",
-    "top_edge":  "#fdae6b",
+    "qcd_dilute":  "#9ecae1",
+    "top_dense":  "#fdae6b",
     "green":     "#4daf4a",
     "purple":    "#984ea3",
     "orange":    "#ff7f00",
@@ -47,10 +47,10 @@ COLORS = {
 }
 CLASS_COLORS = {"QCD": COLORS["qcd"], "Top": COLORS["top"]}
 SUBCLASS_COLORS = {
-    "QCD core":  COLORS["qcd"],
-    "QCD edge":  COLORS["qcd_edge"],
-    "Top core":  COLORS["top"],
-    "Top edge":  COLORS["top_edge"],
+    "QCD dense":  COLORS["qcd"],
+    "QCD dilute":  COLORS["qcd_dilute"],
+    "Top dilute":  COLORS["top"],
+    "Top dense":  COLORS["top_dense"],
 }
 
 # ── Line / Marker Defaults ─────────────────────────────────────────────────

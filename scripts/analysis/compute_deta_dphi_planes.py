@@ -19,19 +19,19 @@ TEST_H5 = EXPERIMENTS.parent / "data" / "top_tagging" / "test.h5"
 MAX_K = 5
 PHYS_PER_GROUP = 2000
 PHYS_CAP = 15000
-SUBCLASS_NAMES = {0: "QCD-Core", 1: "QCD-Edge", 2: "Top-Core", 3: "Top-Edge"}
+SUBCLASS_NAMES = {0: "QCD-Dense", 1: "QCD-Dilute", 2: "Top-Dilute", 3: "Top-Dense"}
 # average panels: 2 class + 4 subclass (all)
 PANELS = [
     (None, 0, "class_qcd", "QCD (all)"),
     (None, 1, "class_top", "Top (all)"),
-    (0, None, "subclass_qcd_core", "QCD-Core"),
-    (1, None, "subclass_qcd_edge", "QCD-Edge"),
-    (2, None, "subclass_top_core", "Top-Core"),
-    (3, None, "subclass_top_edge", "Top-Edge"),
+    (0, None, "subclass_qcd_dense", "QCD-Dense"),
+    (1, None, "subclass_qcd_dilute", "QCD-Dilute"),
+    (2, None, "subclass_top_dilute", "Top-Dilute"),
+    (3, None, "subclass_top_dense", "Top-Dense"),
 ]
 DISPLAY = {"QCD (all)": "QCD (all)", "Top (all)": "Top (all)",
-           "QCD-Core": "QCD-Dense", "QCD-Edge": "QCD-Dilute",
-           "Top-Core": "Top-Dilute", "Top-Edge": "Top-Dense"}
+           "QCD-Dense": "QCD-Dense", "QCD-Dilute": "QCD-Dilute",
+           "Top-Dilute": "Top-Dilute", "Top-Dense": "Top-Dense"}
 def normalize(x): return x / (np.linalg.norm(x, axis=1, keepdims=True) + 1e-10)
 def load_centers(p):
     import torch
@@ -97,8 +97,8 @@ def main():
     # average hist2d
     for subclass, cls, stem, label in PANELS:
         # Display filename (Dense/Dilute); `stem` stays the JSON key (SSOT, byte-identical).
-        fstem = (stem.replace("qcd_core", "qcd_dense").replace("qcd_edge", "qcd_dilute")
-                 .replace("top_core", "top_dilute").replace("top_edge", "top_dense"))
+        fstem = (stem.replace("qcd_dense", "qcd_dense").replace("qcd_dilute", "qcd_dilute")
+                 .replace("top_dilute", "top_dilute").replace("top_dense", "top_dense"))
         if subclass is not None:
             cond=true_global==subclass
         else:

@@ -331,7 +331,7 @@ def main():
     print("\nGenerating 2D UMAP Prediction Status plot...")
     fig, ax = plt.subplots(figsize=(8, 6.5))
     colors = {'True Negative': COLORS["qcd"], 'True Positive': COLORS["top"],
-              'False Positive': COLORS["top_edge"], 'False Negative': COLORS["orange"]}
+              'False Positive': COLORS["top_dense"], 'False Negative': COLORS["orange"]}
     markers = {'True Negative': 'o', 'True Positive': 'o',
                'False Positive': '^', 'False Negative': '^'}
     sizes = {'True Negative': 3, 'True Positive': 3,
@@ -462,8 +462,8 @@ def main():
     panel_labels_grid = ["(a)", "(b)", "(c)", "(d)", "(e)", "(f)", "(g)", "(h)", "(i)"]
     feature_labels = ["Jet mass (GeV)", r"$\tau_{32}$", r"$\sqrt{d_{12}}$ (GeV)"]
     row_labels_grid = ["Jet mass", r"$\tau_{32}$", r"$\sqrt{d_{12}}$ (GeV)"]
-    sc_qcd_colors = [COLORS["qcd"], COLORS["qcd_edge"]]
-    sc_top_colors = [COLORS["top"], COLORS["top_edge"]]
+    sc_qcd_colors = [COLORS["qcd"], COLORS["qcd_dilute"]]
+    sc_top_colors = [COLORS["top"], COLORS["top_dense"]]
     tp_color = COLORS["qcd"]
     fn_color = COLORS["orange"]
     tn_color = COLORS["green"]

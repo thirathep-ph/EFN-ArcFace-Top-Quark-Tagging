@@ -117,7 +117,7 @@ def main():
             sub[mask] = sl + offset
 
         counts = {}
-        for sc_id, sc_name in [(0, 'QCD_Core'), (1, 'QCD_Edge'), (2, 'Top_Core'), (3, 'Top_Edge')]:
+        for sc_id, sc_name in [(0, 'QCD_Dense'), (1, 'QCD_Dilute'), (2, 'Top_Dilute'), (3, 'Top_Dense')]:
             n = int(np.sum(sub == sc_id))
             counts[sc_name] = n
             results[f'{name.replace(chr(10), " ")}_{sc_name}_N'] = n
@@ -128,8 +128,8 @@ def main():
 
         ax = axes[1]
         sc_pos = np.arange(4)
-        sc_vals = [counts['QCD_Core'], counts['QCD_Edge'],
-                   counts['Top_Core'], counts['Top_Edge']]
+        sc_vals = [counts['QCD_Dense'], counts['QCD_Dilute'],
+                   counts['Top_Dilute'], counts['Top_Dense']]
         offset = idx * 0.3
         bars = ax.bar(sc_pos + offset, sc_vals, 0.3, color=colors[idx], alpha=0.8, label=name)
         # Annotate percentages
@@ -155,8 +155,8 @@ def main():
     # Tick labels follow the size convention (larger cluster = Dense side for QCD):
     # QCD bigger cluster -> Dense; Top bigger cluster (Dense side) -> Dilute side.
     ref = model_counts[models[0][0]]
-    qcd_lab = ['QCD\nDense', 'QCD\nDilute'] if ref['QCD_Core'] >= ref['QCD_Edge'] else ['QCD\nDilute', 'QCD\nDense']
-    top_lab = ['Top\nDilute', 'Top\nDense'] if ref['Top_Core'] >= ref['Top_Edge'] else ['Top\nDense', 'Top\nDilute']
+    qcd_lab = ['QCD\nDense', 'QCD\nDilute'] if ref['QCD_Dense'] >= ref['QCD_Dilute'] else ['QCD\nDilute', 'QCD\nDense']
+    top_lab = ['Top\nDilute', 'Top\nDense'] if ref['Top_Dilute'] >= ref['Top_Dense'] else ['Top\nDense', 'Top\nDilute']
     axes[1].set_xticklabels(qcd_lab + top_lab, fontsize=7)
     axes[1].legend(fontsize=7, handlelength=1.2, **{k: v for k, v in LEGEND_KWARGS.items() if k not in ('fontsize',)})
     add_grid(axes[1], axis='y')
@@ -179,7 +179,7 @@ def main():
         mn = results.get(f'{name_key}_norms_median', '?')
         sd = results.get(f'{name_key}_norms_std', '?')
         print(f"  {name_key}: norm median={mn}, std={sd}")
-        for sc in ['QCD_Core', 'QCD_Edge', 'Top_Core', 'Top_Edge']:
+        for sc in ['QCD_Dense', 'QCD_Dilute', 'Top_Dilute', 'Top_Dense']:
             n = results.get(f'{name_key}_{sc}_N', 0)
             print(f"    {sc}: {n}")
 

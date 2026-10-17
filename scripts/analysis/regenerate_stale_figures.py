@@ -116,8 +116,8 @@ def main():
     qcd_sub1 = int(((preds == 0) & (subclass_labels == 1)).sum())
     top_sub0 = int(((preds == 1) & (subclass_labels == 0)).sum())
     top_sub1 = int(((preds == 1) & (subclass_labels == 1)).sum())
-    print(f"  Spectral: QCD_Core={qcd_sub0:,} QCD_Edge={qcd_sub1:,} "
-          f"Top_Core={top_sub0:,} Top_Edge={top_sub1:,}")
+    print(f"  Spectral: QCD_Dense={qcd_sub0:,} QCD_Dilute={qcd_sub1:,} "
+          f"Top_Dilute={top_sub0:,} Top_Dense={top_sub1:,}")
 
     # ── UMAP on 50k subsample ────────────────────────────────────────
     print(f"\nStratified {UMAP_SAMPLE:,} subsample for UMAP...")
@@ -250,7 +250,7 @@ def main():
     composition_matrix = []
     row_labels = []
     full_sub_counts = [qcd_sub0, qcd_sub1, top_sub0, top_sub1]
-    sub_names = ['QCD Core', 'QCD Edge', 'Top Core', 'Top Edge']
+    sub_names = ['QCD Dense', 'QCD Dilute', 'Top Dilute', 'Top Dense']
 
     for sc_idx, (sc_val, sc_name, sc_n) in enumerate(
             zip([0, 1, 0, 1], sub_names, full_sub_counts)):

@@ -1,26 +1,26 @@
 {
-  "QCD-Core": {
+  "QCD-Dense": {
     "n_total": 121570,
     "TN": 121570,
     "FP": 0,
     "FN": 0,
     "TP": 0
   },
-  "QCD-Edge": {
+  "QCD-Dilute": {
     "n_total": 80344,
     "TN": 59481,
     "FP": 20863,
     "FN": 0,
     "TP": 0
   },
-  "Top-Core": {
+  "Top-Dilute": {
     "n_total": 102197,
     "TN": 0,
     "FP": 0,
     "FN": 11882,
     "TP": 90315
   },
-  "Top-Edge": {
+  "Top-Dense": {
     "n_total": 99889,
     "TN": 0,
     "FP": 0,

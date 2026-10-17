@@ -71,33 +71,33 @@
   {
    "artifact": "experiments/dglap_fit_params.json",
    "expect": -1.242,
-   "name": "dglap_alpha_qcd_core",
+   "name": "dglap_alpha_qcd_dense",
    "paper_text": "-1.242",
-   "pointer": "QCD_Core.alpha",
+   "pointer": "QCD_Dense.alpha",
    "tol": 0.001
   },
   {
    "artifact": "experiments/dglap_fit_params.json",
    "expect": -1.022,
-   "name": "dglap_alpha_qcd_edge",
+   "name": "dglap_alpha_qcd_dilute",
    "paper_text": "-1.022",
-   "pointer": "QCD_Edge.alpha",
+   "pointer": "QCD_Dilute.alpha",
    "tol": 0.001
   },
   {
    "artifact": "experiments/dglap_fit_params.json",
    "expect": -0.493,
-   "name": "dglap_alpha_top_core",
+   "name": "dglap_alpha_top_dilute",
    "paper_text": "-0.493",
-   "pointer": "Top_Core.alpha",
+   "pointer": "Top_Dilute.alpha",
    "tol": 0.001
   },
   {
    "artifact": "experiments/dglap_fit_params.json",
    "expect": 1.105,
-   "name": "dglap_alpha_top_edge",
+   "name": "dglap_alpha_top_dense",
    "paper_text": "+1.105",
-   "pointer": "Top_Edge.alpha",
+   "pointer": "Top_Dense.alpha",
    "tol": 0.001
   },
   {
@@ -105,39 +105,39 @@
    "expect": 100.0,
    "name": "topedge_amplitude_bound",
    "paper_text": "A \\to 100",
-   "pointer": "Top_Edge.A",
+   "pointer": "Top_Dense.A",
    "tol": 0.01
   },
   {
    "artifact": "experiments/subclass_label_comparison.json",
    "expect": -1.267,
-   "name": "gt_alpha_qcd_core",
+   "name": "gt_alpha_qcd_dense",
    "paper_text": "$-1.267$",
-   "pointer": "true_partition.QCD.subclasses.QCD_Core.alpha",
+   "pointer": "true_partition.QCD.subclasses.QCD_Dense.alpha",
    "tol": 0.001
   },
   {
    "artifact": "experiments/subclass_label_comparison.json",
    "expect": -0.859,
-   "name": "gt_alpha_qcd_edge",
+   "name": "gt_alpha_qcd_dilute",
    "paper_text": "$-0.859$",
-   "pointer": "true_partition.QCD.subclasses.QCD_Edge.alpha",
+   "pointer": "true_partition.QCD.subclasses.QCD_Dilute.alpha",
    "tol": 0.001
   },
   {
    "artifact": "experiments/subclass_label_comparison.json",
    "expect": -0.543,
-   "name": "gt_alpha_top_core",
+   "name": "gt_alpha_top_dilute",
    "paper_text": "$-0.543$",
-   "pointer": "true_partition.Top.subclasses.Top_Core.alpha",
+   "pointer": "true_partition.Top.subclasses.Top_Dilute.alpha",
    "tol": 0.001
   },
   {
    "artifact": "experiments/subclass_label_comparison.json",
    "expect": 1.106,
-   "name": "gt_alpha_top_edge",
+   "name": "gt_alpha_top_dense",
    "paper_text": "$+1.106$",
-   "pointer": "true_partition.Top.subclasses.Top_Edge.alpha",
+   "pointer": "true_partition.Top.subclasses.Top_Dense.alpha",
    "tol": 0.001
   },
   {
