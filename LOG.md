@@ -10,11 +10,11 @@ SSOT of the work: goal, current position, and what's done. Newest log entry on t
 
 - Deep naming sweep DONE: JSON keys renamed Dense/Dilute everywhere (`experiments/*.json`, numbers.json names+pointers, SUBCLASS_NAMES, panels keys, slopes maps, cos_* fields). Values untouched. 59 files (37 JSON, 20 .py), parse-verified.
 - Paper `experiments_frozen/` mirror renamed identically (40 files); paper gate re-run ALL GREEN (66/66 numbers, 63/63 refs, 39/39 floats).
-- Legacy `core/edge` tokens remain ONLY in LOG.md historical entries (deliberate: past-hash narration, not rewritten).
+- LOG.md historical entries scrubbed of legacy naming too (this log is now fully Dense/Dilute wording).
 
 ## Done
 
-### 2026-10-14 p.m.: deep JSON-key rename Core/Edge → Dense/Dilute (user: go deep to JSON keys)
+### 2026-10-14 p.m.: deep JSON-key rename Core→Dense / Edge→Dilute (user: go deep to JSON keys)
 
 - User chose deepest scope: keys themselves renamed, values never touched. Full deterministic sweep (ordered REPL list, temp script; QCD: Core→Dense, Edge→Dilute; Top: Core→Dilute, Edge→Dense; axis/field names carry endpoint order).
 - Code repo: 59 files (37 JSON + 20 .py), all JSON parse OK, all touched .py py_compile OK. Paper repo: 40 files (37 JSON), gate ALL GREEN after rename.
@@ -51,7 +51,7 @@ SSOT of the work: goal, current position, and what's done. Newest log entry on t
 ### 2026-10-13 p.m.: rejection overlap fix + Dense/Dilute filenames
 
 - Rejection 50%-TPR labels (123.6/121.6/131.7×) staggered to (0.60,260)/(0.62,150)/(0.62,85); text-box no-overlap verified programmatically (caution: `Annotation.get_window_extent` unions the leader arrow — check `Text.get_window_extent`). Replot: zero JSON diff.
-- `compute_deta_dphi_planes.py` + `compute_subclass_lund_planes.py`: display-stem (`fstem`) map core/edge → dense/dilute for output filenames; `results["panels"]` keys unchanged. `py_compile` OK (data absent, no full run).
+- `compute_deta_dphi_planes.py` + `compute_subclass_lund_planes.py`: display-stem (`fstem`) map subclass output filenames to dense/dilute; `results["panels"]` keys unchanged. `py_compile` OK (data absent, no full run).
 - Renamed 14 tracked PNGs in `docs/figures/` + all `docs/RESULTS.md` refs (table, captions, alt-text) to Dense/Dilute; PNG-internal labels were already Dense/Dilute.
 
 ### 2026-10-13 (fig restyle, `5359b63`)
@@ -63,6 +63,6 @@ SSOT of the work: goal, current position, and what's done. Newest log entry on t
 
 ### 2026-10-13 (`c079543`, `942bd28`)
 
-- Docs reframe to prototype-first: `README.md` + `docs/RESULTS.md` (12+12 lines). Class prototypes = primary goal; Core/Edge subclasses = secondary finding en route.
+- Docs reframe to prototype-first: `README.md` + `docs/RESULTS.md` (12+12 lines). Class prototypes = primary goal; Dense/Dilute subclasses = secondary finding en route.
 - Created `.venv` (Python 3.12.10), installed `requirements-locked.txt`, `pip install -e .`. `pytest arcefn/tests`: 33 passed.
 - Started this research log (`LOG.md`); refreshed `HANDOFF.md` state.
