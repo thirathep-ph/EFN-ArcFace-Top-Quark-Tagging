@@ -113,7 +113,7 @@ field of the submission form with the same statement.
 ## Git hygiene
 
 - `experiments/*.json` (small result files) ARE tracked; checkpoints, `.npz`, `.png`, `.onnx` are ignored (regenerable).
-- Repo: https://github.com/thirathep-ph/EFN-ArcFace-Top-Quark-Tagging-and-Jet-Substructure-via-Hyperspherical-Prototypes (branch `main`).
+- Repo: https://github.com/thirathep-ph/EFN-ArcFace-Top-Quark-Tagging (branch `main`).
 
 ## Pending / planned extensions (decided, not yet executed)
 

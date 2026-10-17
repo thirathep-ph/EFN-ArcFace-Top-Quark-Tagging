@@ -112,7 +112,7 @@ ax.text(8, 2.35, "Controls: null inputs still give k*=2 (geometry alone proves n
 ax.text(8, 1.85, "Simulation-only (Pythia 8, no detector)  |  mass-confounded Dense-Dilute split stated  |  "
         "all 48 numbers machine-checked vs artifacts",
         ha="center", fontsize=10, color=GREY)
-ax.text(8, 1.30, "github.com/thirathep-ph/EFN-ArcFace-Top-Quark-Tagging-and-Jet-Substructure-via-Hyperspherical-Prototypes",
+ax.text(8, 1.30, "github.com/thirathep-ph/EFN-ArcFace-Top-Quark-Tagging",
         ha="center", fontsize=9.5, color=TEAL)
 
 OUT.parent.mkdir(exist_ok=True)

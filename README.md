@@ -1,6 +1,6 @@
 # EFN–ArcFace Top Quark Tagging and Jet Substructure via Hyperspherical Prototypes
 
-[![CI](https://github.com/thirathep-ph/EFN-ArcFace-Top-Quark-Tagging-and-Jet-Substructure-via-Hyperspherical-Prototypes/actions/workflows/ci.yml/badge.svg)](https://github.com/thirathep-ph/EFN-ArcFace-Top-Quark-Tagging-and-Jet-Substructure-via-Hyperspherical-Prototypes/actions/workflows/ci.yml)
+[![CI](https://github.com/thirathep-ph/EFN-ArcFace-Top-Quark-Tagging/actions/workflows/ci.yml/badge.svg)](https://github.com/thirathep-ph/EFN-ArcFace-Top-Quark-Tagging/actions/workflows/ci.yml)
 [![Python 3.10–3.12](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -60,7 +60,7 @@ Layout: `arcefn/` (models, data, utils, tests), `scripts/` (training, evaluation
   author = {Thirathep N. Phiankham},
   title = {EFN--ArcFace Top Quark Tagging and Jet Substructure via Hyperspherical Prototypes},
   year = {2026},
-  howpublished = {\url{https://github.com/thirathep-ph/EFN-ArcFace-Top-Quark-Tagging-and-Jet-Substructure-via-Hyperspherical-Prototypes}},
+  howpublished = {\url{https://github.com/thirathep-ph/EFN-ArcFace-Top-Quark-Tagging}},
   note = {GitHub research project}
 }
 ```
