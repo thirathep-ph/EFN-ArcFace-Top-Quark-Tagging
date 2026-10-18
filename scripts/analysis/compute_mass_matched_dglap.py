@@ -5,8 +5,8 @@ power-law exponent alpha merely an echo of jet mass (the subclasses differ
 in mass), or do they reflect genuine splitting-structure differences?
 
 Method: hold mass fixed by binning each class into mass quantiles, then fit
-the AP power law P(zg)=A zg^alpha (1-zg)^beta separately for the Core and
-Edge subclass within each bin. If alpha_Core - alpha_Edge persists within
+the AP power law P(zg)=A zg^alpha (1-zg)^beta separately for the two
+second subclass within each bin. If alpha_index0 - alpha_index1 persists within
 bins, the subclass structure is not a mass echo. Reuses the cached
 embeddings (subclass discovery) and feature matrix (mass, zg) — no forward
 pass and no FastJet recomputation.

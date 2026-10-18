@@ -194,13 +194,13 @@ def main():
     # defined by u-quantiles where subclass composition changes.
     order = np.argsort(u)
     uso, subo = u[order], sub[order]
-    # QCD boundary: last pure-Core quantile to first pure-Edge quantile.
+    # QCD boundary: last index-0 quantile to first index-1 quantile.
     qcd_dense_u = uso[subo == 0]
     qcd_dilute_u = uso[subo == 1]
     top_dilute_u = uso[subo == 2]
     top_dense_u = uso[subo == 3]
     mixtures = {}
-    # QCD interface: overlap band between Core max-decile and Edge min-decile.
+    # QCD interface: overlap band between index-0 max-decile and index-1 min-decile.
     lo, hi = np.quantile(qcd_dense_u, 0.9), np.quantile(qcd_dilute_u, 0.1)
     band = (u >= min(lo, hi)) & (u <= max(lo, hi))
     mixtures["QCD_interface_mass"] = gmm_bic(mass[band & (preds == 0)])

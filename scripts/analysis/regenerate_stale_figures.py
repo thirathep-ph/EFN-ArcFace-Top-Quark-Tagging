@@ -64,11 +64,11 @@ def _run_spectral_per_predicted_class(emb_norm, preds):
     if qcd_mask.sum() > 0:
         qcd_sc, k_qcd = spectral_clustering_subclass(emb_norm[qcd_mask], max_k=10)
         qcd_active, qcd_counts = np.unique(qcd_sc, return_counts=True)
-        # Map to 0=Core, 1=Edge (Core=larger cluster)
+        # Map to 0=larger cluster, 1=smaller cluster
         core_idx = np.argmax(qcd_counts)
         qcd_mapped = np.where(qcd_sc == qcd_active[core_idx], 0, 1)
         subclass_labels[qcd_mask] = qcd_mapped
-        print(f"  QCD spectral: k={k_qcd} Core={int((qcd_mapped==0).sum()):,} Edge={int((qcd_mapped==1).sum()):,}")
+        print(f"  QCD spectral: k={k_qcd} n0={int((qcd_mapped==0).sum()):,} n1={int((qcd_mapped==1).sum()):,}")
 
     if top_mask.sum() > 0:
         top_sc, k_top = spectral_clustering_subclass(emb_norm[top_mask], max_k=10)
@@ -76,7 +76,7 @@ def _run_spectral_per_predicted_class(emb_norm, preds):
         core_idx = np.argmax(top_counts)
         top_mapped = np.where(top_sc == top_active[core_idx], 0, 1)
         subclass_labels[top_mask] = top_mapped
-        print(f"  Top spectral: k={k_top} Core={int((top_mapped==0).sum()):,} Edge={int((top_mapped==1).sum()):,}")
+        print(f"  Top spectral: k={k_top} n0={int((top_mapped==0).sum()):,} n1={int((top_mapped==1).sum()):,}")
 
     return subclass_labels
 

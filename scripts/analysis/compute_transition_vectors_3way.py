@@ -10,7 +10,7 @@ embedding geometry:
 
 Transitions:
 - QCD->Top (predicted class centroids)
-- QCD Dense->Edge, Top Dilute->Edge (predicted subclasses)
+- QCD Dense->Dilute, Top Dilute->Dense (predicted subclasses)
 - QCD-Dilute->Top-Dilute, QCD-Dense->Top-Dense (cross-class steps)
 
 Outputs (experiments only, not copied to paper/figures):
@@ -81,7 +81,7 @@ def get_model_outputs(model_dir, loader, device):
 
 
 def assign_predicted_subclasses(emb_norm, preds):
-    """Cluster each predicted class separately; name the larger Core."""
+    """Cluster each predicted class separately; name the larger cluster index 0."""
     sub = np.full(len(preds), -1, dtype=int)
     for cls, offset in ((0, 0), (1, 2)):
         mask = preds == cls
@@ -223,8 +223,8 @@ def main():
 
     transitions = [
         ("QCD->Top", lambda sub, pred: (pred == 0, pred == 1)),
-        ("QCD Dense->Edge", lambda sub, pred: (sub == 0, sub == 1)),
-        ("Top Dilute->Edge", lambda sub, pred: (sub == 2, sub == 3)),
+        ("QCD Dense->Dilute", lambda sub, pred: (sub == 0, sub == 1)),
+        ("Top Dilute->Dense", lambda sub, pred: (sub == 2, sub == 3)),
         ("QCD-Dilute->Top-Dilute", lambda sub, pred: (sub == 1, sub == 2)),
         ("QCD-Dense->Top-Dense", lambda sub, pred: (sub == 0, sub == 3)),
     ]
@@ -307,8 +307,8 @@ def main():
         # Predicted-class path uses averaged subclass endpoints.
         paths = [
             ("QCD->Top", (cents.get(0, cents.get(1)), cents.get(2, cents.get(3))), "-", 1.6),
-            ("QCD Dense->Edge", (cents.get(0), cents.get(1)), "-", 1.4),
-            ("Top Dilute->Edge", (cents.get(2), cents.get(3)), "-", 1.4),
+            ("QCD Dense->Dilute", (cents.get(0), cents.get(1)), "-", 1.4),
+            ("Top Dilute->Dense", (cents.get(2), cents.get(3)), "-", 1.4),
             ("QCD-Dilute->Top-Dilute", (cents.get(1), cents.get(2)), "--", 1.1),
             ("QCD-Dense->Top-Dense", (cents.get(0), cents.get(3)), ":", 1.1),
         ]

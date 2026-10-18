@@ -57,7 +57,7 @@ def solve_kappa(rbar: float, d: int) -> float:
 
 
 def subclass_stats(x: np.ndarray, labels: np.ndarray, d: int) -> dict:
-    """Per-subclass (rbar, kappa, theta_eff_deg) with Core = larger cluster."""
+    """Per-subclass (rbar, kappa, theta_eff_deg) with index 0 = larger cluster."""
     counts = Counter(labels)
     order = sorted(counts.keys(), key=lambda c: -counts[c])
     out = {}

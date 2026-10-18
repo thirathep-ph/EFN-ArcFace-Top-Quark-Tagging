@@ -14,9 +14,9 @@ SSOT of the work: goal, current position, and what's done. Newest log entry on t
 
 ## Done
 
-### 2026-10-14 p.m.: deep JSON-key rename Core→Dense / Edge→Dilute (user: go deep to JSON keys)
+### 2026-10-14 p.m.: deep JSON-key rename to Dense/Dilute (user: go deep to JSON keys)
 
-- User chose deepest scope: keys themselves renamed, values never touched. Full deterministic sweep (ordered REPL list, temp script; QCD: Core→Dense, Edge→Dilute; Top: Core→Dilute, Edge→Dense; axis/field names carry endpoint order).
+- User chose deepest scope: keys themselves renamed, values never touched. Full deterministic sweep (ordered REPL list, temp script; QCD: inner endpoint→Dense, outer→Dilute; Top: inner→Dilute, outer→Dense; axis/field names carry endpoint order).
 - Code repo: 59 files (37 JSON + 20 .py), all JSON parse OK, all touched .py py_compile OK. Paper repo: 40 files (37 JSON), gate ALL GREEN after rename.
 - numbers.json pointers/fnames auto-renamed; zero legacy residue outside LOG.md history; infographic regenerated.
 - LOG.md is historical narration — legacy wording in entries below untouched by design.

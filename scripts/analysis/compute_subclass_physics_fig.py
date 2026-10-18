@@ -31,7 +31,7 @@ preds = arcface_preds_from_centers(E, EXPERIMENTS / "robustness_s16_m05" / "chec
 check_cm(preds, y, "physics_fig")
 En = E / (np.linalg.norm(E, axis=1, keepdims=True) + 1e-10)
 
-# predicted subclasses, larger cluster -> Core
+# predicted subclasses, larger cluster -> index 0
 sub = np.full(len(y), -1, dtype=int)
 info = {}
 for cls, offset in [(0, 0), (1, 2)]:

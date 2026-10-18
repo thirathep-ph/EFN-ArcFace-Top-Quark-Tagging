@@ -47,7 +47,7 @@ def main():
 
     # Scripts to run (in order)
     scripts = [
-        "generate_paper_figures",      # Core paper figures (UMAP, Lund, physics, heatmap)
+        "generate_paper_figures",      # main paper figures (UMAP, Lund, physics, heatmap)
         "compute_subclass_lund_planes", # Subclass Lund planes (6 panels)
         "generate_hypersphere_viz",    # Hypersphere 3D visualization
         "generate_angular_collimation", # Angular collimation

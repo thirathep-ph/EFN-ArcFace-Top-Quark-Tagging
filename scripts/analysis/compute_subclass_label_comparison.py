@@ -46,7 +46,7 @@ def load_centers(checkpoint: Path) -> np.ndarray:
 
 
 def cluster_partition(emb_norm: np.ndarray, class_mask: np.ndarray) -> tuple[np.ndarray, int]:
-    """Spectral cluster the given events and map largest cluster -> Core (0)."""
+    """Spectral cluster the given events and map largest cluster -> index 0."""
     labels, k = spectral_clustering_subclass(emb_norm[class_mask], max_k=MAX_K)
     counts = Counter(labels)
     order = sorted(counts.keys(), key=lambda c: -counts[c])

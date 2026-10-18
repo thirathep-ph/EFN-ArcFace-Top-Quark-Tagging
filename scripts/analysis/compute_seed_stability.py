@@ -91,7 +91,7 @@ def embeddings_for(seed: int, seed_dirs: dict[int, Path], device: torch.device) 
 
 
 def subclass_labels(embeddings: np.ndarray, cls_labels: np.ndarray) -> np.ndarray:
-    """Spectral 2-subclass split per class; largest cluster -> Core."""
+    """Spectral 2-subclass split per class; largest cluster -> index 0."""
     sub = np.full(len(cls_labels), -1, dtype=np.int8)
     for cls in (0, 1):
         mask = cls_labels == cls

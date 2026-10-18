@@ -2,7 +2,7 @@
 
 Replicates the exact clustering pipeline of
 ``compute_subclass_clustering.py`` (spectral + eigengap, cosine affinity,
-largest cluster -> Core) but stores the per-event assignment so later
+larger cluster -> index 0) but stores the per-event assignment so later
 symbolic-regression stages can condition on subclasses directly.
 
 The script self-verifies against the published aggregates
@@ -11,7 +11,7 @@ per-subclass DGLAP fits must reproduce.
 
 Run: python -m scripts.analysis.compute_subclass_labels
 Artifacts (experiments/physics_sr/):
-  subclass_labels.npz : sub (404000,) int8  (0=Core, 1=Edge), cls (404000,) int8
+  subclass_labels.npz : sub (404000,) int8  (0=near-prototype side, 1=far side), cls (404000,) int8
   subclass_labels_verification.json
 """
 from __future__ import annotations
@@ -75,7 +75,7 @@ def main() -> None:
         print(f"[{cls_name}] k={k_sc} (ref k={ref_ns['k']})")
         for name in entry["counts"]:
             ours_n = entry["counts"][name]
-            ref_n = ref_ns["n0"] if "Core" in name else ref_ns["n1"]
+            ref_n = ref_ns["n0"] if "0" in name else ref_ns["n1"]
             a_ours = entry["dglap"].get(name, {}).get("alpha")
             a_ref = ref_dg.get(name, {}).get("alpha")
             ok_n = ours_n == ref_n

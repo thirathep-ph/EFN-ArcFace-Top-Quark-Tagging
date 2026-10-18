@@ -302,7 +302,7 @@ def main():
     handles = [
         plt.Line2D([0], [0], color=COLORS["qcd"], lw=2, label="mass direction"),
         plt.Line2D([0], [0], color=COLORS["top"], lw=2, label="$\\tau_{32}$ direction"),
-        plt.Line2D([0], [0], color="black", lw=2, label="Core to Edge"),
+        plt.Line2D([0], [0], color="black", lw=2, label="index 0 to index 1"),
     ]
     fig.legend(handles=handles, loc="upper center", ncol=3, fontsize=8,
                frameon=True, bbox_to_anchor=(0.5, 1.02))

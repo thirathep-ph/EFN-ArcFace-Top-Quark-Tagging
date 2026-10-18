@@ -102,7 +102,7 @@ def vmf_bic(ll: float, n: int, d: int, k: int) -> float:
 
 
 def fit_partition(zg_cls: np.ndarray, sub_labels: np.ndarray, cls: int) -> dict:
-    """DGLAP power-law fit per subclass (larger cluster mapped to Core)."""
+    """DGLAP power-law fit per subclass (larger cluster mapped to index 0)."""
     out = {}
     counts = Counter(sub_labels)
     order = sorted(counts.keys(), key=lambda c: -counts[c])

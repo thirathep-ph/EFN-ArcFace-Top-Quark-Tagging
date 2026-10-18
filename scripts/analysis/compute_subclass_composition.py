@@ -130,7 +130,7 @@ def main() -> None:
         mask = partition_labels == cls
         sub, _ = spectral_clustering_subclass(emb_norm[mask], max_k=MAX_K)
         counts = Counter(sub)
-        order = sorted(counts, key=lambda c: -counts[c])  # largest -> Core (0)
+        order = sorted(counts, key=lambda c: -counts[c])  # largest -> index 0
         mapped = np.array([order.index(s) for s in sub])
         true_global[mask] = 2 * cls + mapped
 

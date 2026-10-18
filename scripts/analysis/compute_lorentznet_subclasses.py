@@ -95,13 +95,13 @@ def compute_embeddings(device: torch.device, model, batch_size: int = 32,
 
 
 def discover_subclasses(emb_norm: np.ndarray, labels: np.ndarray) -> np.ndarray:
-    """Per true class: spectral clustering + largest->Core mapping."""
+    """Per true class: spectral clustering + size-ordered mapping (largest cluster -> index 0)."""
     out = np.full(len(labels), -1, dtype=int)
     for cls in (0, 1):
         mask = labels == cls
         sub, k = spectral_clustering_subclass(emb_norm[mask], max_k=MAX_K)
         counts = np.bincount(sub, minlength=int(sub.max()) + 1)
-        order = np.argsort(-counts)  # largest -> Core (0)
+        order = np.argsort(-counts)  # largest -> index 0
         mapped = np.array([int(np.where(order == s)[0][0]) for s in sub])
         out[mask] = 2 * cls + mapped
         print(f"  class {cls}: k={k}, counts={counts.tolist()}")

@@ -52,7 +52,7 @@ def main():
     for cls, cname in [(0, "QCD"), (1, "Top")]:
         X = emb[pred == cls]
         sc, k = spectral_clustering_subclass(X, max_k=5)
-        # size convention: larger cluster = Core (0)
+        # size convention: larger cluster = index 0
         counts = np.bincount(sc)
         core_id = int(np.argmax(counts))
         is_core = sc == core_id
