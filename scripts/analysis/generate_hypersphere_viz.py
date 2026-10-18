@@ -195,12 +195,13 @@ def main():
                              "font.size": 10,
                              "axes.linewidth": 0.6})
 
-        fig = plt.figure(figsize=(9.5, 4.8))
-        gs = fig.add_gridspec(1, 2, width_ratios=[1, 1],
-                              wspace=0.18, left=0.02, right=0.98,
-                              top=0.92, bottom=0.02)
+        fig = plt.figure(figsize=(7.4, 3.6))
+        gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1.05],
+                              wspace=0.30, left=0.01, right=0.985,
+                              top=0.93, bottom=0.06)
         ax1 = fig.add_subplot(gs[0], projection="3d")
         ax2 = fig.add_subplot(gs[1], projection="3d")
+        ax3 = fig.add_subplot(gs[2])
 
         for ax in (ax1, ax2):
             draw_sphere(ax)
@@ -230,10 +231,10 @@ def main():
                               label=CLASS_NAMES[i])
                        for i, c in CLASS_COLORS.items()]
         cls_handles.append(proto_handle)
-        ax1.legend(handles=cls_handles, fontsize=8, frameon=True,
+        ax1.legend(handles=cls_handles, fontsize=7, frameon=True,
                    edgecolor="0.45", facecolor="white", framealpha=0.92,
-                   ncol=3, columnspacing=1.2, handletextpad=0.4,
-                   borderpad=0.4, loc="upper right",
+                   ncol=2, columnspacing=1.0, handletextpad=0.4,
+                   borderpad=0.4, loc="lower left",
                    borderaxespad=0)
         panel_title(ax1, "a", "QCD and top jets")
 
@@ -254,15 +255,37 @@ def main():
                               label=f"{SUBCLASS_NAMES[s]} ({(sub_==s).sum()/len(sub_)*100:.0f}%)")
                        for s in range(4)]
         sub_handles.append(proto_handle)
-        ax2.legend(handles=sub_handles, fontsize=7.5, frameon=True,
+        ax2.legend(handles=sub_handles, fontsize=6.5, frameon=True,
                    edgecolor="0.45", facecolor="white", framealpha=0.92,
-                   ncol=3, columnspacing=1.0, handletextpad=0.4,
-                   borderpad=0.4, loc="upper right",
+                   ncol=2, columnspacing=1.0, handletextpad=0.4,
+                   borderpad=0.4, loc="lower left",
                    borderaxespad=0)
         panel_title(ax2, "b", "Spectral subclasses")
 
+        # panel (c): singular-value spectrum of the 64-D embedding matrix
+        sq = sv_full ** 2
+        per = sq / sq.sum()
+        ncomp = len(per)
+        idx = np.arange(ncomp)
+        cols = ["#377eb8", "#377eb8"] + ["#b0b0b0"] * (ncomp - 2)
+        ax3.bar(idx, per, width=0.75, color=cols, edgecolor="white", linewidth=0.4)
+        ax3.set_yscale("log")
+        ax3.set_ylim(1e-6, 8.0)
+        ax3.set_xlim(-0.7, ncomp - 0.3)
+        ax3.set_xlabel("Singular component", fontsize=10, labelpad=1)
+        ax3.set_ylabel(r"Variance fraction", fontsize=10, labelpad=2)
+        ax3.tick_params(labelsize=8)
+        ax3.set_xticks(idx[::8] if ncomp > 16 else idx)
+        ax3.axhline(1e-5, color="0.35", linewidth=0.7, linestyle=(0, (4, 2)))
+        ax3.text(ncomp - 0.8, 1.6e-5, r"$10^{-5}$", fontsize=8, ha="right", va="bottom")
+        ax3.text(4.0, per[0] * 1.1, f"{per[:2].sum()*100:.1f}% in 2 PCs",
+                 fontsize=9, ha="left", va="center")
+        for sp in ("top", "right"):
+            ax3.spines[sp].set_visible(False)
+        panel_title(ax3, "c", "Singular-value spectrum")
+
         out = os.path.join(model_dir, "hypersphere_3d.png")
-        fig.savefig(str(out), dpi=200, bbox_inches="tight", facecolor="white")
+        fig.savefig(str(out), dpi=300, facecolor="white")
         plt.close(fig)
 
     print(f"Saved: {out}")

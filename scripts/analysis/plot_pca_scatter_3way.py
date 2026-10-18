@@ -22,8 +22,8 @@ events_all, labels_all, _ = load_awkward(str(DATA_DIR / 'test.h5'), max_events=M
 labels_np = labels_all[:MAX_EVENTS]
 
 apply_style()
-fig, axes = plt.subplots(1, 3, figsize=(11, 3.6), sharex=False, sharey=False)
-fig.subplots_adjust(wspace=0.28, left=0.06, right=0.98, top=0.86, bottom=0.18)
+fig, axes = plt.subplots(1, 3, figsize=(6.8, 2.8), sharex=False, sharey=False)
+fig.subplots_adjust(wspace=0.42, left=0.075, right=0.99, top=0.97, bottom=0.19)
 
 for col, (name, mdir) in enumerate(MODEL_DIRS.items()):
     device, _ = get_device()
@@ -50,25 +50,23 @@ for col, (name, mdir) in enumerate(MODEL_DIRS.items()):
     m_top = labels_np == 1
     ax.scatter(proj[m_qcd, 0], proj[m_qcd, 1], s=7, alpha=0.45, c=COLORS["qcd"], edgecolors="none", rasterized=True)
     ax.scatter(proj[m_top, 0], proj[m_top, 1], s=7, alpha=0.45, c=COLORS["top"], edgecolors="none", rasterized=True)
-    ax.set_xlabel("PC1")
-    ax.set_ylabel("PC2")
+    ax.set_xlabel("PC1", fontsize=10)
+    ax.set_ylabel("PC2", fontsize=10, labelpad=1)
     add_grid(ax)
-    ax.tick_params(labelsize=7)
+    ax.tick_params(labelsize=9)
     ax.set_aspect("equal", adjustable="datalim")
-    ax.set_title(f"({chr(97+col)}) {LABELS[col]}\nPC1 {var[0]*100:.1f}% + PC2 {var[1]*100:.1f}% = {var.sum()*100:.1f}%", fontsize=7, pad=6)
+    ax.set_title(f"({chr(97+col)}) {LABELS[col]}\n{var.sum()*100:.1f}% of variance in 2 PCs", fontsize=9.5, pad=4, linespacing=1.15)
 
 # single legend outside
 from matplotlib.lines import Line2D
 handles = [Line2D([0], [0], marker='o', color='w', markerfacecolor=COLORS["qcd"], markersize=6, alpha=0.8),
            Line2D([0], [0], marker='o', color='w', markerfacecolor=COLORS["top"], markersize=6, alpha=0.8)]
-fig.legend(handles, ["QCD", "Top"], loc="upper center", ncol=2, fontsize=8, frameon=True, bbox_to_anchor=(0.5, 1.02))
+fig.legend(handles, ["QCD", "Top"], loc="lower center", ncol=2, fontsize=10, frameon=True, bbox_to_anchor=(0.5, -0.115))
 
 out = pathlib.Path("paper/figures/pca_scatter_3way.png")
 out.parent.mkdir(parents=True, exist_ok=True)
 fig.savefig(out, dpi=300, bbox_inches="tight")
 print(f"saved {out} {out.stat().st_size}")
 import shutil
-shutil.copy(out, pathlib.Path("paper_arxiv/figures/pca_scatter_3way.png"))
-shutil.copy(out, pathlib.Path("paper/overleaf/figures/pca_scatter_3way.png"))
-print("copied")
+print("rendered")
 plt.close(fig)
