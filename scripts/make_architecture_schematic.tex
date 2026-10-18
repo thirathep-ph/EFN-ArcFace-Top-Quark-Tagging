@@ -1,0 +1,62 @@
+\documentclass[tikz,border=5pt]{standalone}
+
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning,fit,backgrounds,calc,
+  arrows.meta,
+  decorations.pathmorphing,decorations.markings}
+
+%% EFN-ArcFace backbone schematic.
+%% Source: jet_tagging/paper/diagrams.tex (archschematic), Row 3 (subclass
+%% clustering branch) removed because clustering is not part of the backbone.
+\newcommand{\archschematic}{
+\begin{tikzpicture}[
+  >=Stealth,
+  font=\small,
+  >={Stealth[length=3pt,width=2.5pt]},
+  block/.style={rectangle, rounded corners=2pt,
+               draw=blue!65!black, fill=blue!6, line width=0.6pt,
+               minimum width=2.35cm, minimum height=0.88cm, align=center},
+  blockS/.style={rectangle, rounded corners=2pt,
+               draw=blue!65!black, fill=blue!6, line width=0.6pt,
+               minimum width=1.95cm, minimum height=0.82cm, align=center},
+  blockG/.style={rectangle, rounded corners=2pt,
+               draw=teal!60!black, fill=teal!7, line width=0.6pt,
+               minimum width=2.25cm, minimum height=0.88cm, align=center},
+  blockR/.style={rectangle, rounded corners=2pt,
+               draw=red!55!black, fill=red!6, line width=0.6pt,
+               minimum width=2.45cm, minimum height=0.88cm, align=center},
+  arr/.style={->, line width=0.6pt, >=Stealth, draw=black!85},
+  lab/.style={font=\scriptsize, text=black!65, above, inner sep=1pt},
+]
+
+% ---- ROW 1: EFN-ArcFace backbone ----
+\node[block]  (C) at (0, 0)    {Constituents\\$(\Delta\eta_i,\;\Delta\phi_i,\;z_i)$};
+\node[block]  (P) at (4.7, 0)  {$\Phi$ MLP\\$2 \to 128$};
+\node[blockS] (S) at (8.7, 0)  {$\displaystyle\sum z_i\Phi_i$};
+\node[block]  (R) at (12.4, 0) {$\rho$ MLP\\$128 \to 64$};
+\node[blockS] (N) at (16.05,0) {$L^{2}$ norm};
+
+\draw[arr] (C) -- node[lab] {per-particle} (P);
+\draw[arr] (P) -- node[lab] {energy-wt} (S);
+\draw[arr] (S) -- node[lab] {jet-level} (R);
+\draw[arr] (R) -- (N);
+
+\node[font=\bfseries\large] at (8.7,1.75) {EFN-ArcFace backbone};
+
+% ---- ROW 2: Hypersphere + Classification ----
+\node[blockG] (E)   at (16.05,-2.55) {$\mathbf{e}\in S^{63}$};
+\draw[arr] (N.south) -- (E.north);
+
+\node[blockR] (AF)  at (12.0,-2.55) {ArcFace\\$W_{\mathrm{QCD}},\,W_{\mathrm{Top}}$};
+\draw[arr] (E.west) -- (AF.east);
+
+\node[block]  (OUT) at (7.85,-2.55) {Top / QCD};
+\draw[arr] (AF.west) -- (OUT.east);
+
+\end{tikzpicture}
+}
+
+\begin{document}
+\archschematic
+\end{document}
