@@ -3,47 +3,45 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-from arcefn.utils.figure_style import apply_style, panel_label, add_grid, save_fig, COLORS
+from arcefn.utils.figure_style import apply_style, add_grid, save_fig, COLORS
 
 inp = pathlib.Path("experiments/dim_3way_50k.json")
 dat = json.loads(inp.read_text())
 
 heads = ["ArcFace", "CosLinear", "Linear"]
 labels = [r"ArcFace ($S^{63},\,m=0.5$)", r"CosLinear ($S^{63},\,m=0$)", r"Linear (Euclid.)"]
-cols = [COLORS["top"], COLORS["purple"], COLORS["gray"]]
+styles = [dict(color=COLORS["top"], ls="-", marker="o"),
+          dict(color=COLORS["gray"], ls="--", marker="s"),
+          dict(color=COLORS["gray"], ls=":", marker="^")]
 
 apply_style()
-fig, axes = plt.subplots(1, 3, figsize=(6.6, 3.0), sharey=True)
-fig.subplots_adjust(wspace=0.24, left=0.085, right=0.985, top=0.86, bottom=0.21)
+fig, axes = plt.subplots(1, 3, figsize=(6.6, 2.5), sharey=True)
+fig.subplots_adjust(wspace=0.14, left=0.085, right=0.985, top=0.87, bottom=0.19)
 
-for ax, h, lab in zip(axes, heads, labels):
-    pca = np.array(dat[h]["pca_top6"])
-    x = np.arange(1, 7)
-    ax.bar(x, pca, color=cols[heads.index(h)], edgecolor="black", linewidth=0.5, width=0.62)
-    ax.set_xlabel("PC rank", fontsize=10)
+x = np.arange(1, 7)
+for i, (ax, h, lab) in enumerate(zip(axes, heads, labels)):
+    cum = np.cumsum(dat[h]["pca_top6"]) * 100
+    st = styles[i]
+    ax.plot(x, cum, lw=1.8, ms=5.5, mec="black", mew=0.6, **st, zorder=3)
+    ax.plot([2], [cum[1]], marker=st["marker"], ms=10, mfc=st["color"],
+            mec="black", mew=0.8, ls="none", zorder=4)
+    ax.annotate(f"2 PCs: {cum[1]:.1f}%", xy=(2, cum[1]),
+                xytext=(0.06, 0.05), textcoords="axes fraction",
+                ha="left", va="bottom", fontsize=9)
+    ax.set_xlim(0.8, 6.2)
+    ax.set_ylim(0, 108)
     ax.set_xticks(x)
-    ax.set_xticklabels([str(i) for i in x])
-    ax.set_ylim(0, 1.02)
-    ax.set_xlim(0.5, 6.5)
+    ax.set_yticks([0, 25, 50, 75, 100])
+    ax.set_yticklabels(["0", "25", "50", "75", "100"])
     add_grid(ax, axis="y")
-    ax.set_title(f"({chr(97+heads.index(h))}) {lab}", fontsize=9.5, pad=5)
-    tw = dat[h]["twonn"]
-    pr = dat[h]["pr"]
-    cum2 = dat[h]["pca_cum2"] * 100
-    # top-right annotation without overlapping bars
-    ax.text(0.97, 0.99, f"TwoNN {tw:.2f}\nPR {pr:.2f}\n2 PCs {cum2:.1f}%",
-            transform=ax.transAxes, ha="right", va="top", fontsize=8.5,
-            bbox=dict(boxstyle="round,pad=0.22", fc="white", ec="0.65", alpha=0.95))
-    for i, v in enumerate(pca[:2]):
-        if v > 0.02:
-            ax.text(x[i], v + 0.025, f"{v*100:.1f}%", ha="center", va="bottom", fontsize=8)
+    ax.set_title(f"({chr(97+i)}) {lab}", fontsize=9.5, pad=5)
 
-axes[0].set_ylabel("Variance fraction", fontsize=10)
-# no suptitle, no italic footnote — caption carries interpretation
+axes[1].set_xlabel("Principal component rank", fontsize=10)
+axes[0].set_ylabel("Cumulative variance (%)", fontsize=10)
+# no legend: every panel is titled with its head; ArcFace is the solid red subject curve
 
 out = pathlib.Path("paper/figures/dimensionality_3way.png")
 out.parent.mkdir(parents=True, exist_ok=True)
 fig.savefig(out, dpi=300, bbox_inches="tight")
 print(f"saved to {out} {out.stat().st_size} bytes")
-import shutil
 plt.close(fig)
