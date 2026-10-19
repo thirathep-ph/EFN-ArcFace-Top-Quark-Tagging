@@ -267,26 +267,24 @@ def main():
         sq = sv_full ** 2
         per = sq / sq.sum()
         ncomp = len(per)
-        nshow = 12
+        nshow = 3
         idx = np.arange(nshow)
         cols = ["#377eb8", "#377eb8"] + ["#b0b0b0"] * (nshow - 2)
         ax3.bar(idx, per[:nshow], width=0.75, color=cols, edgecolor="white",
                 linewidth=0.4)
         ax3.set_yscale("log")
-        ax3.set_ylim(1e-6, 12.0)
-        ax3.set_xlim(-0.7, nshow - 0.3)
+        ax3.set_ylim(1e-6, 40.0)
+        ax3.set_xlim(-0.6, nshow - 0.4)
         ax3.set_xlabel("Singular component", fontsize=NATIVE_LABEL, labelpad=1)
         ax3.set_ylabel("Variance fraction", fontsize=NATIVE_LABEL, labelpad=2)
         ax3.tick_params(labelsize=NATIVE_TICK)
-        ax3.set_xticks(idx)
+        ax3.set_xticks([0, 1, 2])
         ax3.axhline(1e-5, color="0.35", linewidth=0.7, linestyle=(0, (4, 2)))
         ax3.text(nshow - 0.8, 1.6e-5, r"$10^{-5}$", fontsize=NATIVE_ANNOT,
                  ha="right", va="bottom")
-        ax3.text(-0.4, 1.4, f"{per[:2].sum()*100:.1f}% in 2 PCs",
+        ax3.text(-0.4, 20.0, f"{per[:2].sum()*100:.1f}% in 2 PCs",
                  fontsize=NATIVE_ANNOT, ha="left", va="top")
         tail_max = float(per[2:].max())
-        ax3.text(nshow - 0.4, 1e-3, f"3-{ncomp}: max {tail_max:.1e}",
-                 fontsize=NATIVE_ANNOT, ha="right", va="center")
         for sp in ("top", "right"):
             ax3.spines[sp].set_visible(False)
         panel_title(ax3, "c", "Singular-value spectrum")
