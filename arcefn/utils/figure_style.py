@@ -4,14 +4,26 @@ Shared Figure Composition Standards for Publication Figures
 All paper figures should import and use these constants/functions
 for visual consistency (font, color, legend, panel labels, grid).
 
-PRINT-SIZE CONTRACT (paper textwidth = 6.5in, arxiv.sty):
-effective_pt = native_fontsize * (print_width_in / native_width_in),
-native_width_in ~= figsize_width * 0.92 (bbox_inches="tight").
-Targets at print size: labels/annotations >= 9pt, ticks/legend >= 8pt.
-Rule of thumb: a figure printed at 0.48\\textwidth (3.1in) from a
-5in-wide native needs native labels >= 14pt; a figure printed at
-0.90\\textwidth (5.9in) from a 10in-wide native needs native >= 15pt
-for ticks and >= 17pt for titles/annotations.
+UNIVERSAL FIGURE CONTRACT (the one rule for every paper figure)
+---------------------------------------------------------------
+Authored canvas width = printed width * AUTHOR_FACTOR (4/3), and the
+native font sizes below are fixed.  Then EVERY figure prints its text at
+the SAME physical size, whatever width the paper gives it:
+
+    effective_pt = native_pt * printed_in / authored_in
+                = native_pt * 3/4
+    ->  labels/annotations 9.0pt, ticks/legend 8.25pt, titles 10.1pt
+
+So a figure printed at 0.48\\textwidth and one printed at 1.0\\textwidth
+are typographically identical, and re-sizing a figure in LaTeX can
+never make its text illegible.  Use fig_size() to get the canvas:
+
+    fig, ax = plt.subplots(figsize=fig_size(PRINTED_W_IN, aspect))
+
+The gate script scripts/paper_checks/check_figures.py enforces this
+for every \\includegraphics in the paper (effective font in band, spec
+entry present, printed width matching the registry).
+
 Every figure generator MUST call apply_style() (DejaVu Serif) --
 plots rendered without it fall back to DejaVu Sans and break the
 paper's single-font rule. Display-only refonts never touch JSON.
@@ -27,11 +39,43 @@ EXPERIMENTS = _REPO / "experiments"
 
 # ── Typography ──────────────────────────────────────────────────────────────
 FONT_FAMILY = "DejaVu Serif"
-FONT_SIZE = 10
-TICK_SIZE = 8
-LEGEND_SIZE = 8
-LABEL_SIZE = 10
-TITLE_SIZE = 11
+
+# ── UNIVERSAL FIGURE CONTRACT ───────────────────────────────────────────────
+# paper text width (article class, letter) = 345pt = 4.792in
+PAPER_TEXTWIDTH_IN = 345.0 / 72.0
+# authored canvas = printed width * 4/3  ->  effective font = native * 3/4
+AUTHOR_FACTOR = 4.0 / 3.0
+NATIVE_LABEL = 12.0     # -> 9.00 pt in print
+NATIVE_TICK = 11.0      # -> 8.25 pt in print
+NATIVE_LEGEND = 11.0    # -> 8.25 pt in print
+NATIVE_TITLE = 13.5     # -> 10.13 pt in print
+NATIVE_ANNOT = 11.0     # -> 8.25 pt in print
+
+FONT_SIZE = NATIVE_TICK
+TICK_SIZE = NATIVE_TICK
+LEGEND_SIZE = NATIVE_LEGEND
+LABEL_SIZE = NATIVE_LABEL
+TITLE_SIZE = NATIVE_TITLE
+
+
+def fig_size(printed_width_in, aspect=None, height_in=None):
+    """Canvas size (inches) for a figure that will be printed at
+    `printed_width_in` inches in the paper.
+
+    aspect: width/height of the canvas (default 1.6)
+    height_in: explicit canvas height (overrides aspect)
+
+    The canvas is AUTHOR_FACTOR times the printed width so that the
+    native font sizes above land at their target size in print.
+    """
+    w = printed_width_in * AUTHOR_FACTOR
+    h = height_in if height_in is not None else w / (aspect or 1.6)
+    return (w, h)
+
+
+def printed_width(frac_textwidth):
+    """Printed width in inches for a \\textwidth fraction."""
+    return frac_textwidth * PAPER_TEXTWIDTH_IN
 
 # ── Color Palette (muted, colorblind-safe) ─────────────────────────────────
 COLORS = {

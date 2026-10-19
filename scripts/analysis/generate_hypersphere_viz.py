@@ -179,7 +179,13 @@ def main():
         fig.savefig(str(out), dpi=200, bbox_inches="tight", facecolor="white")
         plt.close(fig)
     else:
-        # Original 3D visualization for >2D
+        # 3-D visualisation, universal figure contract:
+        #   authored canvas = printed width x 4/3 with the standard native
+        #   fonts  ->  effective print font = native x 3/4 (labels 9pt,
+        #   ticks 8.25pt) whatever width the paper gives the figure.
+        from arcefn.utils.figure_style import (AUTHOR_FACTOR, printed_width,
+                                               NATIVE_ANNOT, NATIVE_LABEL, NATIVE_TICK)
+
         def draw_sphere(ax, r=1.0, alpha=0.18, color="0.45"):
             u = np.linspace(0, 2 * np.pi, 60)
             v = np.linspace(0, np.pi, 30)
@@ -191,21 +197,17 @@ def main():
 
         arc = slerp(c3[0], c3[1])
 
-        plt.rcParams.update({"font.family": "DejaVu Serif",
-                             "font.size": 10,
-                             "axes.linewidth": 0.6})
-
-        fig = plt.figure(figsize=(7.4, 3.6))
-        gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1.05],
-                              wspace=0.30, left=0.01, right=0.985,
-                              top=0.93, bottom=0.06)
+        FIG_W = printed_width(0.95) * AUTHOR_FACTOR          # 6.07 in authored
+        fig = plt.figure(figsize=(FIG_W, 3.0))
+        gs = fig.add_gridspec(1, 2, wspace=0.02, left=0.0, right=0.62,
+                              top=0.87, bottom=0.40)
         ax1 = fig.add_subplot(gs[0], projection="3d")
         ax2 = fig.add_subplot(gs[1], projection="3d")
-        ax3 = fig.add_subplot(gs[2])
+        ax3 = fig.add_axes([0.70, 0.40, 0.30, 0.47])
 
         for ax in (ax1, ax2):
             draw_sphere(ax)
-            ax.set_box_aspect([1, 1, 1])
+            ax.set_box_aspect([1, 1, 1], zoom=1.5)
             ax.view_init(elev=40, azim=-53)
             ax.set_axis_off()
 
@@ -220,23 +222,12 @@ def main():
         ax1.scatter(c3[:, 0], c3[:, 1], c3[:, 2], s=60, c="k", zorder=6)
         ax1.plot(arc[:, 0], arc[:, 1], arc[:, 2], color="0.25",
                  linewidth=1.4, alpha=0.9, linestyle=(0, (4, 2)))
-
-        mid = arc[150]
-        ax1.text(mid[0], mid[1], mid[2] + 0.17,
-                 f"${geo_deg:.1f}^\\circ$", fontsize=9, ha="center", va="bottom",
-                 bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="0.7", alpha=0.9))
-
-        cls_handles = [Line2D([0], [0], marker="o", color="w",
-                              markerfacecolor=c, markersize=6,
-                              label=CLASS_NAMES[i])
-                       for i, c in CLASS_COLORS.items()]
-        cls_handles.append(proto_handle)
-        ax1.legend(handles=cls_handles, fontsize=7, frameon=True,
-                   edgecolor="0.45", facecolor="white", framealpha=0.92,
-                   ncol=2, columnspacing=1.0, handletextpad=0.4,
-                   borderpad=0.4, loc="lower left",
-                   borderaxespad=0)
         panel_title(ax1, "a", "QCD and top jets")
+        ax1.text2D(0.02, 0.98, f"prototypes {geo_deg:.1f}$^\\circ$ apart",
+                   transform=ax1.transAxes, fontsize=NATIVE_ANNOT, ha="left",
+                   va="top",
+                   bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none",
+                             alpha=0.85))
 
         for s in range(4):
             m = sub_ == s
@@ -245,41 +236,57 @@ def main():
         ax2.scatter(c3[:, 0], c3[:, 1], c3[:, 2], s=60, c="k", zorder=6)
         ax2.plot(arc[:, 0], arc[:, 1], arc[:, 2], color="0.25",
                  linewidth=1.4, alpha=0.9, linestyle=(0, (4, 2)))
-        # duplicate angle label for clarity (both panels show geodesic)
-        mid2 = arc[150]
-        ax2.text(mid2[0], mid2[1], mid2[2] + 0.17, f"${geo_deg:.1f}^\\circ$", fontsize=9,
-                 ha="center", va="bottom", bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="0.7", alpha=0.9))
+        panel_title(ax2, "b", "Spectral subclasses")
+
+        # one shared legend per panel, placed under the panels so the wide
+        # canvas is used instead of covering the spheres
+        cls_handles = [Line2D([0], [0], marker="o", color="w",
+                              markerfacecolor=c, markersize=6,
+                              label=CLASS_NAMES[i])
+                       for i, c in CLASS_COLORS.items()]
+        cls_handles.append(proto_handle)
+        fig.legend(handles=cls_handles, fontsize=NATIVE_ANNOT, frameon=True,
+                   edgecolor="0.45", facecolor="white", framealpha=0.92,
+                   ncol=3, columnspacing=0.5, handletextpad=0.3,
+                   borderpad=0.35, loc="lower left",
+                   bbox_to_anchor=(0.005, 0.005))
 
         sub_handles = [Line2D([0], [0], marker="o", color="w",
                               markerfacecolor=SUBCLASS_COLORS[s], markersize=6,
-                              label=f"{SUBCLASS_NAMES[s]} ({(sub_==s).sum()/len(sub_)*100:.0f}%)")
+                              label=f"{SUBCLASS_NAMES[s]} {(sub_==s).sum()/len(sub_)*100:.0f}%")
                        for s in range(4)]
-        sub_handles.append(proto_handle)
-        ax2.legend(handles=sub_handles, fontsize=6.5, frameon=True,
+        fig.legend(handles=sub_handles, fontsize=NATIVE_ANNOT, frameon=True,
                    edgecolor="0.45", facecolor="white", framealpha=0.92,
-                   ncol=2, columnspacing=1.0, handletextpad=0.4,
-                   borderpad=0.4, loc="lower left",
-                   borderaxespad=0)
-        panel_title(ax2, "b", "Spectral subclasses")
+                   ncol=2, columnspacing=0.5, handletextpad=0.3,
+                   borderpad=0.35, loc="lower left",
+                   bbox_to_anchor=(0.492, 0.005))
 
-        # panel (c): singular-value spectrum of the 64-D embedding matrix
+        # panel (c): singular-value spectrum.  Only the first 12 components
+        # are drawn: the remaining 52 are all below 1e-5 and would leave the
+        # panel empty.
         sq = sv_full ** 2
         per = sq / sq.sum()
         ncomp = len(per)
-        idx = np.arange(ncomp)
-        cols = ["#377eb8", "#377eb8"] + ["#b0b0b0"] * (ncomp - 2)
-        ax3.bar(idx, per, width=0.75, color=cols, edgecolor="white", linewidth=0.4)
+        nshow = 12
+        idx = np.arange(nshow)
+        cols = ["#377eb8", "#377eb8"] + ["#b0b0b0"] * (nshow - 2)
+        ax3.bar(idx, per[:nshow], width=0.75, color=cols, edgecolor="white",
+                linewidth=0.4)
         ax3.set_yscale("log")
-        ax3.set_ylim(1e-6, 8.0)
-        ax3.set_xlim(-0.7, ncomp - 0.3)
-        ax3.set_xlabel("Singular component", fontsize=10, labelpad=1)
-        ax3.set_ylabel(r"Variance fraction", fontsize=10, labelpad=2)
-        ax3.tick_params(labelsize=8)
-        ax3.set_xticks(idx[::8] if ncomp > 16 else idx)
+        ax3.set_ylim(1e-6, 12.0)
+        ax3.set_xlim(-0.7, nshow - 0.3)
+        ax3.set_xlabel("Singular component", fontsize=NATIVE_LABEL, labelpad=1)
+        ax3.set_ylabel("Variance fraction", fontsize=NATIVE_LABEL, labelpad=2)
+        ax3.tick_params(labelsize=NATIVE_TICK)
+        ax3.set_xticks(idx)
         ax3.axhline(1e-5, color="0.35", linewidth=0.7, linestyle=(0, (4, 2)))
-        ax3.text(ncomp - 0.8, 1.6e-5, r"$10^{-5}$", fontsize=8, ha="right", va="bottom")
-        ax3.text(4.0, per[0] * 1.1, f"{per[:2].sum()*100:.1f}% in 2 PCs",
-                 fontsize=9, ha="left", va="center")
+        ax3.text(nshow - 0.8, 1.6e-5, r"$10^{-5}$", fontsize=NATIVE_ANNOT,
+                 ha="right", va="bottom")
+        ax3.text(-0.4, 1.4, f"{per[:2].sum()*100:.1f}% in 2 PCs",
+                 fontsize=NATIVE_ANNOT, ha="left", va="top")
+        tail_max = float(per[2:].max())
+        ax3.text(nshow - 0.4, 1e-3, f"3-{ncomp}: max {tail_max:.1e}",
+                 fontsize=NATIVE_ANNOT, ha="right", va="center")
         for sp in ("top", "right"):
             ax3.spines[sp].set_visible(False)
         panel_title(ax3, "c", "Singular-value spectrum")
@@ -287,6 +294,7 @@ def main():
         out = os.path.join(model_dir, "hypersphere_3d.png")
         fig.savefig(str(out), dpi=300, facecolor="white")
         plt.close(fig)
+        print(f"tail max variance fraction (components 3-{ncomp}): {tail_max:.3e}")
 
     print(f"Saved: {out}")
     print(f"Singular value ratios: {sv_ratio[:6].round(4)}")
