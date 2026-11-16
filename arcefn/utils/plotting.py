@@ -109,6 +109,19 @@ def plot_performance(labels, sims, save_path='results/performance.png'):
 
 def plot_representative_jet(event_p4, title="Representative Jet", save_path=None):
     """Plot jet constituents in eta-phi plane with energy weighting."""
+    import matplotlib as _mpl
+    _mpl.rcParams.update({
+        "font.family": "DejaVu Serif",
+        "font.size": 2,
+        "axes.labelsize": 3,
+        "axes.titlesize": 4.5,
+        "xtick.labelsize": 1.5,
+        "ytick.labelsize": 1.5,
+        "legend.fontsize": 2,
+        "axes.linewidth": 0.6,
+        "lines.linewidth": 1.2,
+        "lines.markersize": 4,
+    })
     px = ak.to_numpy(event_p4.px)
     py = ak.to_numpy(event_p4.py)
     pz = ak.to_numpy(event_p4.pz)
@@ -124,14 +137,14 @@ def plot_representative_jet(event_p4, title="Representative Jet", save_path=None
     deta = eta - jet_eta
     dphi = (phi - jet_phi + np.pi) % (2 * np.pi) - np.pi
     
-    plt.figure(figsize=(9, 7))
+    plt.figure(figsize=(3.07, 2.39))
     # Size reflects pT, color reflects energy fraction
     z = e / (np.sum(e) + 1e-10)
     scatter = plt.scatter(deta, dphi, s=pt*8, alpha=0.7, c=z, cmap='plasma', edgecolors='black', linewidth=0.5)
     plt.colorbar(scatter, label='Energy Fraction (z)')
     plt.xlabel(r'$\Delta\eta$')
     plt.ylabel(r'$\Delta\phi$')
-    plt.title(f"{title}\n(Constituent Pattern)", fontsize=14)
+    plt.title(f"{title}\n(Constituent Pattern)")
     plt.grid(True, alpha=0.2)
     
     if save_path:
@@ -143,6 +156,19 @@ def plot_representative_jet(event_p4, title="Representative Jet", save_path=None
 
 def plot_deta_dphi_plane(events, label="Jets", save_path='results/deta_dphi.png'):
     """Δη-Δφ plane: 2D histogram of constituents relative to jet axis."""
+    import matplotlib as _mpl
+    _mpl.rcParams.update({
+        "font.family": "DejaVu Serif",
+        "font.size": 2,
+        "axes.labelsize": 3,
+        "axes.titlesize": 4.5,
+        "xtick.labelsize": 1.5,
+        "ytick.labelsize": 1.5,
+        "legend.fontsize": 2,
+        "axes.linewidth": 0.6,
+        "lines.linewidth": 1.2,
+        "lines.markersize": 4,
+    })
     # vectorized Δη, Δφ per constituent
     px = ak.to_numpy(ak.flatten(events.px))
     py = ak.to_numpy(ak.flatten(events.py))
@@ -168,7 +194,7 @@ def plot_deta_dphi_plane(events, label="Jets", save_path='results/deta_dphi.png'
         print(f"Warning: No constituents for {label}")
         return
     z = e / (np.sum(e) + 1e-10) if False else None  # unweighted for density
-    plt.figure(figsize=(9, 7))
+    plt.figure(figsize=(3.07, 2.39))
     plt.hist2d(deta, dphi, bins=50, cmap='viridis', cmin=1)
     plt.colorbar(label='Constituent density')
     plt.xlabel(r'$\Delta\eta$')
@@ -184,6 +210,19 @@ def plot_lund_plane(events, label="Jets", save_path='results/lund_plane.png'):
     Accurate Lund Plane using Iterative C/A de-clustering.
     x = ln(1/Delta), y = ln(kt)
     """
+    import matplotlib as _mpl
+    _mpl.rcParams.update({
+        "font.family": "DejaVu Serif",
+        "font.size": 2,
+        "axes.labelsize": 3,
+        "axes.titlesize": 4.5,
+        "xtick.labelsize": 1.5,
+        "ytick.labelsize": 1.5,
+        "legend.fontsize": 2,
+        "axes.linewidth": 0.6,
+        "lines.linewidth": 1.2,
+        "lines.markersize": 4,
+    })
     from arcefn.utils.physics import get_lund_coordinates
     
     print(f"Computing Lund Plane for {label}...")
@@ -193,7 +232,7 @@ def plot_lund_plane(events, label="Jets", save_path='results/lund_plane.png'):
         print(f"Warning: No Lund coordinates found for {label}")
         return
 
-    plt.figure(figsize=(9, 7))
+    plt.figure(figsize=(3.07, 2.39))
     plt.hist2d(ln_inv_delta, ln_kt, bins=50, cmap='viridis', cmin=1)
     plt.colorbar(label='Splitting Density')
     plt.xlabel(r'$\ln(1/\Delta)$')
