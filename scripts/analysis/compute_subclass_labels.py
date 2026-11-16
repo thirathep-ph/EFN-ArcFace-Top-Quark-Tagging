@@ -27,7 +27,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.paths import EXPERIMENTS
-from scripts.analysis.compute_dglap_fit import SUBCLASS_NAMES, fit_zg
+from scripts.figures.compute_dglap_fit import SUBCLASS_NAMES, fit_zg
 
 EMBEDDINGS = EXPERIMENTS / "robustness_s16_m05" / "embeddings.npz"
 FEATURES = EXPERIMENTS / "rf_cache_test.npz"

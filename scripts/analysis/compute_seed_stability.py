@@ -33,7 +33,7 @@ from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.device import get_device
 from arcefn.utils.model_loading import load_model_from_dir
 from arcefn.utils.paths import DATA_DIR, EXPERIMENTS
-from scripts.analysis.compute_dglap_fit import SUBCLASS_NAMES, fit_zg
+from scripts.figures.compute_dglap_fit import SUBCLASS_NAMES, fit_zg
 
 MAX_EVENTS = 404000
 BATCH_SIZE = 2048

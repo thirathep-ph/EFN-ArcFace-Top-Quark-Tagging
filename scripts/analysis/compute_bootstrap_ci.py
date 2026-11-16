@@ -40,6 +40,15 @@ from arcefn.models.efn_arcface import TopTaggingModel
 from arcefn.data.loader import load_awkward, get_h5_len
 from arcefn.utils.device import get_device
 
+import matplotlib as _mpl
+_mpl.rcParams.update({
+    "font.family": "DejaVu Serif", "font.size": 11,
+    "axes.labelsize": 12, "axes.titlesize": 13.5,
+    "xtick.labelsize": 11, "ytick.labelsize": 11, "legend.fontsize": 11,
+    "axes.linewidth": 0.6, "lines.linewidth": 1.2, "lines.markersize": 4,
+})
+
+
 TEST_H5 = str(DATA_DIR / 'test.h5')
 RESULTS_PATH = str(EXPERIMENTS / 'final_analysis_results.json')
 
@@ -341,7 +350,7 @@ def replot(scores_npz, results_json):
     }
 
     # --- Panel (a): ROC curves with bootstrap CI bands + low-FPR inset ---
-    fig, ax = plt.subplots(figsize=(5.0, 4.4))
+    fig, ax = plt.subplots(figsize=(3.96, 3.49))
     rng = np.random.RandomState(42)
     fpr_grid = np.linspace(0, 1, 200)
     n = len(labels)
@@ -363,10 +372,10 @@ def replot(scores_npz, results_json):
                         np.clip(mean_tpr + 1.96 * std_tpr, 0, 1),
                         color=colors[name], alpha=0.12)
     ax.plot([0, 1], [0, 1], 'k--', alpha=0.5, linewidth=0.8)
-    ax.set_xlabel('False Positive Rate', fontsize=14)
-    ax.set_ylabel('True Positive Rate', fontsize=14)
-    ax.tick_params(labelsize=12)
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=3, fontsize=12,
+    ax.set_xlabel('False Positive Rate', fontsize=12.0)
+    ax.set_ylabel('True Positive Rate', fontsize=12.0)
+    ax.tick_params(labelsize=11)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=3, fontsize=11.0,
               **{k: v for k, v in LEGEND_KWARGS.items() if k not in ("ncol", "fontsize")})
     add_grid(ax)
     ax.set_xlim(-0.01, 1.01)
@@ -380,8 +389,8 @@ def replot(scores_npz, results_json):
     ax_in.set_ylim(0.78, 1.005)
     ax_in.set_xticks([0, 0.1])
     ax_in.set_yticks([0.8, 0.9, 1.0])
-    ax_in.tick_params(labelsize=10)
-    ax_in.set_title("zoom: low FPR", fontsize=11, pad=3)
+    ax_in.tick_params(labelsize=11)
+    ax_in.set_title("zoom: low FPR", fontsize=13.5, pad=3)
     ax_in.grid(True, alpha=0.2, linestyle="--", linewidth=0.4)
     for spine in ax_in.spines.values():
         spine.set_edgecolor("0.45")
@@ -389,7 +398,7 @@ def replot(scores_npz, results_json):
     save_fig(fig, "final_roc_curves.png", to_paper=False)
 
     # --- Panel (b): rejection rates, 50%-TPR values annotated from JSON ---
-    fig, ax = plt.subplots(figsize=(5.0, 4.4))
+    fig, ax = plt.subplots(figsize=(3.96, 3.49))
     tpr_labels = ["tpr_30", "tpr_50", "tpr_70", "tpr_80", "tpr_90", "tpr_95"]
     tpr_values = [0.30, 0.50, 0.70, 0.80, 0.90, 0.95]
     for name in MODEL_ORDER:
@@ -402,21 +411,21 @@ def replot(scores_npz, results_json):
     # Staggered labels: the three 50%-TPR values sit within ~10 units on a log
     # axis, so stacked-right labels with fanned leaders (was: overlapping).
     ax.annotate(f"{r50['coslinear_seed42']:.1f}x", xy=(0.50, r50['coslinear_seed42']),
-                xytext=(0.60, 260), fontsize=13, color=colors["coslinear_seed42"],
+                xytext=(0.60, 260), fontsize=11.0, color=colors["coslinear_seed42"],
                 arrowprops=dict(arrowstyle="-", color=colors["coslinear_seed42"], lw=0.8))
     ax.annotate(f"{r50['arcface_s16_m05']:.1f}x", xy=(0.50, r50['arcface_s16_m05']),
-                xytext=(0.62, 150), fontsize=13, color=colors["arcface_s16_m05"],
+                xytext=(0.62, 150), fontsize=11.0, color=colors["arcface_s16_m05"],
                 arrowprops=dict(arrowstyle="-", color=colors["arcface_s16_m05"], lw=0.8))
     ax.annotate(f"{r50['linear_seed42']:.1f}x", xy=(0.50, r50['linear_seed42']),
-                xytext=(0.62, 85), fontsize=13, color=colors["linear_seed42"],
+                xytext=(0.62, 85), fontsize=11.0, color=colors["linear_seed42"],
                 arrowprops=dict(arrowstyle="-", color=colors["linear_seed42"], lw=0.8))
-    ax.set_xlabel('Signal Efficiency (TPR)', fontsize=14)
-    ax.set_ylabel('Background Rejection ($1/\\mathrm{FPR}$)', fontsize=14)
-    ax.tick_params(labelsize=12)
+    ax.set_xlabel('Signal Efficiency (TPR)', fontsize=12.0)
+    ax.set_ylabel('Background Rejection ($1/\\mathrm{FPR}$)', fontsize=12.0)
+    ax.tick_params(labelsize=11)
     ax.set_xticks(tpr_values)
     ax.set_xticklabels([f'{int(v*100)}%' if v < 0.95 else '' for v in tpr_values])
     ax.set_xlim(0.27, 1.005)
-    ax.legend(loc="lower left", fontsize=12,
+    ax.legend(loc="lower left", fontsize=11.0,
               **{k: v for k, v in LEGEND_KWARGS.items() if k not in ("ncol", "fontsize")})
     add_grid(ax)
     ax.set_yscale('log')
@@ -530,7 +539,7 @@ def main():
     print("=" * 60)
 
     # Plot 1: ROC curves with bootstrap CI shading
-    fig, ax = plt.subplots(figsize=(7, 5.5))
+    fig, ax = plt.subplots(figsize=(3.96, 3.11))
     display_names = {
         "arcface_s16_m05": "EFN + ArcFace (ours)",
         "linear_seed42": "EFN + Linear",
@@ -578,7 +587,7 @@ def main():
     save_fig(fig, "final_roc_curves.png")
 
     # Plot 2: Rejection rates line curve
-    fig, ax = plt.subplots(figsize=(7, 5.5))
+    fig, ax = plt.subplots(figsize=(3.96, 3.11))
     tpr_labels = ["tpr_30", "tpr_50", "tpr_70", "tpr_80", "tpr_90", "tpr_95"]
     tpr_values = [0.30, 0.50, 0.70, 0.80, 0.90, 0.95]
 
@@ -608,11 +617,11 @@ def main():
     im = ax.imshow(nmi_matrix, cmap='YlOrRd', aspect='auto', vmin=0, vmax=1)
     ax.set_xticks(range(len(model_names)))
     ax.set_yticks(range(len(model_names)))
-    ax.set_xticklabels(short_names, rotation=45, ha='right', fontsize=8)
-    ax.set_yticklabels(short_names, fontsize=8)
+    ax.set_xticklabels(short_names, rotation=45, ha='right', fontsize=11.0)
+    ax.set_yticklabels(short_names, fontsize=11.0)
     for i in range(len(model_names)):
         for j in range(len(model_names)):
-            ax.text(j, i, f"{nmi_matrix[i,j]:.3f}", ha='center', va='center', fontsize=7,
+            ax.text(j, i, f"{nmi_matrix[i,j]:.3f}", ha='center', va='center', fontsize=11.0,
                    color='white' if nmi_matrix[i, j] < 0.5 else 'black')
     plt.colorbar(im, ax=ax)
     ax.set_title('NMI: Subclass Stability')
@@ -621,11 +630,11 @@ def main():
     im = ax.imshow(ari_matrix, cmap='YlOrRd', aspect='auto', vmin=0, vmax=1)
     ax.set_xticks(range(len(model_names)))
     ax.set_yticks(range(len(model_names)))
-    ax.set_xticklabels(short_names, rotation=45, ha='right', fontsize=8)
-    ax.set_yticklabels(short_names, fontsize=8)
+    ax.set_xticklabels(short_names, rotation=45, ha='right', fontsize=11.0)
+    ax.set_yticklabels(short_names, fontsize=11.0)
     for i in range(len(model_names)):
         for j in range(len(model_names)):
-            ax.text(j, i, f"{ari_matrix[i,j]:.3f}", ha='center', va='center', fontsize=7,
+            ax.text(j, i, f"{ari_matrix[i,j]:.3f}", ha='center', va='center', fontsize=11.0,
                    color='white' if ari_matrix[i, j] < 0.5 else 'black')
     plt.colorbar(im, ax=ax)
     ax.set_title('ARI: Subclass Stability')

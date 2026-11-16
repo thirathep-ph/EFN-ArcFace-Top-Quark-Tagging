@@ -30,7 +30,7 @@ from sklearn.metrics import (
 
 from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.paths import EXPERIMENTS
-from scripts.analysis.compute_dglap_fit import SUBCLASS_NAMES, fit_zg
+from scripts.figures.compute_dglap_fit import SUBCLASS_NAMES, fit_zg
 
 EMBEDDINGS = EXPERIMENTS / "robustness_s16_m05" / "embeddings.npz"
 FEATURES = EXPERIMENTS / "rf_cache_test.npz"

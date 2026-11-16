@@ -25,7 +25,7 @@ from sklearn.metrics import adjusted_rand_score
 
 from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.paths import EXPERIMENTS
-from scripts.analysis.compute_dglap_fit import SUBCLASS_NAMES, fit_zg
+from scripts.figures.compute_dglap_fit import SUBCLASS_NAMES, fit_zg
 
 FEATURES = EXPERIMENTS / "rf_cache_test.npz"
 MAX_K = 5
