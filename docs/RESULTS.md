@@ -69,9 +69,11 @@ Model score vs jet mass — gradual transition, not a sharp mass cutoff; misclas
 | QCD-Dense | ~62 GeV | — | ordinary single-prong |
 | QCD-Dilute | ~134 GeV | — | hard gluon mimicking top (holds 99% of false negatives) |
 | Top-Dilute | ~181 GeV | ~0.63 | boundary mixture (absorbs 93% of false positives) |
-| Top-Dense | ~174 GeV | ~0.46 | diffuse tail, fit non-identifiable — excluded |
+| Top-Dense | ~174 GeV | ~0.46 | diffuse tail, bounded fit physical (α=−0.41) |
 
 Bounded DGLAP power-law fits A·z^α(1−z)^β (α∈[−2,0]): QCD-Dense α=−0.453, QCD-Dilute −0.511, Top-Dilute −0.424, Top-Dense −0.413 (ordering matches soft-gluon hierarchy; quark jets share the same 1/zg tail modulo color factor). Without bound, Top-Dense α≃+1.1 (non-physical). Angular: partition means follow θg ≈ 2m/pT (narrow-pT readout, stated limitation). One mass-matched bin keeps the Dense–Dilute gap (suggestive, not fully clean).
+
+**Cluster-depth checks:** Leiden clustering (k-NN graph k=30, γ∈[0.1,10]) finds 27–164 communities per class — no resolution yields k=2, confirming the manifold lacks discrete sub-clusters. Recursive spectral clustering (eigengap heuristic) yields k=2 at all recursive depths (max depth 6) — a binary tree on a continuous manifold, not discrete clusters. Dense/Dilute is a diagnostic partition cut along a continuum, not a discovery of discrete substructure.
 
 ![Eigengap](figures/eigengap_spectrum.png)
 Eigenvalue spectra + eigengaps: largest gap at k=2 for both QCD and Top partitions.
