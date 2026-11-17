@@ -2,7 +2,7 @@
 
 ## Abstract
 
-Top-quark vs QCD jet classification with a geometrically readable decision rule: an IRC-safe Energy Flow Network backbone (59,072 params) plus an ArcFace head that learns one prototype per class, so classifying = nearest class-prototype on the unit hypersphere S⁶³. Tested on 404k jets: **91.84% accuracy [91.76, 91.92], AUC 0.974, 124× rejection**. Subclass structure (4 groups: Dense/Dilute × Top/QCD) was a secondary finding en route — uncovered by unsupervised clustering on the manifold, 3 of 4 validated against QCD predictions (splitting functions, angular scaling, Lund topology). A feature-based random forest still leads (92.37%) — stated openly, not hidden.
+Top-quark vs QCD jet classification with a geometrically readable decision rule: an IRC-safe Energy Flow Network backbone (59,072 params) plus an ArcFace head that learns one prototype per class, so classifying = nearest class-prototype on the unit hypersphere S⁶³. Tested on 404k jets: **91.84% accuracy [91.76, 91.92], AUC 0.974, 124× rejection**. Diagnostic partition structure (4 groups: Dense/Dilute × Top/QCD) was a secondary finding en route — uncovered by unsupervised clustering on the manifold, all 4 validated against QCD predictions using bounded DGLAP fits (splitting functions, angular scaling, Lund topology). A feature-based random forest still leads (92.37%) — stated openly, not hidden.
 
 <details>
 <summary>Pipeline figure</summary>
@@ -57,9 +57,9 @@ Model score vs jet mass — gradual transition, not a sharp mass cutoff; misclas
 
 </details>
 
-## 3. Secondary finding: subclass structure & physics check (paper §3.2)
+## 3. Secondary finding: diagnostic partition structure & physics check (paper §3.2)
 
-**Takeaway:** secondary finding en route — 4 subclasses found, 3 of 4 validated against QCD; Top-Dense excluded (non-identifiable fit). Predicted-vs-truth partitions agree (ARI 0.79).
+**Takeaway:** secondary finding en route — 4 diagnostic partitions found, all 4 validated against QCD with bounded DGLAP fits. Predicted-vs-truth partitions agree (ARI 0.79). Top-Dense exponent physical under bounded fit (α=−0.41).
 
 <details>
 <summary>Table + figures</summary>
@@ -71,7 +71,7 @@ Model score vs jet mass — gradual transition, not a sharp mass cutoff; misclas
 | Top-Dilute | ~181 GeV | ~0.63 | boundary mixture (absorbs 93% of false positives) |
 | Top-Dense | ~174 GeV | ~0.46 | diffuse tail, fit non-identifiable — excluded |
 
-DGLAP power-law fits A·z^α(1−z)^β: QCD-Dense α=−1.242, QCD-Dilute −1.022, Top-Dilute −0.493 (ordering matches soft-gluon hierarchy; quark jets share the same 1/zg tail modulo color factor). Angular: subclass means follow θg ≈ 2m/pT (narrow-pT readout, stated limitation). One mass-matched bin keeps the Dense–Dilute gap (suggestive, not fully clean).
+Bounded DGLAP power-law fits A·z^α(1−z)^β (α∈[−2,0]): QCD-Dense α=−0.453, QCD-Dilute −0.511, Top-Dilute −0.424, Top-Dense −0.413 (ordering matches soft-gluon hierarchy; quark jets share the same 1/zg tail modulo color factor). Without bound, Top-Dense α≃+1.1 (non-physical). Angular: partition means follow θg ≈ 2m/pT (narrow-pT readout, stated limitation). One mass-matched bin keeps the Dense–Dilute gap (suggestive, not fully clean).
 
 ![Eigengap](figures/eigengap_spectrum.png)
 Eigenvalue spectra + eigengaps: largest gap at k=2 for both QCD and Top partitions.
@@ -83,7 +83,7 @@ Ward hierarchical clustering dendrogram supporting the 2-way split.
 Subclass composition across prediction categories (TP/FP/FN/TN).
 
 ![Subclass physics](figures/subclass_physics_distributions.png)
-Mass / τ32 / zg distributions per subclass: the four groups separate physically.
+Mass / τ32 / zg distributions per diagnostic partition: the four groups separate physically.
 
 ![DGLAP fits](figures/dglap_fit.png)
 Power-law fits: QCD-Dense α=−1.242, QCD-Dilute −1.022, Top-Dilute −0.493, Top-Dense +1.105 (excluded).
@@ -149,7 +149,7 @@ Top-Dense representative map.
 
 ## 4. Geometry & supporting evidence (paper §3.3)
 
-**Takeaway:** embeddings collapse to 2-D (TwoNN 2.21, PCA 83.6+16.4); prototypes 43.6° apart; hypersphere alone (CosLinear) keeps balanced subclasses, margin m=0.5 resolves Top Dilute vs Dense. Null controls (noise, untrained) also give k*=2 — so k*=2 alone proves nothing; the physics case rests on §3.
+**Takeaway:** embeddings collapse to 2-D (TwoNN 2.21, PCA 83.6+16.4); prototypes 43.6° apart; hypersphere alone (CosLinear) keeps balanced partitions, margin m=0.5 resolves Top Dilute vs Dense. Null controls (noise, untrained) also give k*=2 — so k*=2 alone proves nothing; the physics case rests on §3. Leiden clustering (k-NN graph, γ∈[0.1,10]) finds 27–164 communities with no γ yielding k=2 — confirming the manifold is continuous and the Dense/Dilute cut is a diagnostic partition, not discrete sub-clusters.
 
 <details>
 <summary>Figures</summary>
@@ -164,7 +164,7 @@ PCA scatter: PC1 83.6% + PC2 16.4% ≈ 100% (2-D collapse).
 Embedding geometry across ArcFace / CosLinear / Linear heads.
 
 ![Head geometry](figures/head_geometry_3way.png)
-Head comparison: hypersphere alone (CosLinear) keeps balanced subclasses; margin m=0.5 specifically resolves Top Dilute vs Dense.
+Head comparison: hypersphere alone (CosLinear) keeps balanced partitions; margin m=0.5 specifically resolves Top Dilute vs Dense.
 
 ![Dimensionality](figures/dimensionality_3way.png)
 TwoNN + participation ratio per head: ArcFace TwoNN 2.21 vs 4.98/5.19 controls.
@@ -240,13 +240,13 @@ Pareto front: compact c=6 form (leading-physics distillate, not a replacement �
 ## 6. Discussion (paper §4)
 
 - **What the class prototypes learned (primary):** high-mass/low-τ32 (Top) vs low-mass/high-τ32 (QCD) — checked, not assumed.
-- **Why the hypersphere matters:** 3-head comparison isolates it — CosLinear keeps balanced subclasses without any margin; Linear collapses.
+- **Why the hypersphere matters:** 3-head comparison isolates it — CosLinear keeps balanced partitions without any margin; Linear collapses.
 - **Limitations (stated openly):** simulation-only (Pythia 8), binary task, no detector effects, Top-Dense excluded, single-seed label-shuffle residual, QCD mass-confounding stated, narrow pT window, OOD scan is hypothesis-generating only.
 - **Future work:** cross-generator check, multi-seed shuffle, full mass-matched table, multi-class.
 
 ## 7. Conclusion (paper §5)
 
-A 59k-parameter tagger whose binary rule is nearest-class-prototype on S⁶³ (primary contribution) reaches 91.84% with a 2-D, QCD-checked latent geometry; subclass structure is a secondary finding en route: 4 found, 3 validated, controls run, limits stated. The RF still wins on accuracy — and says so in the abstract.
+A 59k-parameter tagger whose binary rule is nearest-class-prototype on S⁶³ (primary contribution) reaches 91.84% with a 2-D, QCD-checked latent geometry; diagnostic partition structure is a secondary finding en route: 4 found, all 4 validated with bounded DGLAP fits, controls run, limits stated. The RF still wins on accuracy — and says so in the abstract.
 
 ## Appendix A — dataset EDA
 
