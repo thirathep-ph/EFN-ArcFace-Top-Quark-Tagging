@@ -1,5 +1,4 @@
-"""
-Shared Figure Composition Standards for Publication Figures
+"""Shared Figure Composition Standards for Publication Figures
 ==========================================================
 All paper figures should import and use these constants/functions
 for visual consistency (font, color, legend, panel labels, grid).
@@ -28,66 +27,30 @@ Every figure generator MUST call apply_style() (DejaVu Serif) --
 plots rendered without it fall back to DejaVu Sans and break the
 paper's single-font rule. Display-only refonts never touch JSON.
 """
-import matplotlib.pyplot as plt
 import matplotlib as mpl
-from pathlib import Path
 
-# ── Paths ──────────────────────────────────────────────────────────────────
-_REPO = Path(__file__).resolve().parents[2]
-PAPER_FIGURES = _REPO / "paper" / "figures"
-EXPERIMENTS = _REPO / "experiments"
-
-# ── Typography ──────────────────────────────────────────────────────────────
+# ── Fonts ─────────────────────────────────────────────────────────────────
 FONT_FAMILY = "DejaVu Serif"
-
-# ── UNIVERSAL FIGURE CONTRACT ───────────────────────────────────────────────
-# paper text width (article class, letter) = 345pt = 4.792in
-PAPER_TEXTWIDTH_IN = 345.0 / 72.0
-# authored canvas = printed width * 4/3  ->  effective font = native * 3/4
+FONT_SIZE = 11
+LABEL_SIZE = 12
+TITLE_SIZE = 13.5
+TICK_SIZE = 11
+LEGEND_SIZE = 10
 AUTHOR_FACTOR = 4.0 / 3.0
-NATIVE_LABEL = 12.0     # -> 9.00 pt in print
-NATIVE_TICK = 11.0      # -> 8.25 pt in print
-NATIVE_LEGEND = 11.0    # -> 8.25 pt in print
-NATIVE_TITLE = 13.5     # -> 10.13 pt in print
-NATIVE_ANNOT = 11.0     # -> 8.25 pt in print
 
-FONT_SIZE = NATIVE_TICK
-TICK_SIZE = NATIVE_TICK
-LEGEND_SIZE = NATIVE_LEGEND
-LABEL_SIZE = NATIVE_LABEL
-TITLE_SIZE = NATIVE_TITLE
-
-
-def fig_size(printed_width_in, aspect=None, height_in=None):
-    """Canvas size (inches) for a figure that will be printed at
-    `printed_width_in` inches in the paper.
-
-    aspect: width/height of the canvas (default 1.6)
-    height_in: explicit canvas height (overrides aspect)
-
-    The canvas is AUTHOR_FACTOR times the printed width so that the
-    native font sizes above land at their target size in print.
-    """
-    w = printed_width_in * AUTHOR_FACTOR
-    h = height_in if height_in is not None else w / (aspect or 1.6)
-    return (w, h)
-
-
-def printed_width(frac_textwidth):
-    """Printed width in inches for a \\textwidth fraction."""
-    return frac_textwidth * PAPER_TEXTWIDTH_IN
-
-# ── Color Palette (muted, colorblind-safe) ─────────────────────────────────
+# ── Color Palette (viridis-based, HEP-inspired) ──────────────────────────
+# Viridis colormap: purple (#430153) -> teal (#30928f) -> yellow-green (#fde725)
+# Background: white, Grid: gray (#c5c5c5), Text: black
 COLORS = {
-    "qcd":       "#377eb8",
-    "top":       "#e41a1c",
-    "qcd_dilute":  "#9ecae1",
-    "top_dense":  "#fdae6b",
-    "green":     "#4daf4a",
-    "purple":    "#984ea3",
-    "orange":    "#ff7f00",
-    "brown":     "#a65628",
-    "gray":      "#999999",
+    "qcd":       "#430153",   # viridis start (deep purple)
+    "top":       "#fde725",   # viridis end (yellow-green)
+    "qcd_dilute":  "#7a04a1", # mid-purple
+    "top_dense":   "#a0da39", # light green
+    "green":     "#30928f",   # viridis mid (teal)
+    "purple":    "#430153",   # viridis start
+    "orange":    "#fde725",   # viridis end
+    "brown":     "#7a04a1",   # mid-purple
+    "gray":      "#c5c5c5",   # grid/axes gray
 }
 CLASS_COLORS = {"QCD": COLORS["qcd"], "Top": COLORS["top"]}
 SUBCLASS_COLORS = {
@@ -97,12 +60,12 @@ SUBCLASS_COLORS = {
     "Top dense":  COLORS["top_dense"],
 }
 
-# ── Line / Marker Defaults ─────────────────────────────────────────────────
+# ── Line / Marker Defaults ───────────────────────────────────────────────
 LINEWIDTH = 1.2
 MARKERSIZE = 4
 ALPHA = 0.7
 
-# ── Legend ──────────────────────────────────────────────────────────────────
+# ── Legend ─────────────────────────────────────────────────────────────────
 LEGEND_KWARGS = dict(
     frameon=True,
     fancybox=True,
@@ -114,15 +77,15 @@ LEGEND_KWARGS = dict(
 )
 
 # ── Grid ───────────────────────────────────────────────────────────────────
-GRID_KWARGS = dict(alpha=0.15, linestyle="--", linewidth=0.4)
+GRID_KWARGS = dict(alpha=0.3, linestyle="--", linewidth=0.5, color="#c5c5c5")
 
 # ── Figure DPI ─────────────────────────────────────────────────────────────
 DPI = 200
 
 
-# ═══════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════
 # Helper functions
-# ═══════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════
 
 def apply_style():
     """Call once at top of script to set global rcParams."""
@@ -140,11 +103,18 @@ def apply_style():
         "axes.linewidth":   0.6,
         "lines.linewidth":  LINEWIDTH,
         "lines.markersize": MARKERSIZE,
+        "axes.grid":        True,
+        "grid.alpha":       0.3,
+        "grid.linestyle":   "--",
+        "grid.linewidth":   0.5,
+        "grid.color":       "#c5c5c5",
+        "figure.facecolor": "white",
+        "axes.facecolor":   "white",
     })
 
 
 def panel_label(ax, label, fontsize=TITLE_SIZE, loc="left", pad=6):
-    """Add a bold panel label like $\mathbf{(a)}$ to an axes."""
+    """Add a bold panel label like $\\mathbf{(a)}$ to an axes."""
     title = f"$\\mathbf{{{label}}}$"
     if loc == "left":
         ax.set_title(title, fontsize=fontsize, loc="left", fontweight="bold", pad=pad)
@@ -163,30 +133,11 @@ def style_legend(ax, **kwargs):
             for t in leg.get_texts():
                 t.set_fontsize(kw["fontsize"])
         if "ncol" in kw:
-            leg._ncol = kw["ncol"]
+            leg._ncols = kw["ncol"]
 
 
-def add_grid(ax, **kwargs):
-    """Add grid with consistent styling."""
-    kw = {**GRID_KWARGS, **kwargs}
-    ax.grid(True, **kw)
-    ax.set_axisbelow(True)
-
-
-def save_fig(fig, name, to_paper=True, **kwargs):
-    """Save figure to experiments/ and optionally copy to paper/figures/.
-    Uses ARCEFN_MODEL_DIR env var for model-specific subdirectory, falls back to EXPERIMENTS.
-    """
-    import os
-    from shutil import copy2
-    model_dir_env = os.environ.get('ARCEFN_MODEL_DIR', '').strip()
-    if model_dir_env:
-        exp_path = Path(model_dir_env) / name
-    else:
-        exp_path = EXPERIMENTS / name
-    exp_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(str(exp_path), **{"dpi": DPI, "bbox_inches": "tight", **kwargs})
-    if to_paper:
-        copy2(str(exp_path), str(PAPER_FIGURES / name))
-    plt.close(fig)
-    print(f"  Saved: {name}")
+def fig_size(printed_w_in, aspect=1.0):
+    """Return authored canvas size for a given printed width."""
+    authored_w = printed_w_in * AUTHOR_FACTOR
+    authored_h = authored_w * aspect
+    return (authored_w, authored_h)

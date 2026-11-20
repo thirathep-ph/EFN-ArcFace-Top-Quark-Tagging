@@ -35,7 +35,7 @@ from arcefn.utils.figure_style import (
 )
 from arcefn.utils.model_loading import load_model_from_dir
 from arcefn.utils.paths import DATA_DIR, EXPERIMENTS
-from arcefn.utils.physics import compute_features
+from arcefn.utils.physics import load_cached_features
 
 MODEL_DIRS = {
     "ArcFace": EXPERIMENTS / "robustness_s16_m05",
@@ -170,7 +170,7 @@ def main():
         str(DATA_DIR / "test.h5"), max_events=MAX_EVENTS, lazy=False
     )
     print("Computing shared physics features once...")
-    phys = compute_features(events)
+    phys = load_cached_features(events)
     mass = phys[:, TARGETS["mass"]].astype(float)
     tau32 = phys[:, TARGETS["tau32"]].astype(float)
 

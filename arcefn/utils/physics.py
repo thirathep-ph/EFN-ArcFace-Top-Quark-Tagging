@@ -136,3 +136,35 @@ def print_feature_stats(features, label="Features"):
         vals = features[:, i]
         print(f"    {name:10s}: mean={np.mean(vals):.4f}, std={np.std(vals):.4f}")
 
+FEATURE_COLUMN_NAMES = ["Mass", "mSD", "Mult", "nSD",
+                        "sqrt_d12", "sqrt_d23", "Tau21", "Tau32",
+                        "zg", "theta_g"]
+
+def load_cached_features(events=None, max_events: int | None = None) -> np.ndarray:
+    """Return the 10 substructure features, reading the parquet cache when possible.
+
+    Cache: ``EXPERIMENTS / "robustness_s16_m05" / "test_features.parquet"``
+    (built by ``scripts/analysis/cache_physics_features.py``). Falls back to
+    ``compute_features(events)`` when the cache is missing or ``--force`` is
+    needed. When ``events`` is passed, returns features for those events only
+    (slices the cached array to ``len(events)``); ``max_events`` sets the same
+    limit explicitly for callers with no events loaded.
+    """
+    import pyarrow.parquet as pq
+    from arcefn.utils.paths import EXPERIMENTS
+
+    parquet_path = EXPERIMENTS / "robustness_s16_m05" / "test_features.parquet"
+    if parquet_path.exists() and max_events is None:
+        t = pq.read_table(parquet_path, columns=["event_idx"] + FEATURE_COLUMN_NAMES)
+        idx = t.column("event_idx").to_numpy(zero_copy_only=False)
+        features = np.column_stack(
+            [t.column(c).to_numpy(zero_copy_only=False) for c in FEATURE_COLUMN_NAMES])
+        # Order by event_idx to match load_awkward row order
+        order = np.argsort(idx, kind="stable")
+        features = features[order]
+        n = len(events) if events is not None else None
+        if n is not None and n <= len(features):
+            features = features[:n]
+        return features
+    return compute_features(events)
+

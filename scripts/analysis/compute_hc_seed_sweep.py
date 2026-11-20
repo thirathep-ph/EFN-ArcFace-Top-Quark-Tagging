@@ -3,7 +3,7 @@ import json, numpy as np
 from pathlib import Path
 from sklearn.cluster import AgglomerativeClustering
 from arcefn.data.loader import load_awkward
-from arcefn.utils.physics import compute_features
+from arcefn.utils.physics import load_cached_features
 from arcefn.utils.paths import DATA_DIR
 from scipy.optimize import curve_fit
 
@@ -34,7 +34,7 @@ N=min(len(En),len(events))
 En=En[:N]; y=y[:N]; events=events[:N]
 preds=preds_all[:N]
 print("compute features once...")
-feat=compute_features(events)
+feat=load_cached_features(events)
 
 out={}
 for seed in [42,123,7]:

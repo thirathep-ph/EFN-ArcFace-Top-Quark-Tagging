@@ -3,7 +3,7 @@ import json, numpy as np
 from pathlib import Path
 from scipy.stats import ks_2samp
 from arcefn.data.loader import load_awkward
-from arcefn.utils.physics import compute_features
+from arcefn.utils.physics import load_cached_features
 from arcefn.utils.paths import DATA_DIR
 from sklearn.cluster import AgglomerativeClustering
 
@@ -24,7 +24,7 @@ events,_,_=load_awkward(str(DATA_DIR/'test.h5'), max_events=NEED, lazy=False)
 N=min(len(En), len(events))
 En=En[:N]; y=y[:N]; events=events[:N]
 preds=preds_all[:N]
-feat=compute_features(events)
+feat=load_cached_features(events)
 names=["Mass","mSD","Mult","nSD","d12","d23","Tau21","Tau32","zg","theta_g"]
 
 res={}

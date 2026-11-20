@@ -22,7 +22,7 @@ from arcefn.utils.paths import EXPERIMENTS, DATA_DIR
 from arcefn.utils.device import get_device
 from arcefn.data.loader import load_awkward
 from arcefn.models.efn_arcface import TopTaggingModel
-from arcefn.utils.physics import compute_features
+from arcefn.utils.physics import load_cached_features
 import torch
 from torch.utils.data import DataLoader
 from arcefn.data.loader import JetTaggingDataset
@@ -59,7 +59,7 @@ all_labels = np.concatenate(all_labels)
 
 print("Computing jet mass via FastJet...")
 t0 = time.time()
-features = compute_features(events)  # col 0=mass, 1=mSD, 2=mult, 3=nSD, ...
+features = load_cached_features(events)  # col 0=mass, 1=mSD, 2=mult, 3=nSD, ...
 jet_mass = features[:, 0]  # mass is the first column
 print(f"FastJet done in {time.time()-t0:.0f}s")
 

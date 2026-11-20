@@ -19,7 +19,7 @@ from scipy.optimize import curve_fit
 
 from arcefn.utils.paths import EXPERIMENTS, DATA_DIR
 from arcefn.data.loader import load_awkward
-from arcefn.utils.physics import compute_features
+from arcefn.utils.physics import load_cached_features
 from arcefn.utils.pred_labels import arcface_preds_from_centers, check_cm
 from arcefn.utils.clustering import spectral_clustering_subclass
 
@@ -76,7 +76,7 @@ def main() -> None:
     # Load test data for features
     print("Loading test data for features...")
     events, _, _ = load_awkward(str(DATA_DIR / "test.h5"), max_events=len(embeddings), lazy=False)
-    features = compute_features(events)
+    features = load_cached_features(events)
     # [Mass, mSD, Mult, nSD, sqrt(d12), sqrt(d23), Tau21, Tau32, zg, theta_g]
     mass_all = features[:, 0].astype(np.float64)
     zg_all = features[:, 8].astype(np.float64)

@@ -61,8 +61,8 @@ def load_features(split: str, max_events: int, seed: int = 42):
     events = events[idx]
     labels = labels[idx]
     print(f"Computing features for {split}.h5 ({n_use} events)...")
-    from arcefn.utils.physics import compute_features
-    features = compute_features(events)
+    from arcefn.utils.physics import load_cached_features
+    features = load_cached_features(events)
     np.savez(cache, features=features, labels=labels)
     print(f"Cached: {cache}")
     return features, labels

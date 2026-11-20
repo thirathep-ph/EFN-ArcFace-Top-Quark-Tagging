@@ -1,0 +1,7 @@
+{
+  "hopkins_statistic": 0.9999993706859375,
+  "silhouette_score": 0.6452317833900452,
+  "n_events": 404000,
+  "n_sample": 3000,
+  "interpretation": "Hopkins ~0.5 => uniform, no discrete clusters; silhouette near 0 => no cluster structure"
+}
