@@ -67,6 +67,8 @@ MARKERSIZE = 4
 ALPHA = 0.7
 
 # ── Legend ─────────────────────────────────────────────────────────────────
+PAPER_FIGURES = {}
+
 LEGEND_KWARGS = dict(
     frameon=True,
     fancybox=True,
@@ -120,7 +122,7 @@ def add_grid(ax, **kwargs):
     ax.grid(**kw)
 
 
-def save_fig(fig, path, dpi=None, **kwargs):
+def save_fig(fig, path, dpi=None, to_paper=False, **kwargs):
     """Save figure with consistent settings."""
     import matplotlib.pyplot as plt
     if dpi is None:
