@@ -40,11 +40,10 @@ JSON = EXPERIMENTS / "robustness_s16_m05" / "tf_clustering.json"
 OUT_DIR = Path("D:/research/ArcEFN-paper/paper/figures/review")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Colorblind-safe palette (Wong, Nature Methods 2011): blue/orange
-# Standard HEP convention: blue = correct, orange = incorrect
-# Avoids red-green pair (inaccessible to ~8% of males)
-COLOR_T = "#0072B2"  # blue = correct (T)
-COLOR_F = "#E69F00"  # orange = incorrect (F)
+# Colorblind-safe palette: viridis-based (T = deep purple, F = yellow-green)
+# Avoids red-green pair which is inaccessible to ~8% of males
+COLOR_T = "#430153"  # viridis start (deep purple) = correct
+COLOR_F = "#fde725"  # viridis end (yellow-green) = incorrect
 
 
 def main() -> None:
@@ -90,29 +89,29 @@ def main() -> None:
     t_above_f_med = int((abs_margin_T > med_abs_F).sum())
 
     # --- Figure 1: PCA 2-D colored by T/F ---
+    # Standard practice: plot majority class (T) first with low alpha,
+    # then minority class (F) on top with larger markers and higher alpha.
     fig, ax = plt.subplots(figsize=(6.5, 5.2))
-    # Plot T first (background, small/transparent), then F on top (larger, more opaque)
-    ax.scatter(X_pca[T_mask, 0], X_pca[T_mask, 1], c=COLOR_T, s=1, alpha=0.12,
-               label=f"T (correct, n={n_T:,})", zorder=1, marker="o")
-    ax.scatter(X_pca[F_mask, 0], X_pca[F_mask, 1], c=COLOR_F, s=8, alpha=0.7,
-               label=f"F (incorrect, n={n_F:,})", zorder=2, marker="x")
+    ax.scatter(X_pca[T_mask, 0], X_pca[T_mask, 1], c=COLOR_T, s=2, alpha=0.15,
+               label=f"T (correct, n={n_T:,})", zorder=1)
+    ax.scatter(X_pca[F_mask, 0], X_pca[F_mask, 1], c=COLOR_F, s=6, alpha=0.6,
+               label=f"F (incorrect, n={n_F:,})", zorder=2, edgecolors="none")
     ax.axvline(0, color="black", linestyle="--", linewidth=1, alpha=0.7,
                label="PC1 = 0 (approx. boundary)")
     ax.set_xlabel("PC1")
     ax.set_ylabel("PC2")
-    ax.set_title(f"PCA 2-D: T={n_T:,} (green) vs F={n_F:,} (red), acc={acc:.4f}")
-    ax.legend(loc="best", fontsize=8, markerscale=4)
+    ax.set_title(f"PCA 2-D: T (correct) vs F (incorrect), acc={acc:.4f}")
+    ax.legend(loc="best", fontsize=8, markerscale=3)
     fig.tight_layout()
     fig.savefig(OUT_DIR / "tf_pca_2d.png", dpi=150)
     plt.close(fig)
 
     # --- Figure 2: Distance-to-prototypes scatter ---
     fig, ax = plt.subplots(figsize=(6.5, 5.2))
-    # Plot T first (background), then F on top (larger, more opaque)
-    ax.scatter(dist_to_qcd[T_mask], dist_to_top[T_mask], c=COLOR_T, s=1, alpha=0.12,
-               label=f"T (correct, n={n_T:,})", zorder=1, marker="o")
-    ax.scatter(dist_to_qcd[F_mask], dist_to_top[F_mask], c=COLOR_F, s=8, alpha=0.7,
-               label=f"F (incorrect, n={n_F:,})", zorder=2, marker="x")
+    ax.scatter(dist_to_qcd[T_mask], dist_to_top[T_mask], c=COLOR_T, s=2, alpha=0.15,
+               label=f"T (correct, n={n_T:,})", zorder=1)
+    ax.scatter(dist_to_qcd[F_mask], dist_to_top[F_mask], c=COLOR_F, s=6, alpha=0.6,
+               label=f"F (incorrect, n={n_F:,})", zorder=2, edgecolors="none")
     lo = min(dist_to_qcd.min(), dist_to_top.min())
     hi = max(dist_to_qcd.max(), dist_to_top.max())
     ax.plot([lo, hi], [lo, hi], color="black", linestyle="--", linewidth=1, alpha=0.7,
@@ -120,7 +119,7 @@ def main() -> None:
     ax.set_xlabel("Distance to QCD prototype (center[0])")
     ax.set_ylabel("Distance to Top prototype (center[1])")
     ax.set_title("Distance to each prototype (colored by T/F)")
-    ax.legend(loc="best", fontsize=8, markerscale=4)
+    ax.legend(loc="best", fontsize=8, markerscale=3)
     fig.tight_layout()
     fig.savefig(OUT_DIR / "tf_distance_scatter.png", dpi=150)
     plt.close(fig)
