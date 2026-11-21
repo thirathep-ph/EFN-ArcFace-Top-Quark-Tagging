@@ -66,9 +66,9 @@ SEED = 42
 
 SUBCLASS_NAMES = {0: "QCD-Dense", 1: "QCD-Dilute", 2: "Top-Dilute", 3: "Top-Dense"}
 
-SUBCLASS_COLORS = {0: "#377eb8", 1: "#9ecae1", 2: "#e41a1c", 3: "#fdae6b"}
+SUBCLASS_COLORS = {0: "#0053a6", 1: "#7aa6d9", 2: "#c8171f", 3: "#e88a8f"}
 
-CLASS_COLORS = {0: "#377eb8", 1: "#e41a1c"}
+CLASS_COLORS = {0: "#0053a6", 1: "#c8171f"}
 
 CLASS_NAMES = {0: "QCD", 1: "Top"}
 
@@ -124,9 +124,9 @@ def main():
 
     SUBCLASS_NAMES = {0: "QCD-Dense", 1: "QCD-Dilute", 2: "Top-Dilute", 3: "Top-Dense"}
 
-    SUBCLASS_COLORS = {0: "#377eb8", 1: "#9ecae1", 2: "#e41a1c", 3: "#fdae6b"}
+    SUBCLASS_COLORS = {0: "#0053a6", 1: "#7aa6d9", 2: "#c8171f", 3: "#e88a8f"}
 
-    CLASS_COLORS = {0: "#377eb8", 1: "#e41a1c"}
+    CLASS_COLORS = {0: "#0053a6", 1: "#c8171f"}
 
     CLASS_NAMES = {0: "QCD", 1: "Top"}
 
@@ -238,7 +238,7 @@ def main():
 
 
 
-    plt.rcParams.update({"font.family": "DejaVu Serif",
+    plt.rcParams.update({"font.family": "Arial",
 
                          "font.size": 10,
 
@@ -386,7 +386,7 @@ def main():
 
 
 
-        plt.rcParams.update({"font.family": "DejaVu Serif",
+        plt.rcParams.update({"font.family": "Arial",
 
                              "font.size": 10,
 

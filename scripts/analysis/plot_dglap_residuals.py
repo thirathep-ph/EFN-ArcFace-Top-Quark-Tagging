@@ -130,8 +130,8 @@ for idx, (sg_id, sg_name) in enumerate(SUBCLASS_NAMES.items()):
     rel_residuals = residuals / (hist[valid] + 1e-10)
     
     # Plot
-    ax.scatter(bin_centers[valid], rel_residuals, s=10, alpha=0.6, color="steelblue")
-    ax.axhline(0, color="red", linestyle="--", linewidth=1)
+    ax.scatter(bin_centers[valid], rel_residuals, s=10, alpha=0.6, color="#0053a6")
+    ax.axhline(0, color="#c8171f", linestyle="--", linewidth=1)
     ax.axhline(0.1, color="gray", linestyle=":", linewidth=0.5)
     ax.axhline(-0.1, color="gray", linestyle=":", linewidth=0.5)
     ax.set_xlabel(r"$z_g$")

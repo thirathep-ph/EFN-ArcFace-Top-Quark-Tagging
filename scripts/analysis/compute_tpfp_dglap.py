@@ -142,7 +142,7 @@ def main() -> None:
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
     fig.suptitle("DGLAP zg fit by TP/TN/FP/FN group (bounded alpha ∈ [-2,0])", fontsize=12)
 
-    colors = {"TP": "#1b9e77", "TN": "#d95f02", "FP": "#7570b3", "FN": "#e7298a"}
+    colors = {"TP": "#0053a6", "TN": "#7aa6d9", "FP": "#c8171f", "FN": "#e88a8f"}
     titles = {"TP": "TP: Top→Top (correct)", "TN": "TN: QCD→QCD (correct)",
               "FP": "FP: QCD→Top (error)", "FN": "FN: Top→QCD (error)"}
 
