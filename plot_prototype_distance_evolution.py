@@ -64,9 +64,9 @@ def plot_class(tag: str) -> None:
     # Prototype proxy: mean of the bin with smallest mean dist_to_own
     best_b = min(range(n_bins), key=lambda b: dist[bin_idx == b].mean())
     proto = pts[bin_idx == best_b].mean(axis=0)
-    ax.scatter(*proto, marker="*", s=400, color="red", edgecolors="black", zorder=5)
+    ax.scatter(*proto, marker="*", s=400, color="#c8171f", edgecolors="black", zorder=5)
     ax.annotate("Prototype", proto, textcoords="offset points", xytext=(0, 12),
-                fontsize=9, ha="center", color="red")
+                fontsize=9, ha="center", color="#c8171f")
 
     # Quiver: mean displacement per consecutive bin pair
     for b in range(n_bins - 1):

@@ -40,10 +40,11 @@ JSON = EXPERIMENTS / "robustness_s16_m05" / "tf_clustering.json"
 OUT_DIR = Path("D:/research/ArcEFN-paper/paper/figures/review")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Colorblind-safe palette: viridis-based (T = deep purple, F = yellow-green)
+# CERN/HEP colorblind-safe palette: T = CERN blue, F = CERN red
 # Avoids red-green pair which is inaccessible to ~8% of males
-COLOR_T = "#430153"  # viridis start (deep purple) = correct
-COLOR_F = "#fde725"  # viridis end (yellow-green) = incorrect
+# CERN blue (#0053a6) and CERN red (#c8171f) are distinguishable by all color vision types
+COLOR_T = "#0053a6"  # CERN blue = correct
+COLOR_F = "#c8171f"  # CERN red = incorrect
 
 
 def main() -> None:

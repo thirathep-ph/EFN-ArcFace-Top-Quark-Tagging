@@ -30,7 +30,7 @@ paper's single-font rule. Display-only refonts never touch JSON.
 import matplotlib as mpl
 
 # ── Fonts ─────────────────────────────────────────────────────────────────
-FONT_FAMILY = "DejaVu Serif"
+FONT_FAMILY = "Arial"
 FONT_SIZE = 11
 LABEL_SIZE = 12
 TITLE_SIZE = 13.5
@@ -38,19 +38,20 @@ TICK_SIZE = 11
 LEGEND_SIZE = 10
 AUTHOR_FACTOR = 4.0 / 3.0
 
-# ── Color Palette (viridis-based, HEP-inspired) ──────────────────────────
-# Viridis colormap: purple (#430153) -> teal (#30928f) -> yellow-green (#fde725)
-# Background: white, Grid: gray (#c5c5c5), Text: black
+# ── Color Palette (CERN/HEP official) ──────────────────────────────────────
+# CERN blue (#0053a6) for QCD/signal, CERN red (#c8171f) for Top/background.
+# Background: white, Grid: light gray (#cccccc), Text: black.
+# Follows CERN Graphics Guidelines and CMS/ATLAS plotting conventions.
 COLORS = {
-    "qcd":       "#430153",   # viridis start (deep purple)
-    "top":       "#fde725",   # viridis end (yellow-green)
-    "qcd_dilute":  "#7a04a1", # mid-purple
-    "top_dense":   "#a0da39", # light green
-    "green":     "#30928f",   # viridis mid (teal)
-    "purple":    "#430153",   # viridis start
-    "orange":    "#fde725",   # viridis end
-    "brown":     "#7a04a1",   # mid-purple
-    "gray":      "#c5c5c5",   # grid/axes gray
+    "qcd":       "#0053a6",   # CERN blue (signal/QCD)
+    "top":       "#c8171f",   # CERN red (background/Top)
+    "qcd_dilute":  "#7aa6d9", # light CERN blue
+    "top_dense":   "#e88a8f", # light CERN red
+    "green":     "#009e73",   # colorblind-safe green (Okabe-Ito)
+    "purple":    "#cc79a7",   # colorblind-safe purple (Okabe-Ito)
+    "orange":    "#e69f00",   # colorblind-safe orange (Okabe-Ito)
+    "brown":     "#a65628",   # colorblind-safe brown
+    "gray":      "#cccccc",   # grid/axes gray
 }
 CLASS_COLORS = {"QCD": COLORS["qcd"], "Top": COLORS["top"]}
 SUBCLASS_COLORS = {
