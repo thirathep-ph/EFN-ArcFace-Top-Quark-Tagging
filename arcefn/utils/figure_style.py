@@ -114,6 +114,21 @@ def apply_style():
     })
 
 
+def add_grid(ax, **kwargs):
+    """Add consistent grid to an axes."""
+    kw = {**GRID_KWARGS, **kwargs}
+    ax.grid(**kw)
+
+
+def save_fig(fig, path, dpi=None, **kwargs):
+    """Save figure with consistent settings."""
+    import matplotlib.pyplot as plt
+    if dpi is None:
+        dpi = DPI
+    fig.savefig(path, dpi=dpi, bbox_inches="tight", facecolor="white", **kwargs)
+    plt.close(fig)
+
+
 def panel_label(ax, label, fontsize=TITLE_SIZE, loc="left", pad=6):
     """Add a bold panel label like $\\mathbf{(a)}$ to an axes."""
     title = f"$\\mathbf{{{label}}}$"
