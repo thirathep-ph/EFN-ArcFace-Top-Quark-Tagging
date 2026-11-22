@@ -29,8 +29,12 @@ code("# Install deps not pre-installed on Kaggle\n!pip install -q --upgrade pip\
 
 code("""import os, subprocess, sys
 REPO = "/kaggle/working/ArcEFN"
-if not os.path.isdir(REPO):
-    subprocess.run(["git", "clone", "https://github.com/thirathep-ph/EFN-ArcFace-Top-Quark-Tagging.git", REPO], check=True)
+URL = "https://github.com/thirathep-ph/EFN-ArcFace-Top-Quark-Tagging.git"
+if os.path.isdir(REPO):
+    subprocess.run(["git", "-C", REPO, "fetch", "origin"], check=False)
+    subprocess.run(["git", "-C", REPO, "reset", "--hard", "origin/main"], check=False)
+else:
+    subprocess.run(["git", "clone", URL, REPO], check=True)
 os.chdir(REPO)
 sys.path.insert(0, REPO)
 print("cwd:", os.getcwd())
