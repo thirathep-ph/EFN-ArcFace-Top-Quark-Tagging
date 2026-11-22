@@ -49,6 +49,8 @@ A 59k-parameter tagger whose decision rule is exactly nearest-class-prototype on
 python scripts/download_data.py   # 3.4 GB dataset
 pip install -e .
 python scripts/train_arcface.py --scale 16 --seed 42 --quick   # sanity run
+
+# Run on Kaggle (free GPU): see KAGGLE.md
 ```
 
 Layout: `arcefn/` (models, data, utils, tests), `scripts/` (training, evaluation, `analysis/`), `experiments/*.json` (tracked results), `docs/` (overview figure + full results gallery).

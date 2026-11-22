@@ -77,7 +77,12 @@ def ensure_dir(path: Path) -> Path:
 
 _PROJECT_ROOT = get_project_root()
 
-DATA_DIR      = _PROJECT_ROOT / 'data' / 'top_tagging'
+# Allow DATA_DIR override via env (useful on Kaggle/Colab where data is mounted elsewhere)
+_data_dir_env = os.environ.get('ARCEFN_DATA_DIR')
+if _data_dir_env:
+    DATA_DIR = Path(_data_dir_env).resolve()
+else:
+    DATA_DIR = _PROJECT_ROOT / 'data' / 'top_tagging'
 EXPERIMENTS   = _PROJECT_ROOT / 'experiments'
 SCRIPTS_DIR   = _PROJECT_ROOT / 'scripts'
 

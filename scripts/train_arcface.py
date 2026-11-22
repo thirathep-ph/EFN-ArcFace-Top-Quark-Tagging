@@ -232,6 +232,9 @@ def main():
     parser.add_argument('--shuffle_labels', type=int, default=None,
                         help='Null-control: globally permute TRAIN labels once '
                              'with this seed (validation labels stay true).')
+    parser.add_argument('--resume', action='store_true',
+                        help='Resume from checkpoint.pt + training_state.pt in '
+                             'checkpoint_dir (if present).')
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -302,6 +305,36 @@ def main():
 
     history = {'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': []}
     best_acc = 0.0
+    start_epoch = 0
+
+    # Optional resume: keep checkpoint.pt as pure state_dict (analysis scripts
+    # depend on that), store optimizer/scheduler/history in training_state.pt.
+    ckpt_path = os.path.join(args.checkpoint_dir, 'checkpoint.pt')
+    state_path = os.path.join(args.checkpoint_dir, 'training_state.pt')
+    if args.resume and os.path.exists(ckpt_path):
+        try:
+            model.load_state_dict(torch.load(ckpt_path, map_location=device))
+            print(f"  Resumed model weights from {ckpt_path}")
+        except Exception as e:
+            print(f"  [resume] could not load weights: {e!r}")
+        if os.path.exists(state_path):
+            try:
+                st = torch.load(state_path, map_location='cpu')
+                if 'optimizer' in st:
+                    optimizer.load_state_dict(st['optimizer'])
+                if 'scheduler' in st and st.get('scheduler') is not None:
+                    try:
+                        scheduler.load_state_dict(st['scheduler'])
+                    except Exception as e:
+                        print(f"  [resume] scheduler load skipped: {e!r}")
+                history = st.get('history', history)
+                best_acc = st.get('best_acc', best_acc)
+                start_epoch = st.get('epoch', -1) + 1
+                print(f"  Resumed from epoch {start_epoch} (best_acc={best_acc:.4f})")
+            except Exception as e:
+                print(f"  [resume] training_state load failed: {e!r}; starting fresh")
+        else:
+            print("  [resume] no training_state.pt; warm-starting weights only")
 
     cached_train_data = None
     cached_val_data = None
@@ -314,7 +347,10 @@ def main():
         vl_ev, vl_lab, vl_w = load_awkward(val_path, max_events=val_len, lazy=True)
         cached_val_data = (vl_ev, vl_lab, vl_w)
 
-    epoch_pbar = tqdm(range(args.epochs), desc="Overall Progress")
+    if start_epoch >= args.epochs:
+        print(f"Already completed {start_epoch}/{args.epochs} epochs; nothing to do.")
+        return
+    epoch_pbar = tqdm(range(start_epoch, args.epochs), desc="Overall Progress")
     for epoch in epoch_pbar:
         current_m = final_margin * min(1.0, (epoch + 1) / warmup_epochs)
         model.arcface_head.set_margin(current_m)
@@ -390,6 +426,16 @@ def main():
             os.makedirs(args.checkpoint_dir, exist_ok=True)
             torch.save(model.state_dict(),
                        os.path.join(args.checkpoint_dir, 'checkpoint.pt'))
+
+        # Persist resume state every epoch (small; enables --resume after timeout).
+        os.makedirs(args.checkpoint_dir, exist_ok=True)
+        torch.save({
+            'epoch': epoch,
+            'best_acc': best_acc,
+            'history': history,
+            'optimizer': optimizer.state_dict(),
+            'scheduler': scheduler.state_dict() if scheduler is not None else None,
+        }, os.path.join(args.checkpoint_dir, 'training_state.pt'))
 
         print(f"Epoch {epoch + 1:2d}/{args.epochs}: m={current_m:.2f} "
               f"| LR={curr_lr:.6f}")
