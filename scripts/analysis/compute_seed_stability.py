@@ -42,6 +42,8 @@ CANONICAL_SEED_DIRS = {
     42: EXPERIMENTS / "robustness_s16_m05",
     123: EXPERIMENTS / "arcface_seed_123",
     7: EXPERIMENTS / "arcface_seed_7",
+    67: EXPERIMENTS / "arcface_seed_67",
+    404: EXPERIMENTS / "arcface_seed_404",
 }
 
 

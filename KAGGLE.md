@@ -41,7 +41,9 @@ kaggle kernels push -p .
   (50 epochs) fits in one session; run the two seeds as two separate sessions.
 - The notebook downloads the 3.4 GB Top Tagging H5 from Zenodo on first run
   (internet must be ON). Re-runs reuse the cached file if the session persists.
-- Mixed precision (`--amp`) is enabled by default and uses CUDA AMP on Kaggle.
+- Mixed precision is OFF by default to match the canonical FP32 runs (the AMD/DirectML
+  machine has no AMP). Set `AMP = True` in the config cell only if you accept tiny
+  numerical differences for a speedup.
 - Checkpoints are saved as `best val acc` only (`checkpoint.pt`) + `history.json`
   + `config.json`, matching the local convention.
 

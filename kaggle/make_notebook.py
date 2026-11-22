@@ -41,12 +41,14 @@ md("## 1. Config")
 code("""SEED = 67          # change to 404 for the second run
 EPOCHS = 50
 MAX_EVENTS = None   # set e.g. 50000 for a quick sanity run
-AMP = True
+# Keep False to match the canonical FP32 runs (AMD/DirectML has no AMP).
+# Set True only if you need speed and accept tiny numerical differences.
+AMP = False
 BATCH_SIZE = 128
 ACCUM = 8
 CHUNK_SIZE = 100000
-CKPT_DIR = "experiments/seed_{}".format(SEED)
-OUT_DIR = "experiments/seed_{}".format(SEED)
+CKPT_DIR = "experiments/arcface_seed_{}".format(SEED)
+OUT_DIR = "experiments/arcface_seed_{}".format(SEED)
 
 import os
 os.environ["ARCEFN_MODEL_DIR"] = CKPT_DIR
