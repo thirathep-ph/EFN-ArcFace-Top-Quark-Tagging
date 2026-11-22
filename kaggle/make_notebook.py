@@ -88,7 +88,7 @@ md("## 3. Train")
 
 code("""import os
 cmd = [
-    "python", "scripts/train_arcface.py",
+    "python", "-m", "scripts.train_arcface",
     "--seed", str(SEED),
     "--epochs", str(EPOCHS),
     "--batch_size", str(BATCH_SIZE),
