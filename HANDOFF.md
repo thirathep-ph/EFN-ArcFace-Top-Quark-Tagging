@@ -10,7 +10,7 @@
 
 - Train: `scripts/train_arcface.py --scale 16 --seed 42` (Adam lr=1e-3 defaults, OneCycleLR peak 2e-3, 50 epochs, batch 128 eff. 1024; AMD DirectML box, never `--amp`).
 - Canonical run: `experiments/robustness_s16_m05/` (`checkpoint.pt` + 64-D `embeddings.npz`, 404k test events).
-- Figures/numbers: `scripts/analysis/compute_*.py` → `experiments/*.json` → `numbers.json` gate (50+ entries).
+- Figures/numbers: `scripts/analysis/compute_*.py` → `experiments/*.json` → `ssot_paper_numbers.json` gate (122 entries, 19 artifacts).
 - Data: `data/` (3.4 GB, gitignored, via `scripts/download_data.py`).
 
 ## Rules

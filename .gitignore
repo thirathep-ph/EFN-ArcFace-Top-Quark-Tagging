@@ -44,6 +44,7 @@ build/
 
 # ===== VIRTUAL ENVIRONMENTS =====
 .venv*/
+.venv_pysr*/
 venv*/
 env/
 
@@ -119,3 +120,7 @@ manim_slides/media/
 manim_slides/slides/
 manim_slides/deck.html
 manim_slides/deck_assets/
+
+# ===== LOCAL ARCHIVE (not versioned) =====
+archive/
+
