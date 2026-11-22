@@ -73,7 +73,7 @@ else:
     existing = [f for f in os.listdir(DATA_DIR) if f.endswith(".h5")]
     total = sum(os.path.getsize(os.path.join(DATA_DIR, f)) for f in existing) if existing else 0
     print("existing h5 bytes:", total)
-    if total < 3_000_000_000:
+    if total < 1_700_000_000:
         get_ipython().system("python scripts/download_data.py --dest " + DATA_DIR)
     else:
         print("dataset already present, skipping download")""")
