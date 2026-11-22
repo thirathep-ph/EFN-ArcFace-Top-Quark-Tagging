@@ -1,0 +1,54 @@
+{
+  "n_events": 404000,
+  "target": "logitdiff (log-odds of the 2-class softmax)",
+  "units": "raw physical units (m/pT and tau32, not standardised)",
+  "A_amplitude_pinned": {
+    "k": 38.51793541069024,
+    "offset": 23.662019141853392,
+    "r2": 0.4817162698342119,
+    "gauge_invariant": false
+  },
+  "B_free_amplitude_tanh": {
+    "a": 64.33032207423116,
+    "k": 21.228502637296128,
+    "offset": -1.4958601835325138,
+    "ratio_k_over_a": 0.3299921709205874,
+    "r2": 0.815248320028977,
+    "gauge_invariant": true
+  },
+  "C_linear_mass": {
+    "a": 60.38881914262674,
+    "k": 21.52167969636809,
+    "ratio_k_over_a": 0.35638517198917297,
+    "r2": 0.809046552422762
+  },
+  "D_free_step": {
+    "a": 7.644028671286676,
+    "mu": 0.20880413433708286,
+    "sd": 0.0386387482573981,
+    "k": 15.94088873513911,
+    "offset": 7.843655394063301,
+    "ratio_k_over_a": 2.0854041004605324,
+    "r2": 0.9109736487807635
+  },
+  "nominal_ratio": 0.3299921709205874,
+  "bootstrap_ratio_mean": 0.3299908635194878,
+  "bootstrap_ratio_std": 0.0011406158067426007,
+  "bootstrap_ratio_ci95": [
+    0.3277863497589508,
+    0.33222024038882836
+  ],
+  "bootstrap_n": 200,
+  "sensitivity": {
+    "offset_forced_zero": 0.3660871315304693,
+    "trim_abs_logit_le_11": 0.4673433402749997,
+    "trim_kept_fraction": 0.6545346534653466,
+    "free_step_profile": 2.0854041004605324
+  },
+  "ratio_range_over_choices": [
+    0.3299921709205874,
+    2.0854041004605324
+  ],
+  "one_third_distance_in_bootstrap_sd": 2.9292618890559456,
+  "auc_of_nominal_form": 0.9429014369840955
+}

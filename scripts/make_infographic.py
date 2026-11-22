@@ -1,6 +1,6 @@
 """README hero infographic: clean, simple pipeline.
 
-Reads values from experiments/numbers.json (SSOT). Output: docs/infographic.png
+Reads values from experiments/ssot_paper_numbers.json (SSOT). Output: docs/infographic.png
 """
 import json
 from pathlib import Path
@@ -12,7 +12,7 @@ from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
 
 ROOT = Path(__file__).resolve().parent.parent
 NUMBERS = {e["name"]: e["expect"] for e in
-           json.load(open(ROOT / "experiments" / "numbers.json"))["entries"]
+           json.load(open(ROOT / "experiments" / "ssot_paper_numbers.json"))["entries"]
            if "expect" in e}
 OUT = ROOT / "docs" / "infographic.png"
 
