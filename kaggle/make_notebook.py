@@ -82,7 +82,7 @@ else:
     else:
         print("dataset already present, skipping download")""")
 
-code("# verify\nimport os\nprint(sorted(os.listdir('data/top_tagging')))")
+code("# verify\nimport os\nprint(sorted(os.listdir(os.environ.get('ARCEFN_DATA_DIR', 'data/top_tagging'))))")
 
 md("## 3. Train")
 
