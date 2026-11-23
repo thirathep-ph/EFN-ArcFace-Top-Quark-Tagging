@@ -72,7 +72,7 @@ def train_chunk(model, loader, optimizer, device, scheduler=None,
     n_batches = len(loader)
 
     for batch_idx, (x, y, w, m, _) in enumerate(loader):
-        x, y, w, m = x.to(device), y.to(device), w.to(device), m.to(device)
+        x, y, w, m = x.to(device, non_blocking=True), y.to(device, non_blocking=True), w.to(device, non_blocking=True), m.to(device, non_blocking=True)
 
         if scaler is not None:
             with torch.amp.autocast('cuda'):
@@ -145,7 +145,7 @@ def evaluate(model, file_path, device, backend_type='cpu', batch_size=1024,
     if cached_data is not None:
         ev, lab, w = cached_data
         ds = JetTaggingDataset(ev, lab, w)
-        loader = DataLoader(ds, batch_size=batch_size, shuffle=False)
+        loader = DataLoader(ds, batch_size=batch_size, shuffle=False, pin_memory=True)
         total_len = len(ds)
         num_chunks = 1
     else:
@@ -162,7 +162,7 @@ def evaluate(model, file_path, device, backend_type='cpu', batch_size=1024,
     with torch.no_grad():
         if cached_data is not None:
             for x, y, w_b, m, _ in loader:
-                x, y, w_b, m = x.to(device), y.to(device), w_b.to(device), m.to(device)
+                x, y, w_b, m = x.to(device, non_blocking=True), y.to(device, non_blocking=True), w_b.to(device, non_blocking=True), m.to(device, non_blocking=True)
                 logits, sims, _ = model(x, mask=m)
                 loss = criterion_cls(logits, y)
                 total_loss += loss.item()
@@ -176,10 +176,10 @@ def evaluate(model, file_path, device, backend_type='cpu', batch_size=1024,
                 ev, lab, w = load_awkward(file_path, max_events=n_events,
                                           start_event=start, lazy=True)
                 ds = JetTaggingDataset(ev, lab, w)
-                loader = DataLoader(ds, batch_size=batch_size, shuffle=False)
+                loader = DataLoader(ds, batch_size=batch_size, shuffle=False, pin_memory=True)
 
                 for x, y, w_b, m, _ in loader:
-                    x, y, w_b, m = x.to(device), y.to(device), w_b.to(device), m.to(device)
+                    x, y, w_b, m = x.to(device, non_blocking=True), y.to(device, non_blocking=True), w_b.to(device, non_blocking=True), m.to(device, non_blocking=True)
                     logits, sims, _ = model(x, mask=m)
                     loss = criterion_cls(logits, y)
                     total_loss += loss.item()
