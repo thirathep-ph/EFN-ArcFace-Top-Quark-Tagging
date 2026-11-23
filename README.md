@@ -18,7 +18,7 @@ Top-quark vs QCD jet classification is a core LHC task where deep taggers are ac
 - **Baselines**: EFN+Linear and EFN+CosLinear (3 seeds each) to isolate the effect of the hypersphere vs the margin; random forest on 10 hand-crafted substructure observables.
 - **Secondary finding en route — diagnostic partition structure (not the primary goal)**: spectral clustering per predicted class (eigengap selects k=2/class → 4 partitions: Dense/Dilute × Top/QCD), with null controls (noise jets, untrained encoder) and a label-shuffled retraining control. Eigengap gives k=2 on the continuous 2D manifold; Leiden clustering (k-NN graph, γ∈[0.1,10]) finds no resolution yielding k=2, confirming the partition is a diagnostic cut along a continuum.
 - **Validation battery**: SoftDrop z_g power-law fits, angular collimation, Lund planes, one mass-matched bin, 3-head geometry comparison (TwoNN/PR/PCA), PySR symbolic distillation, JetNet30 out-of-distribution scan.
-- **Verification**: all 48 reported numbers are tracked to artifacts in `experiments/numbers.json`.
+- **Verification**: all 122 reported numbers are tracked to artifacts in `experiments/ssot_paper_numbers.json`.
 
 ## Results
 
@@ -49,6 +49,12 @@ A 59k-parameter tagger whose decision rule is exactly nearest-class-prototype on
 python scripts/download_data.py   # 3.4 GB dataset
 pip install -e .
 python scripts/train_arcface.py --scale 16 --seed 42 --quick   # sanity run
+
+# Optional: pre-convert H5 -> NumPy for faster loading (auto on Kaggle)
+# ARCEFN_AUTO_CONVERT=1 python scripts/train_arcface.py --scale 16 --seed 42
+# Or manual: python -m scripts.convert_h5_to_npy
+
+# Run on Kaggle (free GPU): see KAGGLE.md
 ```
 
 Layout: `arcefn/` (models, data, utils, tests), `scripts/` (training, evaluation, `analysis/`), `experiments/*.json` (tracked results), `docs/` (overview figure + full results gallery).

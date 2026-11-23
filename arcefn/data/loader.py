@@ -188,9 +188,9 @@ def load_awkward(
         npy_e = os.path.join(cache_dir, stem + "_E.npy")
         base = os.path.join(cache_dir, stem)
 
-    # Auto-convert from h5 if .npy still missing (transparent, one-time)
-    if not os.path.exists(npy_e) and os.path.exists(path):
-        # Determine writable output dir
+    # Auto-convert from h5 if .npy still missing (opt-in via ARCEFN_AUTO_CONVERT=1)
+    auto_convert = os.environ.get("ARCEFN_AUTO_CONVERT", "0") == "1"
+    if auto_convert and not os.path.exists(npy_e) and os.path.exists(path):
         h5_dir = os.path.dirname(path)
         try:
             test_file = os.path.join(h5_dir, ".write_test")
@@ -210,7 +210,6 @@ def load_awkward(
         if not os.path.exists(npy_e):
             print(f"  Converting {path} -> .npy (one-time)...")
             _convert_h5_to_npy(path, out_dir)
-            # update env so subsequent calls find the cache
             if out_dir != os.path.dirname(path):
                 os.environ.setdefault("ARCEFN_NPY_CACHE", out_dir)
 
