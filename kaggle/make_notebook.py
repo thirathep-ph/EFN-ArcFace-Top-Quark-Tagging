@@ -48,6 +48,7 @@ MAX_EVENTS = None   # set e.g. 50000 for a quick sanity run
 # Keep False to match the canonical FP32 runs (AMD/DirectML has no AMP).
 # Set True only if you need speed and accept tiny numerical differences.
 AMP = False
+MULTI_GPU = False   # set True to use both T4s (DataParallel)
 BATCH_SIZE = 128
 ACCUM = 8
 CHUNK_SIZE = 100000
@@ -106,6 +107,8 @@ if MAX_EVENTS:
     cmd += ["--max_events", str(MAX_EVENTS)]
 if AMP:
     cmd += ["--amp"]
+if MULTI_GPU:
+    cmd += ["--multi-gpu"]
 print(" ".join(cmd))
 get_ipython().system(" ".join(cmd))""")
 
