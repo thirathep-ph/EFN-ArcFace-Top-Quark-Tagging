@@ -50,6 +50,10 @@ python scripts/download_data.py   # 3.4 GB dataset
 pip install -e .
 python scripts/train_arcface.py --scale 16 --seed 42 --quick   # sanity run
 
+# Optional: pre-convert H5 -> NumPy for faster loading (auto on Kaggle)
+# ARCEFN_AUTO_CONVERT=1 python scripts/train_arcface.py --scale 16 --seed 42
+# Or manual: python -m scripts.convert_h5_to_npy
+
 # Run on Kaggle (free GPU): see KAGGLE.md
 ```
 
