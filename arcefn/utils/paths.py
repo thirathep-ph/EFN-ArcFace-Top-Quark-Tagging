@@ -77,12 +77,23 @@ def ensure_dir(path: Path) -> Path:
 
 _PROJECT_ROOT = get_project_root()
 
-# Allow DATA_DIR override via env (useful on Kaggle/Colab where data is mounted elsewhere)
+# Allow DATA_DIR override via env (useful on Kaggle/Colab where data is mounted elsewhere).
+# Also auto-detect an attached Kaggle Dataset containing *.h5 (so training works
+# even when the env var is not inherited by the subprocess).
 _data_dir_env = os.environ.get('ARCEFN_DATA_DIR')
 if _data_dir_env:
     DATA_DIR = Path(_data_dir_env).resolve()
 else:
-    DATA_DIR = _PROJECT_ROOT / 'data' / 'top_tagging'
+    _default = _PROJECT_ROOT / 'data' / 'top_tagging'
+    if not _default.exists():
+        _found = None
+        for root, _, files in os.walk('/kaggle/input'):
+            if any(f.endswith('.h5') for f in files):
+                _found = root
+                break
+        DATA_DIR = Path(_found).resolve() if _found else _default
+    else:
+        DATA_DIR = _default
 EXPERIMENTS   = _PROJECT_ROOT / 'experiments'
 SCRIPTS_DIR   = _PROJECT_ROOT / 'scripts'
 

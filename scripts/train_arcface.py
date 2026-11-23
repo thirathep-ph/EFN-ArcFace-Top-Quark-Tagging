@@ -386,7 +386,8 @@ def main():
             train_ds = JetTaggingDataset(tr_ev, tr_lab, tr_w)
             train_loader = DataLoader(
                 train_ds, batch_size=args.batch_size, shuffle=True,
-                pin_memory=True, num_workers=0)
+                pin_memory=True, num_workers=2, prefetch_factor=2,
+                persistent_workers=True)
 
             c_loss, c_acc = train_chunk(
                 model, train_loader, optimizer, device, scheduler=scheduler,

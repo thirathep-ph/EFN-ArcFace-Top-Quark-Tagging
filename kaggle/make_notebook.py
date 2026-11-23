@@ -69,8 +69,16 @@ for root, _, files in os.walk("/kaggle/input"):
             attached.append(os.path.join(root, fn))
 if attached:
     DATA_DIR = os.path.dirname(attached[0])
+    CACHE_DIR = "/kaggle/working/data_cache"
+    os.makedirs(CACHE_DIR, exist_ok=True)
     os.environ["ARCEFN_DATA_DIR"] = DATA_DIR
+    os.environ["ARCEFN_NPY_CACHE"] = CACHE_DIR
     print("Using attached dataset:", DATA_DIR, attached)
+    if not os.path.exists(os.path.join(CACHE_DIR, "train_E.npy")):
+        print("Converting H5 -> NumPy (one-time, ~2 min)...")
+        get_ipython().system("python -m scripts.convert_h5_to_npy --data-dir " + DATA_DIR + " --output-dir " + CACHE_DIR)
+    else:
+        print("NumPy cache present, skipping conversion")
 else:
     DATA_DIR = "data/top_tagging"
     os.makedirs(DATA_DIR, exist_ok=True)
