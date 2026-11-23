@@ -235,6 +235,8 @@ def main():
     parser.add_argument('--resume', action='store_true',
                         help='Resume from checkpoint.pt + training_state.pt in '
                              'checkpoint_dir (if present).')
+    parser.add_argument('--multi-gpu', action='store_true',
+                        help='Use DataParallel across all available GPUs.')
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -293,7 +295,14 @@ def main():
         embedding_dim=args.embedding_dim,
         particle_dim=args.particle_dim,
     ).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+
+    if args.multi_gpu and torch.cuda.device_count() > 1:
+        print(f"  Using DataParallel across {torch.cuda.device_count()} GPUs")
+        model = torch.nn.DataParallel(model)
+    # DirectML does not support Adam's fused _foreach_lerp_ (falls back to CPU).
+    # Disable foreach on DML so optimizer runs on GPU via individual ops.
+    _foreach = backend_type != 'dml'
+    optimizer = optim.Adam(model.parameters(), lr=1e-3, foreach=_foreach)
     scheduler = optim.lr_scheduler.OneCycleLR(
         optimizer, max_lr=2e-3,
         total_steps=total_scheduler_steps if total_scheduler_steps > 0 else 1,
@@ -313,7 +322,8 @@ def main():
     state_path = os.path.join(args.checkpoint_dir, 'training_state.pt')
     if args.resume and os.path.exists(ckpt_path):
         try:
-            model.load_state_dict(torch.load(ckpt_path, map_location=device))
+            _m = model.module if hasattr(model, "module") else model
+            _m.load_state_dict(torch.load(ckpt_path, map_location=device))
             print(f"  Resumed model weights from {ckpt_path}")
         except Exception as e:
             print(f"  [resume] could not load weights: {e!r}")
@@ -353,7 +363,8 @@ def main():
     epoch_pbar = tqdm(range(start_epoch, args.epochs), desc="Overall Progress")
     for epoch in epoch_pbar:
         current_m = final_margin * min(1.0, (epoch + 1) / warmup_epochs)
-        model.arcface_head.set_margin(current_m)
+        _m = model.module if hasattr(model, "module") else model
+        _m.arcface_head.set_margin(current_m)
 
         if use_chunking:
             chunk_indices = list(range(num_train_chunks))
@@ -427,8 +438,8 @@ def main():
         if v_acc > best_acc:
             best_acc = v_acc
             os.makedirs(args.checkpoint_dir, exist_ok=True)
-            torch.save(model.state_dict(),
-                       os.path.join(args.checkpoint_dir, 'checkpoint.pt'))
+            _sd = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
+            torch.save(_sd, os.path.join(args.checkpoint_dir, 'checkpoint.pt'))
 
         # Persist resume state every epoch (small; enables --resume after timeout).
         os.makedirs(args.checkpoint_dir, exist_ok=True)
