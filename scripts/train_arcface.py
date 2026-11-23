@@ -384,10 +384,12 @@ def main():
                 tr_ev, tr_lab, tr_w = cached_train_data
 
             train_ds = JetTaggingDataset(tr_ev, tr_lab, tr_w)
+            _nw = int(os.environ.get("ARCEFN_NUM_WORKERS", "0"))
             train_loader = DataLoader(
                 train_ds, batch_size=args.batch_size, shuffle=True,
-                pin_memory=True, num_workers=2, prefetch_factor=2,
-                persistent_workers=True)
+                pin_memory=True, num_workers=_nw,
+                prefetch_factor=2 if _nw > 0 else None,
+                persistent_workers=_nw > 0)
 
             c_loss, c_acc = train_chunk(
                 model, train_loader, optimizer, device, scheduler=scheduler,
