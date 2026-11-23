@@ -110,6 +110,38 @@ class LazyAwkwardEvents:
         return events_sliced
 
 
+def _convert_h5_to_npy(h5_path: str, out_dir: str) -> None:
+    """Convert a single H5 file to .npy arrays (float32) in out_dir."""
+    import tables as tb
+
+    stem = os.path.splitext(os.path.basename(h5_path))[0]
+    base = os.path.join(out_dir, stem)
+
+    print(f"    Reading {h5_path} ...")
+    f = tb.open_file(h5_path, "r")
+    tbl = f.root.table.table
+    n = tbl.shape[0]
+    v0 = tbl.read(field="values_block_0")
+    v1 = tbl.read(field="values_block_1")
+    f.close()
+
+    N_CONS = 200
+    es = v0[:, 0:N_CONS * 4:4].astype(np.float32)
+    pxs = v0[:, 1:N_CONS * 4:4].astype(np.float32)
+    pys = v0[:, 2:N_CONS * 4:4].astype(np.float32)
+    pzs = v0[:, 3:N_CONS * 4:4].astype(np.float32)
+    labels = v1[:, 1].astype(np.int8)
+    weights = np.ones(n, dtype=np.float32)
+
+    np.save(base + "_E.npy", es)
+    np.save(base + "_px.npy", pxs)
+    np.save(base + "_py.npy", pys)
+    np.save(base + "_pz.npy", pzs)
+    np.save(base + "_labels.npy", labels)
+    np.save(base + "_weights.npy", weights)
+    print(f"    Saved {base}_*.npy ({n:,} events)")
+
+
 def load_awkward(
     path: str,
     max_events: int | None = None,
@@ -145,15 +177,43 @@ def load_awkward(
         Event weights (all ones if not provided in dataset).
     """
     # Fast path: prefer pre-converted .npy (mmap) if available
-    # Check alongside h5 first, then ARCEFN_NPY_CACHE (for read-only attached datasets)
     path = str(path)
     base = path[:-3] if path.endswith(".h5") else path
     npy_e = base + "_E.npy"
     cache_dir = os.environ.get("ARCEFN_NPY_CACHE", "")
+
+    # If no .npy found, check cache dir
     if not os.path.exists(npy_e) and cache_dir:
         stem = os.path.splitext(os.path.basename(path))[0]
         npy_e = os.path.join(cache_dir, stem + "_E.npy")
         base = os.path.join(cache_dir, stem)
+
+    # Auto-convert from h5 if .npy still missing (transparent, one-time)
+    if not os.path.exists(npy_e) and os.path.exists(path):
+        # Determine writable output dir
+        h5_dir = os.path.dirname(path)
+        try:
+            test_file = os.path.join(h5_dir, ".write_test")
+            with open(test_file, "w") as fh:
+                fh.write("ok")
+            os.remove(test_file)
+            out_dir = h5_dir
+        except OSError:
+            out_dir = cache_dir if cache_dir else os.path.join(
+                os.path.expanduser("~"), ".cache", "arcefn_npy")
+            os.makedirs(out_dir, exist_ok=True)
+
+        stem = os.path.splitext(os.path.basename(path))[0]
+        base = os.path.join(out_dir, stem)
+        npy_e = base + "_E.npy"
+
+        if not os.path.exists(npy_e):
+            print(f"  Converting {path} -> .npy (one-time)...")
+            _convert_h5_to_npy(path, out_dir)
+            # update env so subsequent calls find the cache
+            if out_dir != os.path.dirname(path):
+                os.environ.setdefault("ARCEFN_NPY_CACHE", out_dir)
+
     if os.path.exists(npy_e):
         print(f"  Loading {npy_e} (mmap) ...")
         es = np.load(base + "_E.npy", mmap_mode="r")
