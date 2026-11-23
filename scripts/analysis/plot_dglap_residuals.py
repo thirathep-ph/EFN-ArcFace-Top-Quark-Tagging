@@ -32,7 +32,7 @@ print(f"Using {len(embeddings):,} events for residuals")
 import sys
 sys.path.insert(0, r"D:\research\ArcEFN")
 from arcefn.data.loader import load_awkward
-from arcefn.utils.physics import compute_features
+from arcefn.utils.physics import load_cached_features
 from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.pred_labels import arcface_preds_from_centers, check_cm
 from arcefn.utils.paths import DATA_DIR, CHECKPOINT
@@ -43,7 +43,7 @@ events, _, _ = load_awkward(test_h5, max_events=len(embeddings), lazy=False)
 print(f"Loaded {len(events)} events")
 
 print("Computing features...")
-features = compute_features(events)
+features = load_cached_features(events)
 # Column order: [Mass, mSD, Mult, nSD, sqrt(d12), sqrt(d23), Tau21, Tau32, zg, theta_g]
 mass_all = features[:, 0].astype(np.float64)
 zg_all = features[:, 8].astype(np.float64)
@@ -130,8 +130,8 @@ for idx, (sg_id, sg_name) in enumerate(SUBCLASS_NAMES.items()):
     rel_residuals = residuals / (hist[valid] + 1e-10)
     
     # Plot
-    ax.scatter(bin_centers[valid], rel_residuals, s=10, alpha=0.6, color="steelblue")
-    ax.axhline(0, color="red", linestyle="--", linewidth=1)
+    ax.scatter(bin_centers[valid], rel_residuals, s=10, alpha=0.6, color="#0053a6")
+    ax.axhline(0, color="#c8171f", linestyle="--", linewidth=1)
     ax.axhline(0.1, color="gray", linestyle=":", linewidth=0.5)
     ax.axhline(-0.1, color="gray", linestyle=":", linewidth=0.5)
     ax.set_xlabel(r"$z_g$")

@@ -1,0 +1,7 @@
+{
+  "layout": "per constituent [E, px, py, pz] stride 4, cols 0..799",
+  "E2_ge_p2_fraction": 0.9986207178217822,
+  "jet_pt_median": 593.3624267578125,
+  "mpt_median": 0.2564297318458557,
+  "n_events": 404000
+}

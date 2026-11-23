@@ -3,7 +3,7 @@ import json, numpy as np
 from pathlib import Path
 from collections import Counter
 from sklearn.cluster import AgglomerativeClustering
-from arcefn.utils.physics import compute_features, get_lund_coordinates
+from arcefn.utils.physics import load_cached_features, get_lund_coordinates
 from arcefn.data.loader import load_awkward
 from arcefn.utils.paths import DATA_DIR
 from scipy.optimize import curve_fit
@@ -58,7 +58,7 @@ En=En[:N]; y=y[:N]
 preds=preds_all[:N]
 events=events[:N]
 print("compute 10 features...")
-feat=compute_features(events) # (N,10) [Mass,mSD,Mult,nSD,d12,d23,Tau21,Tau32,zg,theta_g]
+feat=load_cached_features(events) # (N,10) [Mass,mSD,Mult,nSD,d12,d23,Tau21,Tau32,zg,theta_g]
 names=["Mass","mSD","Mult","nSD","d12","d23","Tau21","Tau32","zg","theta_g"]
 # Lund coords aggregated per jet: need per-jet lund? get_lund per dataset returns flattened; compute per-cluster later via events subset
 from arcefn.utils.physics import get_lund_coordinates

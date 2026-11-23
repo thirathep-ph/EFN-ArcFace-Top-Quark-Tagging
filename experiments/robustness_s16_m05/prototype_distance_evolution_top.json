@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "total_events": 100,
+    "class": 1,
+    "class_name": "top",
+    "n_events_class": 40,
+    "n_bins": 5,
+    "accuracy": 0.91,
+    "centers_0_is_qcd": true,
+    "centers_1_is_top": true,
+    "runtime_seconds": 2.5709400177001953
+  },
+  "bin_edges": [
+    1.4476404190063477,
+    1.738586950302124,
+    2.0032068729400634,
+    2.214743137359619,
+    2.418351650238037,
+    2.7218668460845947
+  ],
+  "bins": [
+    {
+      "bin": 0,
+      "n": 8,
+      "skipped": true
+    },
+    {
+      "bin": 1,
+      "n": 8,
+      "skipped": true
+    },
+    {
+      "bin": 2,
+      "n": 8,
+      "skipped": true
+    },
+    {
+      "bin": 3,
+      "n": 8,
+      "skipped": true
+    },
+    {
+      "bin": 4,
+      "n": 8,
+      "skipped": true
+    }
+  ],
+  "correlations": {
+    "dist_to_own_vs_mass": 0.12913097694336598,
+    "dist_to_own_vs_tau32": 0.6032887292857372,
+    "dist_to_own_vs_zg": 0.17345289505462622,
+    "dist_to_own_vs_theta_g": -0.07127831334202221,
+    "dist_to_own_vs_n_cons": 0.3458471008320033,
+    "margin_vs_mass": 0.02329428498368276,
+    "margin_vs_tau32": -0.37125840713131686,
+    "margin_vs_zg": -0.05750238258317634,
+    "margin_vs_theta_g": 0.07118149980321031
+  },
+  "summary": {
+    "dist_to_own_mean": 2.0909266471862793,
+    "dist_to_own_std": 0.37085700035095215,
+    "margin_mean": 0.6744078397750854,
+    "margin_std": 0.18547512590885162,
+    "correct_fraction": 0.975
+  }
+}

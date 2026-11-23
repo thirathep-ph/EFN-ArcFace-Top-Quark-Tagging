@@ -1,0 +1,1102 @@
+{
+  "entries": [
+    {
+      "name": "arcface_acc_s16_pct",
+      "artifact": "experiments/arcface_seed_metrics.json",
+      "pointer": "42.accuracy",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 91.8403,
+      "paper_text": "91.84\\%"
+    },
+    {
+      "name": "arcface_acc_s123_pct",
+      "artifact": "experiments/arcface_seed_metrics.json",
+      "pointer": "123.accuracy",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 91.8822,
+      "paper_text": null
+    },
+    {
+      "name": "arcface_acc_s7_pct",
+      "artifact": "experiments/arcface_seed_metrics.json",
+      "pointer": "7.accuracy",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 91.8314,
+      "paper_text": null
+    },
+    {
+      "name": "cm_TN",
+      "artifact": "experiments/arcface_seed_metrics.json",
+      "pointer": "42.confusion_matrix.0.0",
+      "scale": 1,
+      "tol": 0,
+      "expect": 181017.0,
+      "paper_text": "181017"
+    },
+    {
+      "name": "cm_FP",
+      "artifact": "experiments/arcface_seed_metrics.json",
+      "pointer": "42.confusion_matrix.0.1",
+      "scale": 1,
+      "tol": 0,
+      "expect": 20897.0,
+      "paper_text": "20897"
+    },
+    {
+      "name": "cm_FN",
+      "artifact": "experiments/arcface_seed_metrics.json",
+      "pointer": "42.confusion_matrix.1.0",
+      "scale": 1,
+      "tol": 0,
+      "expect": 12068.0,
+      "paper_text": "12068"
+    },
+    {
+      "name": "cm_TP",
+      "artifact": "experiments/arcface_seed_metrics.json",
+      "pointer": "42.confusion_matrix.1.1",
+      "scale": 1,
+      "tol": 0,
+      "expect": 190018.0,
+      "paper_text": "190018"
+    },
+    {
+      "name": "bootstrap_ci_lower_pct",
+      "artifact": "experiments/final_analysis_results.json",
+      "pointer": "bootstrap_ci.arcface_s16_m05.ci_lower",
+      "scale": 100,
+      "tol": 0.01,
+      "expect": 91.755167,
+      "paper_text": "91.76\\%"
+    },
+    {
+      "name": "bootstrap_ci_upper_pct",
+      "artifact": "experiments/final_analysis_results.json",
+      "pointer": "bootstrap_ci.arcface_s16_m05.ci_upper",
+      "scale": 100,
+      "tol": 0.01,
+      "expect": 91.923533,
+      "paper_text": "91.92\\%"
+    },
+    {
+      "name": "rejection_tpr50",
+      "artifact": "experiments/physics_sr/logits.npz",
+      "pointer": "logitdiff:rej50",
+      "scale": 1,
+      "tol": 0.5,
+      "expect": 123.64605,
+      "paper_text": "124"
+    },
+    {
+      "name": "auc_full_model",
+      "artifact": "experiments/physics_sr/logits.npz",
+      "pointer": "logitdiff:auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.973867,
+      "paper_text": "0.974"
+    },
+    {
+      "name": "binom_ci_lower_pct",
+      "artifact": "DERIVED",
+      "pointer": "binom_lower",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 91.755933,
+      "paper_text": "91.76\\%"
+    },
+    {
+      "name": "binom_ci_upper_pct",
+      "artifact": "DERIVED",
+      "pointer": "binom_upper",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 91.92476,
+      "paper_text": "91.92\\%"
+    },
+    {
+      "name": "binom_halfwidth_pp",
+      "artifact": "DERIVED",
+      "pointer": "binom_halfwidth",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 0.084413,
+      "paper_text": "0.08"
+    },
+    {
+      "name": "coslinear_3seed_mean_pct",
+      "artifact": "experiments/seed_accs.json",
+      "pointer": "mean:baselines_coslinear_seed_42.accuracy,baselines_coslinear_seed_123.accuracy,baselines_coslinear_seed_7.accuracy",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 91.996535,
+      "paper_text": "92.00"
+    },
+    {
+      "name": "coslinear_seed_42_pct",
+      "artifact": "experiments/seed_accs.json",
+      "pointer": "baselines_coslinear_seed_42.accuracy",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 91.979455,
+      "paper_text": null
+    },
+    {
+      "name": "s22_3seed_mean_pct",
+      "artifact": "experiments/seed_accs.json",
+      "pointer": "mean:robustness_s22_m05.accuracy,robustness_s22_seed_123.accuracy,robustness_s22_seed_7.accuracy",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 91.814191,
+      "paper_text": null
+    },
+    {
+      "name": "pca_pc1_pct",
+      "artifact": "experiments/dim_3way_50k.json",
+      "pointer": "ArcFace.pca_top6.0",
+      "scale": 100,
+      "tol": 0.05,
+      "expect": 83.61,
+      "paper_text": "83.6"
+    },
+    {
+      "name": "pca_pc2_pct",
+      "artifact": "experiments/dim_3way_50k.json",
+      "pointer": "ArcFace.pca_top6.1",
+      "scale": 100,
+      "tol": 0.05,
+      "expect": 16.39,
+      "paper_text": "16.4"
+    },
+    {
+      "name": "twonn_arcface",
+      "artifact": "experiments/dim_3way_50k.json",
+      "pointer": "ArcFace.twonn",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 2.21,
+      "paper_text": "2.21"
+    },
+    {
+      "name": "pr_arcface",
+      "artifact": "experiments/dim_3way_50k.json",
+      "pointer": "ArcFace.pr",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 1.38,
+      "paper_text": "1.38"
+    },
+    {
+      "name": "twonn_coslinear",
+      "artifact": "experiments/dim_3way_50k.json",
+      "pointer": "CosLinear.twonn",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 4.98,
+      "paper_text": "4.98"
+    },
+    {
+      "name": "pr_coslinear",
+      "artifact": "experiments/dim_3way_50k.json",
+      "pointer": "CosLinear.pr",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 5.63,
+      "paper_text": "5.63"
+    },
+    {
+      "name": "twonn_linear",
+      "artifact": "experiments/dim_3way_50k.json",
+      "pointer": "Linear.twonn",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 5.19,
+      "paper_text": "5.19"
+    },
+    {
+      "name": "pca_cum2_coslinear_pct",
+      "artifact": "experiments/dim_3way_50k.json",
+      "pointer": "CosLinear.pca_cum2",
+      "scale": 100,
+      "tol": 0.05,
+      "expect": 48.83,
+      "paper_text": "48.8"
+    },
+    {
+      "name": "pca_cum2_linear_pct",
+      "artifact": "experiments/dim_3way_50k.json",
+      "pointer": "Linear.pca_cum2",
+      "scale": 100,
+      "tol": 0.05,
+      "expect": 89.94,
+      "paper_text": "89.9"
+    },
+    {
+      "name": "dglap_tf_TP_alpha",
+      "artifact": "experiments/robustness_s16_m05/tpfp_dglap.json",
+      "pointer": "TP.dglap.alpha",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": -0.0,
+      "paper_text": "-0.0000"
+    },
+    {
+      "name": "dglap_tf_TN_alpha",
+      "artifact": "experiments/robustness_s16_m05/tpfp_dglap.json",
+      "pointer": "TN.dglap.alpha",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": -1.193573,
+      "paper_text": "-1.1936"
+    },
+    {
+      "name": "dglap_tf_FP_alpha",
+      "artifact": "experiments/robustness_s16_m05/tpfp_dglap.json",
+      "pointer": "FP.dglap.alpha",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": -0.247717,
+      "paper_text": "-0.2477"
+    },
+    {
+      "name": "dglap_tf_FN_alpha",
+      "artifact": "experiments/robustness_s16_m05/tpfp_dglap.json",
+      "pointer": "FN.dglap.alpha",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": -0.597395,
+      "paper_text": "-0.5974"
+    },
+    {
+      "name": "dglap_tf_TP_r2",
+      "artifact": "experiments/robustness_s16_m05/tpfp_dglap.json",
+      "pointer": "TP.dglap.r2",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.963817,
+      "paper_text": "0.9638"
+    },
+    {
+      "name": "dglap_tf_TN_r2",
+      "artifact": "experiments/robustness_s16_m05/tpfp_dglap.json",
+      "pointer": "TN.dglap.r2",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.999302,
+      "paper_text": "0.9993"
+    },
+    {
+      "name": "dglap_tf_FP_r2",
+      "artifact": "experiments/robustness_s16_m05/tpfp_dglap.json",
+      "pointer": "FP.dglap.r2",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.896574,
+      "paper_text": "0.8966"
+    },
+    {
+      "name": "dglap_tf_FN_r2",
+      "artifact": "experiments/robustness_s16_m05/tpfp_dglap.json",
+      "pointer": "FN.dglap.r2",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.971444,
+      "paper_text": "0.9714"
+    },
+    {
+      "name": "hopkins_H",
+      "artifact": "experiments/robustness_s16_m05/hopkins_silhouette.json",
+      "pointer": "hopkins_statistic",
+      "scale": 1,
+      "tol": 0.0001,
+      "expect": 0.999999,
+      "paper_text": "1.0000"
+    },
+    {
+      "name": "silhouette_score",
+      "artifact": "experiments/robustness_s16_m05/hopkins_silhouette.json",
+      "pointer": "silhouette_score",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.645232,
+      "paper_text": "0.6452"
+    },
+    {
+      "name": "proto_evol_top_n",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.top.n_total",
+      "scale": 1,
+      "tol": 0,
+      "expect": 202086.0,
+      "paper_text": "202086"
+    },
+    {
+      "name": "proto_evol_top_acc",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.top.accuracy",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.940283,
+      "paper_text": "0.9403"
+    },
+    {
+      "name": "proto_evol_top_dist_mean",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.top.dist_own_mean",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 2.0967,
+      "paper_text": "2.0967"
+    },
+    {
+      "name": "proto_evol_top_tau32_rho",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.top.spearman_across_bins.tau32",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 1.0,
+      "paper_text": "+1.00"
+    },
+    {
+      "name": "proto_evol_top_mass_first",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.top.bins.0.mass",
+      "scale": 1,
+      "tol": 0.05,
+      "expect": 171.644056,
+      "paper_text": "171.6"
+    },
+    {
+      "name": "proto_evol_top_mass_last",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.top.bins.9.mass",
+      "scale": 1,
+      "tol": 0.05,
+      "expect": 164.383048,
+      "paper_text": "164.4"
+    },
+    {
+      "name": "proto_evol_top_correct_first",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.top.bins.0.frac_correct",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 1.0,
+      "paper_text": "1.000"
+    },
+    {
+      "name": "proto_evol_top_correct_last",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.top.bins.9.frac_correct",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.417487,
+      "paper_text": "0.417"
+    },
+    {
+      "name": "proto_evol_qcd_n",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.qcd.n_total",
+      "scale": 1,
+      "tol": 0,
+      "expect": 201914.0,
+      "paper_text": "201914"
+    },
+    {
+      "name": "proto_evol_qcd_acc",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.qcd.accuracy",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.896505,
+      "paper_text": "0.8965"
+    },
+    {
+      "name": "proto_evol_qcd_dist_mean",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.qcd.dist_own_mean",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 1.637758,
+      "paper_text": "1.6378"
+    },
+    {
+      "name": "proto_evol_qcd_mass_rho",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.qcd.spearman_across_bins.mass",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.890909,
+      "paper_text": "+0.89"
+    },
+    {
+      "name": "proto_evol_qcd_thetag_rho",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.qcd.spearman_across_bins.theta_g",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.830303,
+      "paper_text": "+0.83"
+    },
+    {
+      "name": "proto_evol_qcd_nconst_rho",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.qcd.spearman_across_bins.n_const",
+      "scale": 1,
+      "tol": 0.01,
+      "expect": 0.963636,
+      "paper_text": "+0.96"
+    },
+    {
+      "name": "proto_evol_qcd_mass_first",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.qcd.bins.0.mass",
+      "scale": 1,
+      "tol": 0.05,
+      "expect": 56.989452,
+      "paper_text": "57.0"
+    },
+    {
+      "name": "proto_evol_qcd_mass_last",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.qcd.bins.9.mass",
+      "scale": 1,
+      "tol": 0.05,
+      "expect": 178.403752,
+      "paper_text": "178.4"
+    },
+    {
+      "name": "proto_evol_qcd_correct_first",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.qcd.bins.0.frac_correct",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 1.0,
+      "paper_text": "1.000"
+    },
+    {
+      "name": "proto_evol_qcd_correct_last",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.qcd.bins.9.frac_correct",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.014659,
+      "paper_text": "0.015"
+    },
+    {
+      "name": "proto_evol_top_mass_rho",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.top.spearman_across_bins.mass",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.418182,
+      "paper_text": null
+    },
+    {
+      "name": "proto_evol_top_nconst_rho",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.top.spearman_across_bins.n_const",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.842424,
+      "paper_text": null
+    },
+    {
+      "name": "proto_evol_top_dist_std",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.top.dist_own_std",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.426197,
+      "paper_text": null
+    },
+    {
+      "name": "proto_evol_qcd_tau32_rho",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.qcd.spearman_across_bins.tau32",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": -0.466667,
+      "paper_text": null
+    },
+    {
+      "name": "proto_evol_qcd_dist_std",
+      "artifact": "experiments/robustness_s16_m05/prototype_distance_evolution_10bin.json",
+      "pointer": "classes.qcd.dist_own_std",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.713146,
+      "paper_text": null
+    },
+    {
+      "name": "norm_raw_mean_auc",
+      "artifact": "experiments/physics_sr/norm_summary.json",
+      "pointer": "mean:cells.norm_raw_s42.auc,cells.norm_raw_s123.auc,cells.norm_raw_s7.auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.952467,
+      "paper_text": null
+    },
+    {
+      "name": "norm_z_mean_auc",
+      "artifact": "experiments/physics_sr/norm_summary.json",
+      "pointer": "mean:cells.norm_z_s42.auc,cells.norm_z_s123.auc,cells.norm_z_s7.auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.9611,
+      "paper_text": null
+    },
+    {
+      "name": "norm_mm_mean_auc",
+      "artifact": "experiments/physics_sr/norm_summary.json",
+      "pointer": "mean:cells.norm_mm_s42.auc,cells.norm_mm_s123.auc,cells.norm_mm_s7.auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.9537,
+      "paper_text": null
+    },
+    {
+      "name": "norm_robust_mean_auc",
+      "artifact": "experiments/physics_sr/norm_summary.json",
+      "pointer": "mean:cells.norm_robust_s42.auc,cells.norm_robust_s123.auc,cells.norm_robust_s7.auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.960433,
+      "paper_text": null
+    },
+    {
+      "name": "norm_sigma_mean_auc",
+      "artifact": "experiments/physics_sr/norm_summary.json",
+      "pointer": "mean:cells.norm_sigma_s42.auc,cells.norm_sigma_s123.auc,cells.norm_sigma_s7.auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.95,
+      "paper_text": null
+    },
+    {
+      "name": "sym_c2_acc_pct",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.1.metrics.acc",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 88.239356,
+      "paper_text": "88.24"
+    },
+    {
+      "name": "sym_c2_auc",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.1.metrics.auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.905867,
+      "paper_text": "0.906"
+    },
+    {
+      "name": "sym_c2_rej50",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.1.metrics.rej50",
+      "scale": 1,
+      "tol": 0.5,
+      "expect": 11.311709,
+      "paper_text": "11"
+    },
+    {
+      "name": "sym_c5_acc_pct",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.3.metrics.acc",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 87.981931,
+      "paper_text": "87.98"
+    },
+    {
+      "name": "sym_c5_auc",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.3.metrics.auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.943277,
+      "paper_text": "0.943"
+    },
+    {
+      "name": "sym_c5_rej50",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.3.metrics.rej50",
+      "scale": 1,
+      "tol": 0.5,
+      "expect": 29.416375,
+      "paper_text": "29"
+    },
+    {
+      "name": "sym_c6_acc_pct",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.4.metrics.acc",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 89.438861,
+      "paper_text": "89.44"
+    },
+    {
+      "name": "sym_c6_auc",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.4.metrics.auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.949625,
+      "paper_text": "0.950"
+    },
+    {
+      "name": "sym_c6_rej50",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.4.metrics.rej50",
+      "scale": 1,
+      "tol": 0.5,
+      "expect": 32.847568,
+      "paper_text": "33"
+    },
+    {
+      "name": "sym_c9_acc_pct",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.7.metrics.acc",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 89.643069,
+      "paper_text": "89.64"
+    },
+    {
+      "name": "sym_c9_auc",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.7.metrics.auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.957928,
+      "paper_text": "0.958"
+    },
+    {
+      "name": "sym_c9_rej50",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.7.metrics.rej50",
+      "scale": 1,
+      "tol": 0.5,
+      "expect": 53.247363,
+      "paper_text": "53"
+    },
+    {
+      "name": "sym_c11_acc_pct",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.9.metrics.acc",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 89.437376,
+      "paper_text": "89.44"
+    },
+    {
+      "name": "sym_c11_auc",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.9.metrics.auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.960414,
+      "paper_text": "0.960"
+    },
+    {
+      "name": "sym_c11_rej50",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.9.metrics.rej50",
+      "scale": 1,
+      "tol": 0.5,
+      "expect": 68.842141,
+      "paper_text": "69"
+    },
+    {
+      "name": "sym_c16_acc_pct",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.13.metrics.acc",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 90.016089,
+      "paper_text": "90.02"
+    },
+    {
+      "name": "sym_c16_auc",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.13.metrics.auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.96296,
+      "paper_text": "0.963"
+    },
+    {
+      "name": "sym_c16_rej50",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.13.metrics.rej50",
+      "scale": 1,
+      "tol": 0.5,
+      "expect": 73.104272,
+      "paper_text": "73"
+    },
+    {
+      "name": "sym_c19_acc_pct",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.16.metrics.acc",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 89.711386,
+      "paper_text": "89.71"
+    },
+    {
+      "name": "sym_c19_auc",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.16.metrics.auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.963242,
+      "paper_text": "0.963"
+    },
+    {
+      "name": "sym_c19_rej50",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.16.metrics.rej50",
+      "scale": 1,
+      "tol": 0.5,
+      "expect": 77.30245,
+      "paper_text": "77"
+    },
+    {
+      "name": "sym_c21_acc_pct",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.17.metrics.acc",
+      "scale": 100,
+      "tol": 0.005,
+      "expect": 90.066584,
+      "paper_text": "90.07"
+    },
+    {
+      "name": "sym_c21_auc",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.17.metrics.auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.963692,
+      "paper_text": "0.964"
+    },
+    {
+      "name": "sym_c21_rej50",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.17.metrics.rej50",
+      "scale": 1,
+      "tol": 0.5,
+      "expect": 73.557013,
+      "paper_text": "74"
+    },
+    {
+      "name": "sym_c21_corr_nn",
+      "artifact": "experiments/physics_sr/symbolic_eval.json",
+      "pointer": "equations.17.corr_with_nn_logit",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.968843,
+      "paper_text": "0.969"
+    },
+    {
+      "name": "k_nominal",
+      "artifact": "experiments/physics_sr/compact_form_ratio.json",
+      "pointer": "nominal_ratio",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.329992,
+      "paper_text": "0.33"
+    },
+    {
+      "name": "k_bootstrap_std",
+      "artifact": "experiments/physics_sr/compact_form_ratio.json",
+      "pointer": "bootstrap_ratio_std",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.001141,
+      "paper_text": "0.0011"
+    },
+    {
+      "name": "k_ci_lo",
+      "artifact": "experiments/physics_sr/compact_form_ratio.json",
+      "pointer": "bootstrap_ratio_ci95.0",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.327786,
+      "paper_text": "0.328"
+    },
+    {
+      "name": "k_ci_hi",
+      "artifact": "experiments/physics_sr/compact_form_ratio.json",
+      "pointer": "bootstrap_ratio_ci95.1",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.33222,
+      "paper_text": "0.332"
+    },
+    {
+      "name": "k_offset_zero",
+      "artifact": "experiments/physics_sr/compact_form_ratio.json",
+      "pointer": "sensitivity.offset_forced_zero",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.366087,
+      "paper_text": "0.366"
+    },
+    {
+      "name": "k_linear_mass",
+      "artifact": "experiments/physics_sr/compact_form_ratio.json",
+      "pointer": "C_linear_mass.ratio_k_over_a",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.356385,
+      "paper_text": "0.356"
+    },
+    {
+      "name": "k_trim_saturated",
+      "artifact": "experiments/physics_sr/compact_form_ratio.json",
+      "pointer": "sensitivity.trim_abs_logit_le_11",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.467343,
+      "paper_text": "0.467"
+    },
+    {
+      "name": "k_free_step_profile",
+      "artifact": "experiments/physics_sr/compact_form_ratio.json",
+      "pointer": "sensitivity.free_step_profile",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 2.085404,
+      "paper_text": "2.09"
+    },
+    {
+      "name": "k_auc_nominal_form",
+      "artifact": "experiments/physics_sr/compact_form_ratio.json",
+      "pointer": "auc_of_nominal_form",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.942901,
+      "paper_text": "0.943"
+    },
+    {
+      "name": "linear_acc_3seed_mean_pct",
+      "artifact": "DERIVED",
+      "pointer": "linear_3seed_mean",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 91.941997,
+      "paper_text": "91.94"
+    },
+    {
+      "name": "linear_rej50",
+      "artifact": "experiments/paired_scores_cache.npz",
+      "pointer": "scores_linear_seed42:rej50",
+      "scale": 1,
+      "tol": 0.5,
+      "expect": 121.63494,
+      "paper_text": "122"
+    },
+    {
+      "name": "linear_auc",
+      "artifact": "experiments/paired_scores_cache.npz",
+      "pointer": "scores_linear_seed42:auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.974265,
+      "paper_text": "0.974"
+    },
+    {
+      "name": "coslinear_rej50",
+      "artifact": "experiments/paired_scores_cache.npz",
+      "pointer": "scores_coslinear_seed42:rej50",
+      "scale": 1,
+      "tol": 0.5,
+      "expect": 131.711676,
+      "paper_text": "132"
+    },
+    {
+      "name": "coslinear_auc",
+      "artifact": "experiments/paired_scores_cache.npz",
+      "pointer": "scores_coslinear_seed42:auc",
+      "scale": 1,
+      "tol": 0.0005,
+      "expect": 0.974813,
+      "paper_text": "0.975"
+    },
+    {
+      "name": "qcd_frac_at_mass_gt160_pct",
+      "artifact": "DERIVED",
+      "pointer": "qcd_frac_mass160",
+      "scale": 100,
+      "tol": 0.05,
+      "expect": 7.585441,
+      "paper_text": "7.6"
+    },
+    {
+      "name": "auc_mass_window_140_170",
+      "artifact": "experiments/mass_window_null.json",
+      "pointer": "windows.0.model_auc",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 0.887345,
+      "paper_text": "0.89"
+    },
+    {
+      "name": "auc_massonly_window_140_170",
+      "artifact": "experiments/mass_window_null.json",
+      "pointer": "windows.0.mass_only_auc",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 0.696262,
+      "paper_text": "0.70"
+    },
+    {
+      "name": "auc_mass_window_150_200",
+      "artifact": "experiments/mass_window_null.json",
+      "pointer": "windows.1.model_auc",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 0.878804,
+      "paper_text": "0.88"
+    },
+    {
+      "name": "auc_massonly_window_150_200",
+      "artifact": "experiments/mass_window_null.json",
+      "pointer": "windows.1.mass_only_auc",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 0.548422,
+      "paper_text": "0.55"
+    },
+    {
+      "name": "acc_mass_window_150_200_pct",
+      "artifact": "experiments/mass_window_null.json",
+      "pointer": "windows.1.model_acc",
+      "scale": 100,
+      "tol": 0.05,
+      "expect": 90.235675,
+      "paper_text": "90.2"
+    },
+    {
+      "name": "majority_acc_window_150_200_pct",
+      "artifact": "experiments/mass_window_null.json",
+      "pointer": "windows.1.majority_acc",
+      "scale": 100,
+      "tol": 0.05,
+      "expect": 88.817979,
+      "paper_text": "88.8"
+    },
+    {
+      "name": "inject_margin_top",
+      "artifact": "experiments/poc_injection_scan_results.json",
+      "pointer": "inject:margin_top",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 0.415659,
+      "paper_text": "0.416"
+    },
+    {
+      "name": "inject_margin_qcd",
+      "artifact": "experiments/poc_injection_scan_results.json",
+      "pointer": "inject:margin_qcd",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": -0.519716,
+      "paper_text": "-0.516"
+    },
+    {
+      "name": "inject_calib_err",
+      "artifact": "experiments/poc_injection_scan_results.json",
+      "pointer": "inject:calib",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 0.04591,
+      "paper_text": "0.046"
+    },
+    {
+      "name": "emb_norm_median",
+      "artifact": "experiments/embedding_geometry_results.json",
+      "pointer": "ArcFace (s=16, m=0.5)_norms_median",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 7.727916,
+      "paper_text": "7.73"
+    },
+    {
+      "name": "emb_norm_std",
+      "artifact": "experiments/embedding_geometry_results.json",
+      "pointer": "ArcFace (s=16, m=0.5)_norms_std",
+      "scale": 1,
+      "tol": 0.005,
+      "expect": 4.937682,
+      "paper_text": "4.94"
+    },
+    {
+      "name": "tau32_alone_auc_raw",
+      "artifact": "DERIVED",
+      "pointer": "tau32_auc",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.147094,
+      "paper_text": "0.147"
+    },
+    {
+      "name": "tau32_alone_auc_neg",
+      "artifact": "DERIVED",
+      "pointer": "tau32_auc_neg",
+      "scale": 1,
+      "tol": 0.001,
+      "expect": 0.852906,
+      "paper_text": "0.853"
+    },
+    {
+      "name": "proto_angle_deg",
+      "artifact": "experiments/dimensionality_results.json",
+      "pointer": "class_center_angular_distance_deg",
+      "scale": 1,
+      "tol": 0.05,
+      "expect": 43.610481,
+      "paper_text": "43.6"
+    },
+    {
+      "name": "conformal_coverage_pct",
+      "artifact": "experiments/archive/conformal_results.json",
+      "pointer": "arcface_s16_m05.empirical_coverage",
+      "scale": 100,
+      "tol": 0.05,
+      "expect": 90.066,
+      "paper_text": "90.1"
+    },
+    {
+      "name": "eda_mean_mass_train",
+      "artifact": "experiments/eda/eda_stats.json",
+      "pointer": "dataset_stats.0.mean_mass",
+      "scale": 1,
+      "tol": 0.05,
+      "expect": 135.684723,
+      "paper_text": "135.7"
+    },
+    {
+      "name": "eda_mean_mass_val",
+      "artifact": "experiments/eda/eda_stats.json",
+      "pointer": "dataset_stats.1.mean_mass",
+      "scale": 1,
+      "tol": 0.05,
+      "expect": 135.824051,
+      "paper_text": "135.8"
+    },
+    {
+      "name": "eda_mean_ncons_train",
+      "artifact": "experiments/eda/eda_stats.json",
+      "pointer": "dataset_stats.0.mean_constituents",
+      "scale": 1,
+      "tol": 0.05,
+      "expect": 49.049236,
+      "paper_text": "49.0"
+    }
+  ]
+}

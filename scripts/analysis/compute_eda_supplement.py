@@ -17,7 +17,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from arcefn.utils.paths import EXPERIMENTS, DATA_DIR
 from arcefn.data.loader import load_awkward
-from arcefn.utils.physics import compute_features
+from arcefn.utils.physics import load_cached_features
 
 rng = np.random.default_rng(42)
 events, labels, _ = load_awkward(str(DATA_DIR / 'test.h5'), max_events=100000, lazy=True)
@@ -26,7 +26,7 @@ idx = np.sort(rng.choice(total, 100000, replace=False))
 events = events[idx]
 labels = labels[idx]
 
-features = compute_features(events)
+features = load_cached_features(events)
 mass = features[:, 0]
 t32 = features[:, 7]
 mult = features[:, 2]

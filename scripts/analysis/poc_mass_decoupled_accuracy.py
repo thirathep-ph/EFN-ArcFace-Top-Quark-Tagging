@@ -22,7 +22,7 @@ from arcefn.utils.paths import EXPERIMENTS, DATA_DIR
 from arcefn.utils.device import get_device
 from arcefn.data.loader import load_awkward
 from arcefn.models.efn_arcface import TopTaggingModel
-from arcefn.utils.physics import compute_features
+from arcefn.utils.physics import load_cached_features
 import torch
 from torch.utils.data import DataLoader
 from arcefn.data.loader import JetTaggingDataset
@@ -59,7 +59,7 @@ all_labels = np.concatenate(all_labels)
 
 print("Computing jet mass via FastJet...")
 t0 = time.time()
-features = compute_features(events)  # col 0=mass, 1=mSD, 2=mult, 3=nSD, ...
+features = load_cached_features(events)  # col 0=mass, 1=mSD, 2=mult, 3=nSD, ...
 jet_mass = features[:, 0]  # mass is the first column
 print(f"FastJet done in {time.time()-t0:.0f}s")
 
@@ -120,7 +120,7 @@ majority_acc_arr = np.array(majority_accs)
 cnt_arr = np.array(counts)
 
 ax = axes[0]
-ax.plot(bin_arr[mask], acc_arr[mask], 'o-', markersize=6, color='#377eb8', label='Model accuracy')
+ax.plot(bin_arr[mask], acc_arr[mask], 'o-', markersize=6, color='#0053a6', label='Model accuracy')
 ax.plot(bin_arr[mask], majority_acc_arr[mask], 'g^--', markersize=4, alpha=0.8,
         label='Majority-class (mass-only null)')
 ax.axhline(0.9184, color='gray', linestyle='--', alpha=0.5, label='Overall accuracy (91.84%)')
@@ -138,7 +138,7 @@ ax2.set_ylabel('N events', fontsize=13, color='gray')
 ax2.tick_params(colors='gray')
 
 ax = axes[1]
-ax.plot(bin_arr[mask], auc_arr[mask], 's-', markersize=6, color='#e41a1c', label='Model AUC')
+ax.plot(bin_arr[mask], auc_arr[mask], 's-', markersize=6, color='#c8171f', label='Model AUC')
 ax.plot(bin_arr[mask], mass_auc_arr[mask], 'g^--', markersize=4, alpha=0.8,
         label='Mass-only ranker AUC')
 ax.axhline(0.973, color='gray', linestyle='--', alpha=0.5, label='Overall AUC (0.973)')

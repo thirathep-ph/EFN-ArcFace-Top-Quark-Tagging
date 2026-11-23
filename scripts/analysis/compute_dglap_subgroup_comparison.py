@@ -34,7 +34,7 @@ import numpy as np
 from arcefn.utils.paths import DATA_DIR, EXPERIMENTS, CHECKPOINT
 from arcefn.utils.clustering import spectral_clustering_subclass
 from arcefn.utils.pred_labels import arcface_preds_from_centers, check_cm
-from arcefn.utils.physics import compute_features
+from arcefn.utils.physics import load_cached_features
 from arcefn.utils.figure_style import apply_style, save_fig
 
 import matplotlib
@@ -329,7 +329,7 @@ def main():
     if len(events) != len(embeddings):
         # events loaded full; subset to match embeddings order
         events = events[: len(embeddings)]
-    features = compute_features(events)
+    features = load_cached_features(events)
     # Column order: [Mass, mSD, Mult, nSD, sqrt(d12), sqrt(d23), Tau21, Tau32, zg, theta_g]
     mass_all = features[:, 0].astype(np.float64)
     zg_all = features[:, 8].astype(np.float64)
