@@ -6,6 +6,7 @@ Convert HDF5 dataset into awkward jagged arrays of
 
 Pipeline: H5 Dataset -> NumPy -> Awkward (jagged) -> Vector (Lorentz)
 """
+import os
 import hdf5plugin
 import h5py
 import numpy as np
@@ -143,24 +144,68 @@ def load_awkward(
     weights : np.ndarray
         Event weights (all ones if not provided in dataset).
     """
-    f = h5py.File(path, 'r')
-    
-    # Locate dataset (handle table/table or direct keys)
-    if 'table' in f:
-        tbl = f['table']['table']
-    else:
-        tbl = f[list(f.keys())[0]]
-        
-    total_len = tbl.shape[0]
-    start = start_event
-    end = min(total_len, start + max_events) if max_events is not None else total_len
-    n = end - start
+    # Fast path: prefer pre-converted .npy (mmap) if available
+    # Check alongside h5 first, then ARCEFN_NPY_CACHE (for read-only attached datasets)
+    path = str(path)
+    base = path[:-3] if path.endswith(".h5") else path
+    npy_e = base + "_E.npy"
+    cache_dir = os.environ.get("ARCEFN_NPY_CACHE", "")
+    if not os.path.exists(npy_e) and cache_dir:
+        stem = os.path.splitext(os.path.basename(path))[0]
+        npy_e = os.path.join(cache_dir, stem + "_E.npy")
+        base = os.path.join(cache_dir, stem)
+    if os.path.exists(npy_e):
+        print(f"  Loading {npy_e} (mmap) ...")
+        es = np.load(base + "_E.npy", mmap_mode="r")
+        pxs = np.load(base + "_px.npy", mmap_mode="r")
+        pys = np.load(base + "_py.npy", mmap_mode="r")
+        pzs = np.load(base + "_pz.npy", mmap_mode="r")
+        all_labels = np.load(base + "_labels.npy", mmap_mode="r")
+        all_weights = np.load(base + "_weights.npy", mmap_mode="r")
 
-    if n <= 0:
-        f.close()
-        raise ValueError(f"Invalid range: start_event={start_event}, max_events={max_events} for dataset of length {total_len}")
+        total_len = es.shape[0]
+        start = start_event
+        end = min(total_len, start + max_events) if max_events is not None else total_len
+        n = end - start
 
-    print(f"  Reading {n:,} entries (range {start:,} to {end:,}) from {path}...")
+        if n <= 0:
+            raise ValueError(f"Invalid range: start_event={start_event}, max_events={max_events} for dataset of length {total_len}")
+
+        es = es[start:end]
+        pxs = pxs[start:end]
+        pys = pys[start:end]
+        pzs = pzs[start:end]
+        labels = np.array(all_labels[start:end])
+        weights = np.array(all_weights[start:end])
+
+        if lazy:
+            events = LazyAwkwardEvents(es, pxs, pys, pzs, trim_padding=trim_padding)
+            return events, labels, weights
+
+        # non-lazy: trim padding
+        if trim_padding:
+            mask = es > 0
+            n_per_event = mask.sum(axis=1)
+            es_flat = es[mask]
+            pxs_flat = pxs[mask]
+            pys_flat = pys[mask]
+            pzs_flat = pzs[mask]
+            counts = n_per_event.tolist()
+            e_jagged = ak.unflatten(es_flat, counts)
+            px_jagged = ak.unflatten(pxs_flat, counts)
+            py_jagged = ak.unflatten(pys_flat, counts)
+            pz_jagged = ak.unflatten(pzs_flat, counts)
+        else:
+            e_jagged = ak.from_numpy(np.array(es))
+            px_jagged = ak.from_numpy(np.array(pxs))
+            py_jagged = ak.from_numpy(np.array(pys))
+            pz_jagged = ak.from_numpy(np.array(pzs))
+
+        events = ak.zip({"E": e_jagged, "px": px_jagged, "py": py_jagged, "pz": pz_jagged}, with_name="Momentum4D")
+        return events, labels, weights
+
+    # Original H5 path
+    f = h5py.File(path, "r")
     
     # Layout check: values_block_0 (804 cols) vs values_block_1 (2 cols)
     if 'values_block_0' in tbl.dtype.names:
