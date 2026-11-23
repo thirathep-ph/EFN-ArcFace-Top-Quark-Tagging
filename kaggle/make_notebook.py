@@ -74,6 +74,7 @@ if attached:
     os.environ["ARCEFN_DATA_DIR"] = DATA_DIR
     os.environ["ARCEFN_NPY_CACHE"] = CACHE_DIR
     os.environ["ARCEFN_AUTO_CONVERT"] = "1"
+    os.environ["ARCEFN_NUM_WORKERS"] = "2"
     print("Using attached dataset:", DATA_DIR, attached)
 else:
     DATA_DIR = "data/top_tagging"
