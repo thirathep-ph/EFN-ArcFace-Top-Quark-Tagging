@@ -46,11 +46,11 @@ A 59k-parameter tagger whose decision rule is exactly nearest-class-prototype on
 ## Reproduce
 
 ```bash
-python scripts/download_data.py   # 3.4 GB dataset
+python scripts/download_data.py   # ~1.7 GB dataset (Zenodo record 2603256)
 pip install -e .
 python scripts/train_arcface.py --scale 16 --seed 42 --quick   # sanity run
 
-# Optional: pre-convert H5 -> NumPy for faster loading (auto on Kaggle)
+# Optional speedup: pre-convert H5 -> NumPy (auto on Kaggle, opt-in locally)
 # ARCEFN_AUTO_CONVERT=1 python scripts/train_arcface.py --scale 16 --seed 42
 # Or manual: python -m scripts.convert_h5_to_npy
 
