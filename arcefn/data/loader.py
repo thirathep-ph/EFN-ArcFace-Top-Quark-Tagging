@@ -468,10 +468,10 @@ class JetTaggingDataset(Dataset):
         
         if isinstance(events, LazyAwkwardEvents):
             self.events = events
-            self.E = torch.from_numpy(events.E).float()
-            self.px = torch.from_numpy(events.px).float()
-            self.py = torch.from_numpy(events.py).float()
-            self.pz = torch.from_numpy(events.pz).float()
+            self.E = torch.from_numpy(np.array(events.E)).float()
+            self.px = torch.from_numpy(np.array(events.px)).float()
+            self.py = torch.from_numpy(np.array(events.py)).float()
+            self.pz = torch.from_numpy(np.array(events.pz)).float()
         else:
             self.events = events
             # Convert awkward to padded numpy
